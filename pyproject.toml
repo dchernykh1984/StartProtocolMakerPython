@@ -1,0 +1,9 @@
+[tool.poetry]
+name = "start-protocol-maker"
+version = "0.1.0"
+description = "Generate start protocols for offline referee events"
+authors = ["Denis Chernykh <education03@mail.ru>"]
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = "^3.14"
