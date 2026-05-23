@@ -363,9 +363,9 @@ def save_backup(
         lines.append(_TAG_USE_ALL)
     if auto_shift:
         lines.append(_TAG_AUTO_SHIFT)
-    p.write_text("\n".join(lines) + "\n", encoding="cp1251")
+    p.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def write_start_protocol(path: str, save_items: list[str]) -> None:
     """Write save_items to a start protocol file (one line per competitor)."""
-    Path(path).write_text("\n".join(save_items) + "\n", encoding="cp1251")
+    Path(path).write_text("\n".join(save_items) + "\n", encoding="utf-8")
