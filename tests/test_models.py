@@ -371,14 +371,15 @@ class TestBackup:
 
 class TestWriteStartProtocol:
     def test_writes_lines(self) -> None:
+        ivan = "\u0418\u0432\u0430\u043d"  # Ivan
         items = [
-            "1#Alice#G#3#1#1990#T#C##0 00:00:00.000#",
+            f"1#{ivan}#G#3#1#1990#T#C##0 00:00:00.000#",
             "2#Bob#G#3#1#1985#T#C##0 00:00:00.000#",
         ]
         with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as f:
             path = f.name
         write_start_protocol(path, items)
-        content = Path(path).read_text(encoding="cp1251")
+        content = Path(path).read_text(encoding="utf-8")
         for item in items:
             assert item in content
 
@@ -386,5 +387,5 @@ class TestWriteStartProtocol:
         with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as f:
             path = f.name
         write_start_protocol(path, [])
-        content = Path(path).read_text(encoding="cp1251")
+        content = Path(path).read_text(encoding="utf-8")
         assert content.strip() == ""
