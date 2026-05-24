@@ -324,7 +324,15 @@ class MainWindow(QMainWindow):
         self._refresh_duplicate_indicator()
         self._write_backup("data", "spm_backup.txt")
         if self._start_protocol_file:
-            write_start_protocol(self._start_protocol_file, self._save_as_items())
+            try:
+                write_start_protocol(self._start_protocol_file, self._save_as_items())
+            except FileNotFoundError:
+                QMessageBox.warning(
+                    self,
+                    "Save",
+                    f'Cannot save: directory for "{self._start_protocol_file}"'
+                    ' does not exist.\nUse "Save as" to choose a new location.',
+                )
 
     def _write_backup(self, folder: str, filename: str) -> None:
         save_backup(
@@ -617,7 +625,15 @@ class MainWindow(QMainWindow):
                 self, "Save", 'File with start protocol not selected. Click "Save as"'
             )
             return
-        write_start_protocol(self._start_protocol_file, self._save_as_items())
+        try:
+            write_start_protocol(self._start_protocol_file, self._save_as_items())
+        except FileNotFoundError:
+            QMessageBox.warning(
+                self,
+                "Save",
+                f'Cannot save: directory for "{self._start_protocol_file}"'
+                ' does not exist.\nUse "Save as" to choose a new location.',
+            )
 
     def _on_save_as_start(self) -> None:
         path, _ = QFileDialog.getSaveFileName(self, "Save start protocol")
