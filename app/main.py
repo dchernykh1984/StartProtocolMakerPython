@@ -65,6 +65,7 @@ def _macos_set_process_name(name: str) -> None:
             objc.sel_registerName(b"processInfo"),
         )
 
+        ns_name = _nsstr(name)
         objc.objc_msgSend.restype = ctypes.c_void_p
         objc.objc_msgSend.argtypes = [
             ctypes.c_void_p,
@@ -74,7 +75,7 @@ def _macos_set_process_name(name: str) -> None:
         objc.objc_msgSend(
             proc_info,
             objc.sel_registerName(b"setProcessName:"),
-            _nsstr(name),
+            ns_name,
         )
     except Exception:  # noqa: S110
         pass
