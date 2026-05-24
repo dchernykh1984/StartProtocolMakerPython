@@ -338,7 +338,7 @@ class MainWindow(QMainWindow):
 
     def _write_backup(self, folder: str, filename: str) -> None:
         save_backup(
-            path=f"{folder}/{filename}",
+            path=str(Path(folder) / filename),
             open_items=self._open_items(),
             save_items=self._save_as_items(),
             groups=self._groups(),
