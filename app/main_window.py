@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -45,6 +46,7 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("Start Protocol Maker")
+        self.setWindowIcon(QIcon(str(Path(__file__).parent / "app.ico")))
         self._start_protocol_file: str = ""
         self._regexp_from: str = ""
         self._regexp_to: str = ""
