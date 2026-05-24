@@ -44,7 +44,7 @@ _BACKUP_PATH = "data/spm_backup.txt"
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("Start Protocol Maker (pulse-sports.ru)")
+        self.setWindowTitle("Start Protocol Maker")
         self._start_protocol_file: str = ""
         self._regexp_from: str = ""
         self._regexp_to: str = ""
