@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import ftplib
 import re
 import time
 from pathlib import Path
+from urllib.parse import urlparse
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
@@ -50,7 +52,6 @@ class MainWindow(QMainWindow):
         self._start_protocol_file: str = ""
         self._regexp_from: str = ""
         self._regexp_to: str = ""
-        self._ftp_address: str = ""
         self._setup_ui()
         self._load_backup(_BACKUP_PATH)
 
@@ -266,6 +267,9 @@ class MainWindow(QMainWindow):
         self._btn_check_names = QPushButton("Check names")
         self._btn_check_names.clicked.connect(self._on_check_names)
         row5.addWidget(self._btn_check_names)
+        self._btn_check_mail = QPushButton("Check mail")
+        self._btn_check_mail.clicked.connect(self._on_check_mail)
+        row5.addWidget(self._btn_check_mail)
         right.addLayout(row5)
 
         row6 = QHBoxLayout()
@@ -276,6 +280,16 @@ class MainWindow(QMainWindow):
         self._btn_save_as_start.clicked.connect(self._on_save_as_start)
         row6.addWidget(self._btn_save_as_start)
         right.addLayout(row6)
+
+        row_ftp = QHBoxLayout()
+        row_ftp.addWidget(QLabel("FTP:"))
+        self._edit_ftp_address = QLineEdit()
+        self._edit_ftp_address.setPlaceholderText("ftp://host/path/#login#password")
+        row_ftp.addWidget(self._edit_ftp_address)
+        self._btn_upload = QPushButton("Upload")
+        self._btn_upload.clicked.connect(self._on_upload)
+        row_ftp.addWidget(self._btn_upload)
+        right.addLayout(row_ftp)
 
         row7 = QHBoxLayout()
         self._btn_backup = QPushButton("Backup")
@@ -324,6 +338,7 @@ class MainWindow(QMainWindow):
 
     def _save_all_data(self) -> None:
         self._refresh_duplicate_indicator()
+        self._write_backup("temp", f"spm{int(time.time())}.txt")
         self._write_backup("data", "spm_backup.txt")
         if self._start_protocol_file:
             try:
@@ -345,7 +360,7 @@ class MainWindow(QMainWindow):
             numbers=self._numbers(),
             regexp_from=self._regexp_from,
             regexp_to=self._regexp_to,
-            ftp_address=self._ftp_address,
+            ftp_address=self._edit_ftp_address.text(),
             start_protocol_file=self._start_protocol_file,
             use_all_numbers=self._chk_use_all.isChecked(),
             auto_shift=self._chk_auto_shift.isChecked(),
@@ -390,7 +405,7 @@ class MainWindow(QMainWindow):
             self._combo_group.addItem(grp)
         self._regexp_from = data["regexp_from"]
         self._regexp_to = data["regexp_to"]
-        self._ftp_address = data["ftp_address"]
+        self._edit_ftp_address.setText(data["ftp_address"])
         self._start_protocol_file = data["start_protocol_file"]
         self._chk_use_all.setChecked(data["use_all_numbers"])
         self._chk_auto_shift.setChecked(data["auto_shift"])
@@ -473,7 +488,7 @@ class MainWindow(QMainWindow):
     def _on_add_group(self) -> None:
         name = self._edit_add_group.text().strip()
         laps = self._edit_add_laps.text().strip()
-        numbers_range = self._edit_numbers_range.text().strip()
+        numbers_range = self._edit_numbers_range.text().strip() or "1-200"
         if not name or not laps:
             return
         group_text = f"{name}#{laps}"
@@ -584,12 +599,13 @@ class MainWindow(QMainWindow):
         line = text.strip()
         if self._regexp_from:
             try:
-                line = re.sub(self._regexp_from, self._regexp_to, line)
+                # Convert .NET-style backreferences ($1, $2) to Python (\1, \2)
+                py_to = re.sub(r"\$(\d+)", r"\\\1", self._regexp_to)
+                line = re.sub(self._regexp_from, py_to, line)
             except re.error:
                 pass
         self._parse_and_fill_form(line)
-        if self._chk_auto_shift.isChecked():
-            self._on_get_number()
+        self._on_get_number()
 
     def _on_set_regexp_from(self) -> None:
         accepted, text = self._text_area_dialog('"RegExp From" Form', self._regexp_from)
@@ -620,6 +636,41 @@ class MainWindow(QMainWindow):
         self._lbl_error.setVisible(found)
         if found and idx >= 0:
             self._list_save_as.setCurrentRow(idx)
+
+    def _on_check_mail(self) -> None:
+        found, idx = check_duplicate_fields(self._save_as_items(), 8, True)
+        self._lbl_error.setVisible(found)
+        if found and idx >= 0:
+            self._list_save_as.setCurrentRow(idx)
+
+    def _on_upload(self) -> None:
+        self._on_save_start()
+        if not self._start_protocol_file:
+            return
+        ftp_address = self._edit_ftp_address.text().strip()
+        if not ftp_address:
+            QMessageBox.warning(self, "Upload", "FTP address is not set.")
+            return
+        parts = ftp_address.split("#")
+        if len(parts) < 3:
+            QMessageBox.warning(
+                self,
+                "Upload",
+                "FTP address format: ftp://host/path/#login#password",
+            )
+            return
+        ftp_url, login, password = parts[0], parts[1], parts[2]
+        filename = Path(self._start_protocol_file).name
+        try:
+            parsed = urlparse(ftp_url)
+            host = parsed.hostname or ftp_url
+            remote_dir = parsed.path or "/"
+            with ftplib.FTP(host, login, password) as ftp:  # noqa: S321
+                ftp.cwd(remote_dir)
+                with Path(self._start_protocol_file).open("rb") as f:
+                    ftp.storbinary(f"STOR {filename}", f)
+        except Exception as exc:
+            QMessageBox.warning(self, "Upload", f"Exception during file upload: {exc}")
 
     def _on_save_start(self) -> None:
         if not self._start_protocol_file:
