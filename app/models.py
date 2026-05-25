@@ -368,4 +368,5 @@ def save_backup(
 
 def write_start_protocol(path: str, save_items: list[str]) -> None:
     """Write save_items to a start protocol file (one line per competitor)."""
-    Path(path).write_text("\n".join(save_items) + "\n", encoding="utf-8")
+    content = "\n".join(save_items)
+    Path(path).write_text(content + "\n" if content else "", encoding="utf-8")
