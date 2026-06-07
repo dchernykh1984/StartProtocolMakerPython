@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.http_io import fetch_participants
 from app.models import (
     auto_shift_time,
     build_competitor_line,
@@ -37,11 +38,23 @@ from app.models import (
     get_time_from_seconds,
     load_backup,
     parse_competitor_line,
+    participant_to_open_line,
     save_backup,
     write_start_protocol,
 )
 
 _BACKUP_PATH = "data/spm_backup.txt"
+
+
+def _participant_merge_key(line: str) -> tuple[str, str, str]:
+    """Return (last_name_lower, first_name_lower, birth_year) for dedup."""
+    parts = line.split("#")
+    name = parts[1] if len(parts) > 1 else ""
+    name_split = name.split(" ", 1)
+    last_name = name_split[0].lower()
+    first_name = name_split[1].lower() if len(name_split) > 1 else ""
+    year = parts[5] if len(parts) > 5 else ""
+    return (last_name, first_name, year)
 
 
 class MainWindow(QMainWindow):
@@ -291,6 +304,29 @@ class MainWindow(QMainWindow):
         row_ftp.addWidget(self._btn_upload)
         right.addLayout(row_ftp)
 
+        row_http_url = QHBoxLayout()
+        row_http_url.addWidget(QLabel("Site URL:"))
+        self._edit_http_site_url = QLineEdit()
+        self._edit_http_site_url.setPlaceholderText("https://your-site.com")
+        row_http_url.addWidget(self._edit_http_site_url)
+        right.addLayout(row_http_url)
+
+        row_http_token = QHBoxLayout()
+        row_http_token.addWidget(QLabel("Token:"))
+        self._edit_http_token = QLineEdit()
+        self._edit_http_token.setPlaceholderText("upload token UUID")
+        row_http_token.addWidget(self._edit_http_token)
+        right.addLayout(row_http_token)
+
+        row_http_btns = QHBoxLayout()
+        self._btn_merge_from_site = QPushButton("Load from site (Merge)")
+        self._btn_merge_from_site.clicked.connect(self._on_merge_from_site)
+        row_http_btns.addWidget(self._btn_merge_from_site)
+        self._btn_replace_from_site = QPushButton("Load from site (Replace)")
+        self._btn_replace_from_site.clicked.connect(self._on_replace_from_site)
+        row_http_btns.addWidget(self._btn_replace_from_site)
+        right.addLayout(row_http_btns)
+
         row7 = QHBoxLayout()
         self._btn_backup = QPushButton("Backup")
         self._btn_backup.clicked.connect(self._on_backup)
@@ -364,6 +400,8 @@ class MainWindow(QMainWindow):
             start_protocol_file=self._start_protocol_file,
             use_all_numbers=self._chk_use_all.isChecked(),
             auto_shift=self._chk_auto_shift.isChecked(),
+            http_site_url=self._edit_http_site_url.text(),
+            http_token=self._edit_http_token.text(),
         )
 
     def _parse_and_fill_form(self, line: str) -> None:
@@ -406,6 +444,8 @@ class MainWindow(QMainWindow):
         self._regexp_from = data["regexp_from"]
         self._regexp_to = data["regexp_to"]
         self._edit_ftp_address.setText(data["ftp_address"])
+        self._edit_http_site_url.setText(data["http_site_url"])
+        self._edit_http_token.setText(data["http_token"])
         self._start_protocol_file = data["start_protocol_file"]
         self._chk_use_all.setChecked(data["use_all_numbers"])
         self._chk_auto_shift.setChecked(data["auto_shift"])
@@ -725,6 +765,67 @@ class MainWindow(QMainWindow):
                 self._edit_team.setText(saved_team + " / " + self._edit_team.text())
         if self._edit_city.text() != saved_city:
             self._edit_city.setText(saved_city + " / " + self._edit_city.text())
+
+    def _fetch_open_lines_from_site(self) -> list[str] | None:
+        """Fetch participant data from site and convert to open-list lines."""
+        site_url = self._edit_http_site_url.text().strip()
+        token = self._edit_http_token.text().strip()
+        if not site_url or not token:
+            QMessageBox.warning(
+                self, "Load from site", "Site URL and Token must be set."
+            )
+            return None
+        try:
+            data = fetch_participants(site_url, token)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Load from site", str(exc))
+            return None
+        categories = data.get("categories", [])
+        return [
+            participant_to_open_line(p, categories)
+            for p in data.get("participants", [])
+        ]
+
+    def _on_merge_from_site(self) -> None:
+        lines = self._fetch_open_lines_from_site()
+        if lines is None:
+            return
+        existing_keys = {
+            _participant_merge_key(self._list_open.item(i).text())
+            for i in range(self._list_open.count())
+            if "#" in self._list_open.item(i).text()
+        }
+        added = 0
+        for line in lines:
+            if "#" not in line:
+                continue
+            key = _participant_merge_key(line)
+            if key not in existing_keys:
+                self._list_open.addItem(line)
+                existing_keys.add(key)
+                added += 1
+        self._save_all_data()
+        QMessageBox.information(
+            self, "Load from site", f"Added {added} new participant(s)."
+        )
+
+    def _on_replace_from_site(self) -> None:
+        lines = self._fetch_open_lines_from_site()
+        if lines is None:
+            return
+        if not lines:
+            QMessageBox.warning(
+                self,
+                "Load from site",
+                "No participants returned. The list was not changed.",
+            )
+            return
+        self._list_open.clear()
+        self._list_open.addItems(lines)
+        self._save_all_data()
+        QMessageBox.information(
+            self, "Load from site", f"Loaded {len(lines)} participant(s)."
+        )
 
     # ------------------------------------------------------------------
     # close event
