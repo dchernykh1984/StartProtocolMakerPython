@@ -209,6 +209,7 @@ _SECTION_NUMBERS = "List of numbers"
 _SECTION_REGEXP_FROM = "RegExp From"
 _SECTION_REGEXP_TO = "RegExp To"
 _SECTION_FTP = "FTP Configuration"
+_SECTION_HTTP = "HTTP Configuration"
 _TAG_START_FILE = "StartProtocolFile"
 _TAG_USE_ALL = "UseAllNumbers"
 _TAG_AUTO_SHIFT = "AutoShift"
@@ -242,6 +243,8 @@ def load_backup(path: str) -> dict:  # noqa: C901
         "regexp_from": "",
         "regexp_to": "",
         "ftp_address": "",
+        "http_site_url": "",
+        "http_token": "",
         "start_protocol_file": "",
         "use_all_numbers": False,
         "auto_shift": False,
@@ -307,6 +310,15 @@ def load_backup(path: str) -> dict:  # noqa: C901
             result["ftp_address"] = lines[i]
             i += 1
 
+    if i < len(lines) and lines[i] == _SECTION_HTTP:
+        i += 1
+        if i < len(lines):
+            result["http_site_url"] = lines[i]
+            i += 1
+        if i < len(lines):
+            result["http_token"] = lines[i]
+            i += 1
+
     if i < len(lines) and lines[i] == _TAG_START_FILE:
         i += 1
         if i < len(lines):
@@ -335,6 +347,8 @@ def save_backup(
     start_protocol_file: str,
     use_all_numbers: bool,
     auto_shift: bool,
+    http_site_url: str = "",
+    http_token: str = "",
 ) -> None:
     """Write a backup file. Port of C++ saveBackupFile logic."""
     p = Path(path)
@@ -356,6 +370,10 @@ def save_backup(
         lines.extend(regexp_to.splitlines())
     lines.append(_SECTION_FTP)
     lines.append(ftp_address)
+    if http_site_url or http_token:
+        lines.append(_SECTION_HTTP)
+        lines.append(http_site_url)
+        lines.append(http_token)
     if start_protocol_file:
         lines.append(_TAG_START_FILE)
         lines.append(start_protocol_file)
@@ -364,6 +382,40 @@ def save_backup(
     if auto_shift:
         lines.append(_TAG_AUTO_SHIFT)
     p.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def participant_to_open_line(participant: dict, categories: list[dict]) -> str:
+    """Convert an API participant dict to a start-protocol open-list line."""
+    cat_id = participant.get("category_id")
+    cat_name = participant.get("category_name", "")
+    laps = ""
+    if cat_id is not None:
+        for cat in categories:
+            if cat.get("id") == cat_id:
+                laps_val = cat.get("laps")
+                if laps_val is not None:
+                    laps = str(laps_val)
+                if not cat_name:
+                    cat_name = cat.get("name", "")
+                break
+    # Always include the # separator so field positions are consistent with
+    # parse_competitor_line expectations (group=f(2), laps=f(3), stage=f(4)).
+    group_with_laps = f"{cat_name}#{laps}"
+    last = participant.get("last_name", "")
+    first = participant.get("first_name", "")
+    name = f"{last} {first}".strip()
+    year_of_birth = str(participant.get("birth_year", ""))
+    return build_competitor_line(
+        number="",
+        name=name,
+        group_with_laps=group_with_laps,
+        stage="1",
+        year_of_birth=year_of_birth,
+        team=participant.get("team", ""),
+        city=participant.get("city", ""),
+        comment="",
+        time_shift="0 00:00:00.000",
+    )
 
 
 def write_start_protocol(path: str, save_items: list[str]) -> None:
