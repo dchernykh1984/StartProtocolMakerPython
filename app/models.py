@@ -401,10 +401,19 @@ def participant_to_open_line(participant: dict, categories: list[dict]) -> str:
     # Always include the # separator so field positions are consistent with
     # parse_competitor_line expectations (group=f(2), laps=f(3), stage=f(4)).
     group_with_laps = f"{cat_name}#{laps}"
-    last = participant.get("last_name", "")
-    first = participant.get("first_name", "")
-    name = f"{last} {first}".strip()
-    year_of_birth = str(participant.get("birth_year", ""))
+    p_names = participant.get("participant_names", "")
+    if p_names:
+        name = p_names
+        year_of_birth = participant.get("participant_birth_years", "") or str(
+            participant.get("birth_year", "")
+        )
+        city = participant.get("participant_cities", "") or participant.get("city", "")
+    else:
+        last = participant.get("last_name", "")
+        first = participant.get("first_name", "")
+        name = f"{last} {first}".strip()
+        year_of_birth = str(participant.get("birth_year", ""))
+        city = participant.get("city", "")
     return build_competitor_line(
         number="",
         name=name,
@@ -412,7 +421,7 @@ def participant_to_open_line(participant: dict, categories: list[dict]) -> str:
         stage="1",
         year_of_birth=year_of_birth,
         team=participant.get("team", ""),
-        city=participant.get("city", ""),
+        city=city,
         comment="",
         time_shift="0 00:00:00.000",
     )
