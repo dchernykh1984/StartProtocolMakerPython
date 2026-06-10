@@ -144,6 +144,50 @@ class TestParticipantToOpenLine:
         parsed = parse_competitor_line(line)
         assert parsed["group"] == ""
 
+    def test_relay_uses_participant_names(self) -> None:
+        p = self._make_participant(
+            first_name="",
+            last_name="",
+            participant_names="Ivanov Ivan<BR>Petrov Vasya",
+            participant_birth_years="1990<BR>1995",
+            participant_cities="Moscow<BR>Almaty",
+        )
+        line = participant_to_open_line(p, [])
+        parts = line.split("#")
+        assert parts[1] == "Ivanov Ivan<BR>Petrov Vasya"
+
+    def test_relay_uses_participant_birth_years(self) -> None:
+        p = self._make_participant(
+            first_name="",
+            last_name="",
+            participant_names="Ivanov Ivan<BR>Petrov Vasya",
+            participant_birth_years="1990<BR>1995",
+            participant_cities="Moscow<BR>Almaty",
+        )
+        line = participant_to_open_line(p, [])
+        parsed = parse_competitor_line(line)
+        assert parsed["year_of_birth"] == "1990<BR>1995"
+
+    def test_relay_uses_participant_cities(self) -> None:
+        p = self._make_participant(
+            first_name="",
+            last_name="",
+            participant_names="Ivanov Ivan<BR>Petrov Vasya",
+            participant_birth_years="1990<BR>1995",
+            participant_cities="Moscow<BR>Almaty",
+        )
+        line = participant_to_open_line(p, [])
+        parsed = parse_competitor_line(line)
+        assert parsed["city"] == "Moscow<BR>Almaty"
+
+    def test_individual_ignores_participant_names_field(self) -> None:
+        p = self._make_participant(
+            participant_names="", participant_birth_years="", participant_cities=""
+        )
+        line = participant_to_open_line(p, [])
+        parts = line.split("#")
+        assert parts[1] == "Petrov Ivan"
+
 
 # ---------------------------------------------------------------------------
 # backup round-trip with HTTP fields
