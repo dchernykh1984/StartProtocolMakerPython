@@ -117,6 +117,18 @@ poetry run python -m app.main
 > **Note:** use `-m app.main`, not `python app/main.py`. The `-m` flag adds the
 > project root to `sys.path` so that the `app` package is importable.
 
+## Cycling-site integration
+
+The application can fetch participant lists directly from the cycling-site API.
+
+1. Open **Settings -> HTTP** in the application.
+2. Enter the site URL (e.g. `https://cycling.codered.cloud`).
+3. Enter the competition token - find it on the competition detail page when
+   logged in as an organizer or admin.
+
+The application calls `GET /api/v1/participants/?competition_token=<token>` and
+populates the start list automatically.
+
 ## Contributing
 
 Before requesting a review, make sure the CI pipeline passes on your pull request. Once the pipeline is green, request a review from [@dchernykh1984](https://github.com/dchernykh1984).

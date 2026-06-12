@@ -67,6 +67,15 @@ class TestFetchParticipants:
             with pytest.raises(ValueError):
                 fetch_participants("https://example.com", "tok")
 
+    def test_empty_body_raises_value_error(self) -> None:
+        mock = MagicMock()
+        mock.__enter__ = lambda s: s
+        mock.__exit__ = MagicMock(return_value=False)
+        mock.read.return_value = b""
+        with patch("urllib.request.urlopen", return_value=mock):
+            with pytest.raises(ValueError):
+                fetch_participants("https://example.com", "tok")
+
     def test_url_includes_token(self) -> None:
         payload: dict[str, list] = {"participants": [], "categories": []}
         calls: list[str] = []
@@ -78,7 +87,19 @@ class TestFetchParticipants:
         with patch("urllib.request.urlopen", side_effect=fake_urlopen):
             fetch_participants("https://site.com", "my-token")
         assert "my-token" in calls[0]
-        assert calls[0].startswith("https://site.com/api/participants/")
+        assert calls[0].startswith("https://site.com/api/v1/participants/")
+
+    def test_competition_token_param_name(self) -> None:
+        payload: dict[str, list] = {"participants": [], "categories": []}
+        calls: list[str] = []
+
+        def fake_urlopen(url, timeout):
+            calls.append(url)
+            return _make_response(payload)
+
+        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+            fetch_participants("https://site.com", "abc-uuid")
+        assert "competition_token=abc-uuid" in calls[0]
 
 
 # ---------------------------------------------------------------------------
