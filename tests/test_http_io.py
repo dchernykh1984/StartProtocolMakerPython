@@ -67,6 +67,15 @@ class TestFetchParticipants:
             with pytest.raises(ValueError):
                 fetch_participants("https://example.com", "tok")
 
+    def test_empty_body_raises_value_error(self) -> None:
+        mock = MagicMock()
+        mock.__enter__ = lambda s: s
+        mock.__exit__ = MagicMock(return_value=False)
+        mock.read.return_value = b""
+        with patch("urllib.request.urlopen", return_value=mock):
+            with pytest.raises(ValueError):
+                fetch_participants("https://example.com", "tok")
+
     def test_url_includes_token(self) -> None:
         payload: dict[str, list] = {"participants": [], "categories": []}
         calls: list[str] = []
