@@ -24,8 +24,8 @@ def fetch_participants(site_url: str, token: str) -> dict:
     """
     url = (
         site_url.rstrip("/")
-        + "/api/participants/?"
-        + urllib.parse.urlencode({"token": token})
+        + "/api/v1/participants/?"
+        + urllib.parse.urlencode({"competition_token": token})
     )
     try:
         with urllib.request.urlopen(url, timeout=10) as resp:  # noqa: S310

@@ -78,7 +78,7 @@ class TestFetchParticipants:
         with patch("urllib.request.urlopen", side_effect=fake_urlopen):
             fetch_participants("https://site.com", "my-token")
         assert "my-token" in calls[0]
-        assert calls[0].startswith("https://site.com/api/participants/")
+        assert calls[0].startswith("https://site.com/api/v1/participants/")
 
 
 # ---------------------------------------------------------------------------
