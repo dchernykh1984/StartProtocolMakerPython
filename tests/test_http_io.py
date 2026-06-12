@@ -80,6 +80,18 @@ class TestFetchParticipants:
         assert "my-token" in calls[0]
         assert calls[0].startswith("https://site.com/api/v1/participants/")
 
+    def test_competition_token_param_name(self) -> None:
+        payload: dict[str, list] = {"participants": [], "categories": []}
+        calls: list[str] = []
+
+        def fake_urlopen(url, timeout):
+            calls.append(url)
+            return _make_response(payload)
+
+        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+            fetch_participants("https://site.com", "abc-uuid")
+        assert "competition_token=abc-uuid" in calls[0]
+
 
 # ---------------------------------------------------------------------------
 # participant_to_open_line
