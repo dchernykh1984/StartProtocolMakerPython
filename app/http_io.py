@@ -3,24 +3,32 @@
 from __future__ import annotations
 
 import json
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
 
 
 def upload_start_list(
-    site_url: str, token: str, device_id: str, items: list[str]
+    site_url: str,
+    token: str,
+    device_id: str,
+    items: list[str],
+    client_revision: int | None = None,
 ) -> int:
     """Upload this device's start list (the "save" list) to the cycling site.
 
     The site stores it keyed by ``device_id``; re-uploading the same ``device_id``
-    overwrites the previously stored list.
+    overwrites the previously stored list, unless this snapshot is older than the one
+    already stored (the server rejects a stale revision with HTTP 409).
 
     Args:
         site_url: Base URL of the site, e.g. "https://example.com".
         token: Upload token (UUID) from the competition detail page.
         device_id: Stable per-machine identifier (see config).
         items: The start-protocol lines (one per competitor).
+        client_revision: Monotonic ordering revision; defaults to the current epoch-ms
+            so a delayed/reordered request can't overwrite a newer snapshot.
 
     Returns:
         The number of items the site stored.
@@ -28,9 +36,16 @@ def upload_start_list(
     Raises:
         ValueError: On HTTP error, network error, or invalid JSON response.
     """
+    if client_revision is None:
+        client_revision = int(time.time() * 1000)
     url = site_url.rstrip("/") + "/api/v1/start-list/"
     payload = json.dumps(
-        {"competition_token": token, "device_id": device_id, "items": items}
+        {
+            "competition_token": token,
+            "device_id": device_id,
+            "items": items,
+            "client_revision": client_revision,
+        }
     ).encode("utf-8")
     req = urllib.request.Request(  # noqa: S310
         url,

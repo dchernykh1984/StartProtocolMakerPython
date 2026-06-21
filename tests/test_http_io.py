@@ -126,7 +126,9 @@ class TestUploadStartList:
             return _make_response({"device_id": "dev-1", "count": 2})
 
         with patch("urllib.request.urlopen", side_effect=fake):
-            upload_start_list("https://site.com", "my-token", "dev-1", ["x", "y"])
+            upload_start_list(
+                "https://site.com", "my-token", "dev-1", ["x", "y"], client_revision=42
+            )
         req = captured[0]
         assert req.full_url == "https://site.com/api/v1/start-list/"
         assert req.get_method() == "POST"
@@ -135,7 +137,20 @@ class TestUploadStartList:
             "competition_token": "my-token",
             "device_id": "dev-1",
             "items": ["x", "y"],
+            "client_revision": 42,
         }
+
+    def test_auto_generates_monotonic_client_revision(self) -> None:
+        captured: list = []
+
+        def fake(req, timeout):
+            captured.append(req)
+            return _make_response({"device_id": "d", "count": 0})
+
+        with patch("urllib.request.urlopen", side_effect=fake):
+            upload_start_list("https://site.com", "t", "d", [])
+        body = json.loads(captured[0].data.decode("utf-8"))
+        assert body["client_revision"] > 0  # epoch-ms timestamp by default
 
     def test_http_error_raises_value_error(self) -> None:
         exc = urllib.error.HTTPError(
