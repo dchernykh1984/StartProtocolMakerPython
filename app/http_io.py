@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -14,7 +13,7 @@ def upload_start_list(
     token: str,
     device_id: str,
     items: list[str],
-    client_revision: int | None = None,
+    client_revision: int,
 ) -> int:
     """Upload this device's start list (the "save" list) to the cycling site.
 
@@ -27,8 +26,8 @@ def upload_start_list(
         token: Upload token (UUID) from the competition detail page.
         device_id: Stable per-machine identifier (see config).
         items: The start-protocol lines (one per competitor).
-        client_revision: Monotonic ordering revision; defaults to the current epoch-ms
-            so a delayed/reordered request can't overwrite a newer snapshot.
+        client_revision: Strictly-increasing per-device counter (persisted in the
+            backup); the server uses it to reject a reordered/stale overwrite.
 
     Returns:
         The number of items the site stored.
@@ -36,8 +35,6 @@ def upload_start_list(
     Raises:
         ValueError: On HTTP error, network error, or invalid JSON response.
     """
-    if client_revision is None:
-        client_revision = int(time.time() * 1000)
     url = site_url.rstrip("/") + "/api/v1/start-list/"
     payload = json.dumps(
         {

@@ -114,7 +114,11 @@ class TestUploadStartList:
             return_value=_make_response({"device_id": "d", "count": 3}),
         ):
             count = upload_start_list(
-                "https://example.com", "tok", "dev-1", ["a", "b", "c"]
+                "https://example.com",
+                "tok",
+                "dev-1",
+                ["a", "b", "c"],
+                client_revision=1,
             )
         assert count == 3
 
@@ -140,18 +144,6 @@ class TestUploadStartList:
             "client_revision": 42,
         }
 
-    def test_auto_generates_monotonic_client_revision(self) -> None:
-        captured: list = []
-
-        def fake(req, timeout):
-            captured.append(req)
-            return _make_response({"device_id": "d", "count": 0})
-
-        with patch("urllib.request.urlopen", side_effect=fake):
-            upload_start_list("https://site.com", "t", "d", [])
-        body = json.loads(captured[0].data.decode("utf-8"))
-        assert body["client_revision"] > 0  # epoch-ms timestamp by default
-
     def test_http_error_raises_value_error(self) -> None:
         exc = urllib.error.HTTPError(
             url="",
@@ -162,13 +154,17 @@ class TestUploadStartList:
         )
         with patch("urllib.request.urlopen", side_effect=exc):
             with pytest.raises(ValueError, match="HTTP 401"):
-                upload_start_list("https://example.com", "bad", "dev", [])
+                upload_start_list(
+                    "https://example.com", "bad", "dev", [], client_revision=1
+                )
 
     def test_url_error_raises_value_error(self) -> None:
         exc = urllib.error.URLError(reason="down")
         with patch("urllib.request.urlopen", side_effect=exc):
             with pytest.raises(ValueError, match="Connection error"):
-                upload_start_list("https://example.com", "tok", "dev", [])
+                upload_start_list(
+                    "https://example.com", "tok", "dev", [], client_revision=1
+                )
 
 
 # ---------------------------------------------------------------------------
@@ -372,3 +368,43 @@ class TestBackupHTTPRoundTrip:
         assert result["auto_shift"] is True
         assert result["device_id"] == "dev-7"
         assert result["start_protocol_file"] == "start.txt"
+
+    def test_client_revision_saved_and_loaded(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = str(Path(tmp) / "backup.txt")
+            save_backup(
+                path=path,
+                open_items=[],
+                save_items=[],
+                groups=[],
+                numbers=[],
+                regexp_from="",
+                regexp_to="",
+                ftp_address="",
+                start_protocol_file="",
+                use_all_numbers=False,
+                auto_shift=False,
+                device_id="dev-1",
+                client_revision=7,
+            )
+            result = load_backup(path)
+        assert result["client_revision"] == 7
+
+    def test_client_revision_defaults_to_zero(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = str(Path(tmp) / "backup.txt")
+            save_backup(
+                path=path,
+                open_items=[],
+                save_items=[],
+                groups=[],
+                numbers=[],
+                regexp_from="",
+                regexp_to="",
+                ftp_address="",
+                start_protocol_file="",
+                use_all_numbers=False,
+                auto_shift=False,
+            )
+            result = load_backup(path)
+        assert result["client_revision"] == 0
