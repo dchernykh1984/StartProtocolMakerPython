@@ -213,6 +213,7 @@ _SECTION_HTTP = "HTTP Configuration"
 _TAG_START_FILE = "StartProtocolFile"
 _TAG_USE_ALL = "UseAllNumbers"
 _TAG_AUTO_SHIFT = "AutoShift"
+_TAG_DEVICE_ID = "DeviceId"
 
 
 def _read_section(
@@ -245,6 +246,7 @@ def load_backup(path: str) -> dict:  # noqa: C901
         "ftp_address": "",
         "http_site_url": "",
         "http_token": "",
+        "device_id": "",
         "start_protocol_file": "",
         "use_all_numbers": False,
         "auto_shift": False,
@@ -331,6 +333,13 @@ def load_backup(path: str) -> dict:  # noqa: C901
 
     if i < len(lines) and lines[i] == _TAG_AUTO_SHIFT:
         result["auto_shift"] = True
+        i += 1
+
+    if i < len(lines) and lines[i] == _TAG_DEVICE_ID:
+        i += 1
+        if i < len(lines):
+            result["device_id"] = lines[i]
+            i += 1
 
     return result
 
@@ -349,6 +358,7 @@ def save_backup(
     auto_shift: bool,
     http_site_url: str = "",
     http_token: str = "",
+    device_id: str = "",
 ) -> None:
     """Write a backup file. Port of C++ saveBackupFile logic."""
     p = Path(path)
@@ -381,6 +391,9 @@ def save_backup(
         lines.append(_TAG_USE_ALL)
     if auto_shift:
         lines.append(_TAG_AUTO_SHIFT)
+    if device_id:
+        lines.append(_TAG_DEVICE_ID)
+        lines.append(device_id)
     p.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import ftplib
 import re
 import time
+import uuid
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -28,7 +29,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.http_io import fetch_participants
+from app.http_io import fetch_participants, upload_start_list
 from app.models import (
     auto_shift_time,
     build_competitor_line,
@@ -318,6 +319,13 @@ class MainWindow(QMainWindow):
         row_http_token.addWidget(self._edit_http_token)
         right.addLayout(row_http_token)
 
+        row_device = QHBoxLayout()
+        row_device.addWidget(QLabel("Device ID:"))
+        self._edit_device_id = QLineEdit()
+        self._edit_device_id.setPlaceholderText("auto-generated on first run")
+        row_device.addWidget(self._edit_device_id)
+        right.addLayout(row_device)
+
         row_http_btns = QHBoxLayout()
         self._btn_merge_from_site = QPushButton("Load from site (Merge)")
         self._btn_merge_from_site.clicked.connect(self._on_merge_from_site)
@@ -326,6 +334,12 @@ class MainWindow(QMainWindow):
         self._btn_replace_from_site.clicked.connect(self._on_replace_from_site)
         row_http_btns.addWidget(self._btn_replace_from_site)
         right.addLayout(row_http_btns)
+
+        row_send = QHBoxLayout()
+        self._btn_send_to_site = QPushButton("Send start list to site")
+        self._btn_send_to_site.clicked.connect(self._on_send_to_site)
+        row_send.addWidget(self._btn_send_to_site)
+        right.addLayout(row_send)
 
         row7 = QHBoxLayout()
         self._btn_backup = QPushButton("Backup")
@@ -402,6 +416,7 @@ class MainWindow(QMainWindow):
             auto_shift=self._chk_auto_shift.isChecked(),
             http_site_url=self._edit_http_site_url.text(),
             http_token=self._edit_http_token.text(),
+            device_id=self._edit_device_id.text().strip(),
         )
 
     def _parse_and_fill_form(self, line: str) -> None:
@@ -446,6 +461,9 @@ class MainWindow(QMainWindow):
         self._edit_ftp_address.setText(data["ftp_address"])
         self._edit_http_site_url.setText(data["http_site_url"])
         self._edit_http_token.setText(data["http_token"])
+        # A stable per-machine id, generated once and persisted so the site can tell
+        # referees' uploads apart (re-posting the same id overwrites that device).
+        self._edit_device_id.setText(data.get("device_id") or uuid.uuid4().hex)
         self._start_protocol_file = data["start_protocol_file"]
         self._chk_use_all.setChecked(data["use_all_numbers"])
         self._chk_auto_shift.setChecked(data["auto_shift"])
@@ -825,6 +843,27 @@ class MainWindow(QMainWindow):
         self._save_all_data()
         QMessageBox.information(
             self, "Load from site", f"Loaded {len(lines)} participant(s)."
+        )
+
+    def _on_send_to_site(self) -> None:
+        """Upload the current save list (right list) to the site for this device."""
+        site_url = self._edit_http_site_url.text().strip()
+        token = self._edit_http_token.text().strip()
+        device_id = self._edit_device_id.text().strip()
+        if not site_url or not token:
+            QMessageBox.warning(self, "Send to site", "Site URL and Token must be set.")
+            return
+        if not device_id:
+            device_id = uuid.uuid4().hex
+            self._edit_device_id.setText(device_id)
+        self._save_all_data()  # persists the device id and the current list
+        try:
+            count = upload_start_list(site_url, token, device_id, self._save_as_items())
+        except ValueError as exc:
+            QMessageBox.warning(self, "Send to site", str(exc))
+            return
+        QMessageBox.information(
+            self, "Send to site", f"Sent {count} competitor(s) to the site."
         )
 
     # ------------------------------------------------------------------
