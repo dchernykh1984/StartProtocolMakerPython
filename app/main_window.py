@@ -66,6 +66,7 @@ class MainWindow(QMainWindow):
         self._start_protocol_file: str = ""
         self._regexp_from: str = ""
         self._regexp_to: str = ""
+        self._client_revision: int = 0
         self._setup_ui()
         self._load_backup(_BACKUP_PATH)
 
@@ -417,6 +418,7 @@ class MainWindow(QMainWindow):
             http_site_url=self._edit_http_site_url.text(),
             http_token=self._edit_http_token.text(),
             device_id=self._edit_device_id.text().strip(),
+            client_revision=self._client_revision,
         )
 
     def _parse_and_fill_form(self, line: str) -> None:
@@ -464,6 +466,7 @@ class MainWindow(QMainWindow):
         # A stable per-machine id, generated once and persisted so the site can tell
         # referees' uploads apart (re-posting the same id overwrites that device).
         self._edit_device_id.setText(data.get("device_id") or uuid.uuid4().hex)
+        self._client_revision = data.get("client_revision", 0)
         self._start_protocol_file = data["start_protocol_file"]
         self._chk_use_all.setChecked(data["use_all_numbers"])
         self._chk_auto_shift.setChecked(data["auto_shift"])
@@ -856,9 +859,14 @@ class MainWindow(QMainWindow):
         if not device_id:
             device_id = uuid.uuid4().hex
             self._edit_device_id.setText(device_id)
-        self._save_all_data()  # persists the device id and the current list
+        # Bump the per-device counter on every send so the server can order uploads and
+        # reject a delayed/reordered one; persist it (with the list) before sending.
+        self._client_revision += 1
+        self._save_all_data()  # persists the device id, counter and current list
         try:
-            count = upload_start_list(site_url, token, device_id, self._save_as_items())
+            count = upload_start_list(
+                site_url, token, device_id, self._save_as_items(), self._client_revision
+            )
         except ValueError as exc:
             QMessageBox.warning(self, "Send to site", str(exc))
             return

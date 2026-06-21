@@ -214,6 +214,7 @@ _TAG_START_FILE = "StartProtocolFile"
 _TAG_USE_ALL = "UseAllNumbers"
 _TAG_AUTO_SHIFT = "AutoShift"
 _TAG_DEVICE_ID = "DeviceId"
+_TAG_CLIENT_REVISION = "ClientRevision"
 
 
 def _read_section(
@@ -247,6 +248,7 @@ def load_backup(path: str) -> dict:  # noqa: C901
         "http_site_url": "",
         "http_token": "",
         "device_id": "",
+        "client_revision": 0,
         "start_protocol_file": "",
         "use_all_numbers": False,
         "auto_shift": False,
@@ -341,6 +343,15 @@ def load_backup(path: str) -> dict:  # noqa: C901
             result["device_id"] = lines[i]
             i += 1
 
+    if i < len(lines) and lines[i] == _TAG_CLIENT_REVISION:
+        i += 1
+        if i < len(lines):
+            try:
+                result["client_revision"] = int(lines[i])
+            except ValueError:
+                result["client_revision"] = 0
+            i += 1
+
     return result
 
 
@@ -359,6 +370,7 @@ def save_backup(
     http_site_url: str = "",
     http_token: str = "",
     device_id: str = "",
+    client_revision: int = 0,
 ) -> None:
     """Write a backup file. Port of C++ saveBackupFile logic."""
     p = Path(path)
@@ -394,6 +406,9 @@ def save_backup(
     if device_id:
         lines.append(_TAG_DEVICE_ID)
         lines.append(device_id)
+    if client_revision:
+        lines.append(_TAG_CLIENT_REVISION)
+        lines.append(str(client_revision))
     p.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
