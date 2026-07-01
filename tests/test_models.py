@@ -352,6 +352,31 @@ class TestBackup:
         result = self._roundtrip(**self._defaults(auto_shift=True))
         assert result["auto_shift"] is True
 
+    def test_auto_shift_false_not_saved(self) -> None:
+        result = self._roundtrip(**self._defaults(auto_shift=False))
+        assert result["auto_shift"] is False
+
+    def test_first_number(self) -> None:
+        result = self._roundtrip(**self._defaults(first_number="5"))
+        assert result["first_number"] == "5"
+
+    def test_first_number_empty_by_default(self) -> None:
+        result = self._roundtrip(**self._defaults())
+        assert result["first_number"] == ""
+
+    def test_delay(self) -> None:
+        result = self._roundtrip(**self._defaults(delay="30"))
+        assert result["delay"] == "30"
+
+    def test_delay_empty_by_default(self) -> None:
+        result = self._roundtrip(**self._defaults())
+        assert result["delay"] == ""
+
+    def test_first_number_and_delay_together(self) -> None:
+        result = self._roundtrip(**self._defaults(first_number="10", delay="60"))
+        assert result["first_number"] == "10"
+        assert result["delay"] == "60"
+
     def test_load_nonexistent_returns_empty(self) -> None:
         result = load_backup("/nonexistent/path/file.txt")
         assert result["open_items"] == []

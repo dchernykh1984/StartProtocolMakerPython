@@ -213,6 +213,8 @@ _SECTION_HTTP = "HTTP Configuration"
 _TAG_START_FILE = "StartProtocolFile"
 _TAG_USE_ALL = "UseAllNumbers"
 _TAG_AUTO_SHIFT = "AutoShift"
+_TAG_FIRST_NUMBER = "FirstNumber"
+_TAG_DELAY = "DelayPerNumber"
 _TAG_DEVICE_ID = "DeviceId"
 _TAG_CLIENT_REVISION = "ClientRevision"
 
@@ -252,6 +254,8 @@ def load_backup(path: str) -> dict:  # noqa: C901
         "start_protocol_file": "",
         "use_all_numbers": False,
         "auto_shift": False,
+        "first_number": "",
+        "delay": "",
     }
 
     p = Path(path)
@@ -337,6 +341,18 @@ def load_backup(path: str) -> dict:  # noqa: C901
         result["auto_shift"] = True
         i += 1
 
+    if i < len(lines) and lines[i] == _TAG_FIRST_NUMBER:
+        i += 1
+        if i < len(lines):
+            result["first_number"] = lines[i]
+            i += 1
+
+    if i < len(lines) and lines[i] == _TAG_DELAY:
+        i += 1
+        if i < len(lines):
+            result["delay"] = lines[i]
+            i += 1
+
     if i < len(lines) and lines[i] == _TAG_DEVICE_ID:
         i += 1
         if i < len(lines):
@@ -355,6 +371,13 @@ def load_backup(path: str) -> dict:  # noqa: C901
     return result
 
 
+def _append_tag_value(lines: list[str], tag: str, value: str | int) -> None:
+    """Append tag + value pair only when value is truthy."""
+    if value:
+        lines.append(tag)
+        lines.append(str(value))
+
+
 def save_backup(
     path: str,
     open_items: list[str],
@@ -371,6 +394,8 @@ def save_backup(
     http_token: str = "",
     device_id: str = "",
     client_revision: int = 0,
+    first_number: str = "",
+    delay: str = "",
 ) -> None:
     """Write a backup file. Port of C++ saveBackupFile logic."""
     p = Path(path)
@@ -396,19 +421,15 @@ def save_backup(
         lines.append(_SECTION_HTTP)
         lines.append(http_site_url)
         lines.append(http_token)
-    if start_protocol_file:
-        lines.append(_TAG_START_FILE)
-        lines.append(start_protocol_file)
+    _append_tag_value(lines, _TAG_START_FILE, start_protocol_file)
     if use_all_numbers:
         lines.append(_TAG_USE_ALL)
     if auto_shift:
         lines.append(_TAG_AUTO_SHIFT)
-    if device_id:
-        lines.append(_TAG_DEVICE_ID)
-        lines.append(device_id)
-    if client_revision:
-        lines.append(_TAG_CLIENT_REVISION)
-        lines.append(str(client_revision))
+    _append_tag_value(lines, _TAG_FIRST_NUMBER, first_number)
+    _append_tag_value(lines, _TAG_DELAY, delay)
+    _append_tag_value(lines, _TAG_DEVICE_ID, device_id)
+    _append_tag_value(lines, _TAG_CLIENT_REVISION, client_revision)
     p.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
