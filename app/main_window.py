@@ -415,6 +415,8 @@ class MainWindow(QMainWindow):
             start_protocol_file=self._start_protocol_file,
             use_all_numbers=self._chk_use_all.isChecked(),
             auto_shift=self._chk_auto_shift.isChecked(),
+            first_number=self._edit_first_number.text(),
+            delay=self._edit_delay.text(),
             http_site_url=self._edit_http_site_url.text(),
             http_token=self._edit_http_token.text(),
             device_id=self._edit_device_id.text().strip(),
@@ -470,6 +472,8 @@ class MainWindow(QMainWindow):
         self._start_protocol_file = data["start_protocol_file"]
         self._chk_use_all.setChecked(data["use_all_numbers"])
         self._chk_auto_shift.setChecked(data["auto_shift"])
+        self._edit_first_number.setText(data.get("first_number", ""))
+        self._edit_delay.setText(data.get("delay", ""))
         self._refresh_duplicate_indicator()
 
     # ------------------------------------------------------------------
