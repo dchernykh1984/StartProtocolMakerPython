@@ -516,22 +516,6 @@ def categories_to_group_rows(
     return rows
 
 
-def categories_to_groups(categories: list[dict]) -> list[str]:
-    """Group texts (``name#laps`` or ``name``) for the categories, order preserved."""
-    return [group for group, _ in categories_to_group_rows(categories)]
-
-
-def merge_groups(existing: list[str], incoming: list[str]) -> list[str]:
-    """Return ``existing`` plus each ``incoming`` group not present (order kept)."""
-    result = list(existing)
-    present = set(existing)
-    for group in incoming:
-        if group not in present:
-            present.add(group)
-            result.append(group)
-    return result
-
-
 def write_start_protocol(path: str, save_items: list[str]) -> None:
     """Write save_items to a start protocol file (one line per competitor)."""
     content = "\n".join(save_items)

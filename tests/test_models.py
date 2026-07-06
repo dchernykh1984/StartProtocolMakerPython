@@ -9,7 +9,6 @@ from app.models import (
     auto_shift_time,
     build_competitor_line,
     categories_to_group_rows,
-    categories_to_groups,
     category_number_range,
     check_duplicate_fields,
     current_local_seconds,
@@ -18,7 +17,6 @@ from app.models import (
     get_next_number,
     get_time_from_seconds,
     load_backup,
-    merge_groups,
     parse_competitor_line,
     save_backup,
     write_start_protocol,
@@ -421,67 +419,6 @@ class TestWriteStartProtocol:
 
 
 # ---------------------------------------------------------------------------
-# categories_to_groups
-# ---------------------------------------------------------------------------
-
-
-class TestCategoriesToGroups:
-    def test_name_and_laps(self) -> None:
-        cats = [{"id": 1, "name": "Elite", "laps": 5}]
-        assert categories_to_groups(cats) == ["Elite#5"]
-
-    def test_no_laps_is_name_only(self) -> None:
-        cats = [{"id": 1, "name": "Junior", "laps": None}]
-        assert categories_to_groups(cats) == ["Junior"]
-
-    def test_missing_laps_key_is_name_only(self) -> None:
-        assert categories_to_groups([{"id": 1, "name": "Open"}]) == ["Open"]
-
-    def test_order_preserved(self) -> None:
-        cats = [
-            {"id": 1, "name": "A", "laps": 1},
-            {"id": 2, "name": "B", "laps": 2},
-        ]
-        assert categories_to_groups(cats) == ["A#1", "B#2"]
-
-    def test_blank_names_skipped(self) -> None:
-        cats = [
-            {"id": 1, "name": "  ", "laps": 3},
-            {"id": 2, "name": "Real", "laps": 1},
-        ]
-        assert categories_to_groups(cats) == ["Real#1"]
-
-    def test_duplicates_collapsed(self) -> None:
-        cats = [{"name": "X", "laps": 2}, {"name": "X", "laps": 2}]
-        assert categories_to_groups(cats) == ["X#2"]
-
-    def test_empty_input(self) -> None:
-        assert categories_to_groups([]) == []
-
-
-# ---------------------------------------------------------------------------
-# merge_groups
-# ---------------------------------------------------------------------------
-
-
-class TestMergeGroups:
-    def test_adds_new_only(self) -> None:
-        assert merge_groups(["A#1"], ["A#1", "B#2"]) == ["A#1", "B#2"]
-
-    def test_existing_order_kept_and_new_appended(self) -> None:
-        assert merge_groups(["B#2"], ["A#1", "B#2", "C#3"]) == ["B#2", "A#1", "C#3"]
-
-    def test_no_incoming_keeps_existing(self) -> None:
-        assert merge_groups(["A#1"], []) == ["A#1"]
-
-    def test_all_new(self) -> None:
-        assert merge_groups([], ["A#1", "B#2"]) == ["A#1", "B#2"]
-
-    def test_incoming_duplicates_added_once(self) -> None:
-        assert merge_groups([], ["A#1", "A#1"]) == ["A#1"]
-
-
-# ---------------------------------------------------------------------------
 # category_number_range / categories_to_group_rows
 # ---------------------------------------------------------------------------
 
@@ -511,6 +448,13 @@ class TestCategoriesToGroupRows:
     def test_no_laps_and_no_bib(self) -> None:
         assert categories_to_group_rows([{"name": "Open"}]) == [("Open", "1-200")]
 
+    def test_none_laps_is_name_only(self) -> None:
+        cats = [{"name": "Junior", "laps": None, "bib_from": 1, "bib_to": 9}]
+        assert categories_to_group_rows(cats) == [("Junior", "1-9")]
+
+    def test_empty_input(self) -> None:
+        assert categories_to_group_rows([]) == []
+
     def test_order_and_dedup(self) -> None:
         cats = [
             {"name": "A", "laps": 1, "bib_from": 1, "bib_to": 9},
@@ -525,11 +469,3 @@ class TestCategoriesToGroupRows:
             {"name": "X", "bib_from": 2, "bib_to": 8},
         ]
         assert categories_to_group_rows(cats) == [("X", "2-8")]
-
-    def test_group_texts_match_categories_to_groups(self) -> None:
-        cats: list[dict] = [
-            {"name": "Elite", "laps": 5, "bib_from": 1, "bib_to": 50},
-            {"name": "Open"},
-        ]
-        rows = categories_to_group_rows(cats)
-        assert [g for g, _ in rows] == categories_to_groups(cats)

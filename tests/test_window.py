@@ -1,7 +1,7 @@
 """Qt-level tests for the load-from-site handlers in MainWindow.
 
-The pure conversion helpers (categories_to_groups, merge_groups) are tested in
-test_models; here we verify the handlers wire them to the widgets correctly -- in
+The pure conversion helper (categories_to_group_rows) is tested in test_models;
+here we verify the handlers wire it to the widgets correctly -- in
 particular that Replace still syncs groups when the site has no participants yet.
 main_window is excluded from coverage, so these guard against silent handler drift.
 """
