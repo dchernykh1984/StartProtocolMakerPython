@@ -8,7 +8,9 @@ from pathlib import Path
 from app.models import (
     auto_shift_time,
     build_competitor_line,
+    categories_to_group_rows,
     categories_to_groups,
+    category_number_range,
     check_duplicate_fields,
     current_local_seconds,
     get_field,
@@ -477,3 +479,57 @@ class TestMergeGroups:
 
     def test_incoming_duplicates_added_once(self) -> None:
         assert merge_groups([], ["A#1", "A#1"]) == ["A#1"]
+
+
+# ---------------------------------------------------------------------------
+# category_number_range / categories_to_group_rows
+# ---------------------------------------------------------------------------
+
+
+class TestCategoryNumberRange:
+    def test_bib_from_to(self) -> None:
+        assert category_number_range({"bib_from": 10, "bib_to": 40}) == "10-40"
+
+    def test_missing_bib_from_uses_default(self) -> None:
+        assert category_number_range({"bib_to": 40}) == "1-200"
+
+    def test_missing_bib_to_uses_default(self) -> None:
+        assert category_number_range({"bib_from": 10}) == "1-200"
+
+    def test_none_values_use_default(self) -> None:
+        assert category_number_range({"bib_from": None, "bib_to": None}) == "1-200"
+
+    def test_custom_default(self) -> None:
+        assert category_number_range({}, default="5-9") == "5-9"
+
+
+class TestCategoriesToGroupRows:
+    def test_pairs_group_text_with_bib_range(self) -> None:
+        cats = [{"name": "Elite", "laps": 5, "bib_from": 1, "bib_to": 50}]
+        assert categories_to_group_rows(cats) == [("Elite#5", "1-50")]
+
+    def test_no_laps_and_no_bib(self) -> None:
+        assert categories_to_group_rows([{"name": "Open"}]) == [("Open", "1-200")]
+
+    def test_order_and_dedup(self) -> None:
+        cats = [
+            {"name": "A", "laps": 1, "bib_from": 1, "bib_to": 9},
+            {"name": "A", "laps": 1, "bib_from": 1, "bib_to": 9},
+            {"name": "B", "laps": 2, "bib_from": 10, "bib_to": 19},
+        ]
+        assert categories_to_group_rows(cats) == [("A#1", "1-9"), ("B#2", "10-19")]
+
+    def test_blank_names_skipped(self) -> None:
+        cats = [
+            {"name": "  ", "bib_from": 1, "bib_to": 9},
+            {"name": "X", "bib_from": 2, "bib_to": 8},
+        ]
+        assert categories_to_group_rows(cats) == [("X", "2-8")]
+
+    def test_group_texts_match_categories_to_groups(self) -> None:
+        cats: list[dict] = [
+            {"name": "Elite", "laps": 5, "bib_from": 1, "bib_to": 50},
+            {"name": "Open"},
+        ]
+        rows = categories_to_group_rows(cats)
+        assert [g for g, _ in rows] == categories_to_groups(cats)
