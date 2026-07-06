@@ -31,15 +31,15 @@ from PySide6.QtWidgets import (
 
 from app.http_io import fetch_participants, upload_start_list
 from app.models import (
+    DEFAULT_NUMBER_RANGE,
     auto_shift_time,
     build_competitor_line,
-    categories_to_groups,
+    categories_to_group_rows,
     check_duplicate_fields,
     current_local_seconds,
     get_next_number,
     get_time_from_seconds,
     load_backup,
-    merge_groups,
     parse_competitor_line,
     participant_to_open_line,
     save_backup,
@@ -825,7 +825,9 @@ class MainWindow(QMainWindow):
             self._list_groups.item(i).text() for i in range(self._list_groups.count())
         ]
 
-    def _add_group_row(self, group_text: str, numbers_range: str = "1-200") -> None:
+    def _add_group_row(
+        self, group_text: str, numbers_range: str = DEFAULT_NUMBER_RANGE
+    ) -> None:
         """Append a group (with its number range) to the list and the combo box."""
         self._list_groups.addItem(group_text)
         item = self._list_groups.item(self._list_groups.count() - 1)
@@ -834,30 +836,41 @@ class MainWindow(QMainWindow):
             self._combo_group.addItem(group_text)
 
     def _merge_groups_from_payload(self, data: dict) -> int:
-        """Add site groups not already present; returns how many were added."""
-        existing = self._group_texts()
-        incoming = categories_to_groups(data.get("categories", []))
-        merged = merge_groups(existing, incoming)
-        added = merged[len(existing) :]
-        for group_text in added:
-            self._add_group_row(group_text)
-        return len(added)
+        """Add site groups not already present; returns how many were added.
+
+        New groups take the site's bib range; existing groups keep their current range.
+        """
+        present = set(self._group_texts())
+        added = 0
+        for group_text, numbers_range in categories_to_group_rows(
+            data.get("categories", [])
+        ):
+            if group_text not in present:
+                present.add(group_text)
+                self._add_group_row(group_text, numbers_range)
+                added += 1
+        return added
 
     def _replace_groups_from_payload(self, data: dict) -> int:
-        """Replace the groups list with the site's; keep number ranges of kept ones."""
-        incoming = categories_to_groups(data.get("categories", []))
+        """Replace the groups list with the site's groups.
+
+        A group that already exists keeps its current (possibly hand-tuned) range;
+        a new group takes the site's bib range.
+        """
+        incoming = categories_to_group_rows(data.get("categories", []))
         if not incoming:
             return 0
         preserved = {
             self._list_groups.item(i).text(): (
-                self._list_groups.item(i).data(Qt.ItemDataRole.UserRole) or "1-200"
+                self._list_groups.item(i).data(Qt.ItemDataRole.UserRole)
+                or DEFAULT_NUMBER_RANGE
             )
             for i in range(self._list_groups.count())
         }
         self._list_groups.clear()
         self._combo_group.clear()
-        for group_text in incoming:
-            self._add_group_row(group_text, preserved.get(group_text, "1-200"))
+        for group_text, numbers_range in incoming:
+            self._add_group_row(group_text, preserved.get(group_text, numbers_range))
         return len(incoming)
 
     def _on_merge_from_site(self) -> None:

@@ -109,3 +109,45 @@ def test_replace_replaces_participants_when_present(win, monkeypatch):
     assert win._list_open.count() == 1
     assert "New Rider" in win._list_open.item(0).text()
     assert [t for t, _ in _group_rows(win)] == ["Elite#5"]
+
+
+# -- Groups carry the site's bib range into the numbers list (review point 2)
+
+
+def test_replace_uses_site_bib_range_for_new_groups(win, monkeypatch):
+    payload = {
+        "participants": [],
+        "categories": [
+            {"id": 1, "name": "Elite", "laps": 5, "bib_from": 100, "bib_to": 199}
+        ],
+    }
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: payload)
+    win._on_replace_from_site()
+    assert _group_rows(win) == [("Elite#5", "100-199")]
+
+
+def test_replace_keeps_existing_range_for_kept_group(win, monkeypatch):
+    # A group already present keeps its hand-tuned range instead of the site's.
+    win._add_group_row("Elite#5", "7-7")
+    payload = {
+        "participants": [],
+        "categories": [
+            {"id": 1, "name": "Elite", "laps": 5, "bib_from": 100, "bib_to": 199}
+        ],
+    }
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: payload)
+    win._on_replace_from_site()
+    assert _group_rows(win) == [("Elite#5", "7-7")]
+
+
+def test_merge_uses_site_bib_range_for_new_groups(win, monkeypatch):
+    win._add_group_row("Old#1", "1-9")
+    payload = {
+        "participants": [],
+        "categories": [
+            {"id": 2, "name": "Elite", "laps": 5, "bib_from": 100, "bib_to": 199}
+        ],
+    }
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: payload)
+    win._on_merge_from_site()
+    assert _group_rows(win) == [("Old#1", "1-9"), ("Elite#5", "100-199")]

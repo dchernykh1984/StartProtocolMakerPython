@@ -476,14 +476,33 @@ def participant_to_open_line(participant: dict, categories: list[dict]) -> str:
     )
 
 
-def categories_to_groups(categories: list[dict]) -> list[str]:
-    """Convert API category dicts to the group-list format used by this app.
+DEFAULT_NUMBER_RANGE = "1-200"
 
-    Each group is ``name#laps`` when the category has a lap count, or just ``name``
-    when it does not (mirroring how the UI stores manually added groups). Categories
-    without a name are skipped, and duplicates are collapsed keeping first-seen order.
+
+def category_number_range(category: dict, default: str = DEFAULT_NUMBER_RANGE) -> str:
+    """Return a category's bib range as ``bib_from-bib_to``, or ``default`` if unset.
+
+    The ``get number`` button picks the next free bib from this range, so a group synced
+    from the site must carry the site's bib range instead of a made-up default.
     """
-    groups: list[str] = []
+    bib_from = category.get("bib_from")
+    bib_to = category.get("bib_to")
+    if bib_from is None or bib_to is None:
+        return default
+    return f"{bib_from}-{bib_to}"
+
+
+def categories_to_group_rows(
+    categories: list[dict], default_range: str = DEFAULT_NUMBER_RANGE
+) -> list[tuple[str, str]]:
+    """Convert API categories to ``(group_text, number_range)`` rows.
+
+    ``group_text`` is ``name#laps`` when the category has a lap count, else just
+    ``name`` (mirroring how the UI stores manually added groups); ``number_range`` is
+    the category's ``bib_from-bib_to``. Nameless categories are skipped and duplicate
+    group texts collapsed, keeping first-seen order.
+    """
+    rows: list[tuple[str, str]] = []
     seen: set[str] = set()
     for cat in categories:
         name = (cat.get("name") or "").strip()
@@ -493,8 +512,13 @@ def categories_to_groups(categories: list[dict]) -> list[str]:
         group = f"{name}#{laps_val}" if laps_val is not None else name
         if group not in seen:
             seen.add(group)
-            groups.append(group)
-    return groups
+            rows.append((group, category_number_range(cat, default_range)))
+    return rows
+
+
+def categories_to_groups(categories: list[dict]) -> list[str]:
+    """Group texts (``name#laps`` or ``name``) for the categories, order preserved."""
+    return [group for group, _ in categories_to_group_rows(categories)]
 
 
 def merge_groups(existing: list[str], incoming: list[str]) -> list[str]:
