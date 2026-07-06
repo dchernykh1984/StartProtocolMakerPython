@@ -476,6 +476,38 @@ def participant_to_open_line(participant: dict, categories: list[dict]) -> str:
     )
 
 
+def categories_to_groups(categories: list[dict]) -> list[str]:
+    """Convert API category dicts to the group-list format used by this app.
+
+    Each group is ``name#laps`` when the category has a lap count, or just ``name``
+    when it does not (mirroring how the UI stores manually added groups). Categories
+    without a name are skipped, and duplicates are collapsed keeping first-seen order.
+    """
+    groups: list[str] = []
+    seen: set[str] = set()
+    for cat in categories:
+        name = (cat.get("name") or "").strip()
+        if not name:
+            continue
+        laps_val = cat.get("laps")
+        group = f"{name}#{laps_val}" if laps_val is not None else name
+        if group not in seen:
+            seen.add(group)
+            groups.append(group)
+    return groups
+
+
+def merge_groups(existing: list[str], incoming: list[str]) -> list[str]:
+    """Return ``existing`` plus each ``incoming`` group not present (order kept)."""
+    result = list(existing)
+    present = set(existing)
+    for group in incoming:
+        if group not in present:
+            present.add(group)
+            result.append(group)
+    return result
+
+
 def write_start_protocol(path: str, save_items: list[str]) -> None:
     """Write save_items to a start protocol file (one line per competitor)."""
     content = "\n".join(save_items)
