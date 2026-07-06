@@ -33,11 +33,13 @@ from app.http_io import fetch_participants, upload_start_list
 from app.models import (
     auto_shift_time,
     build_competitor_line,
+    categories_to_groups,
     check_duplicate_fields,
     current_local_seconds,
     get_next_number,
     get_time_from_seconds,
     load_backup,
+    merge_groups,
     parse_competitor_line,
     participant_to_open_line,
     save_backup,
@@ -791,8 +793,12 @@ class MainWindow(QMainWindow):
         if self._edit_city.text() != saved_city:
             self._edit_city.setText(saved_city + " / " + self._edit_city.text())
 
-    def _fetch_open_lines_from_site(self) -> list[str] | None:
-        """Fetch participant data from site and convert to open-list lines."""
+    def _fetch_site_payload(self) -> dict | None:
+        """Fetch the participants payload from the site (participants + categories).
+
+        Returns the parsed dict, or ``None`` after showing a popup when the URL/token
+        are missing or the request fails (no data is changed in that case).
+        """
         site_url = self._edit_http_site_url.text().strip()
         token = self._edit_http_token.text().strip()
         if not site_url or not token:
@@ -801,20 +807,64 @@ class MainWindow(QMainWindow):
             )
             return None
         try:
-            data = fetch_participants(site_url, token)
+            return fetch_participants(site_url, token)
         except ValueError as exc:
             QMessageBox.warning(self, "Load from site", str(exc))
             return None
+
+    @staticmethod
+    def _payload_to_open_lines(data: dict) -> list[str]:
         categories = data.get("categories", [])
         return [
             participant_to_open_line(p, categories)
             for p in data.get("participants", [])
         ]
 
+    def _group_texts(self) -> list[str]:
+        return [
+            self._list_groups.item(i).text() for i in range(self._list_groups.count())
+        ]
+
+    def _add_group_row(self, group_text: str, numbers_range: str = "1-200") -> None:
+        """Append a group (with its number range) to the list and the combo box."""
+        self._list_groups.addItem(group_text)
+        item = self._list_groups.item(self._list_groups.count() - 1)
+        item.setData(Qt.ItemDataRole.UserRole, numbers_range)
+        if self._combo_group.findText(group_text) == -1:
+            self._combo_group.addItem(group_text)
+
+    def _merge_groups_from_payload(self, data: dict) -> int:
+        """Add site groups not already present; returns how many were added."""
+        existing = self._group_texts()
+        incoming = categories_to_groups(data.get("categories", []))
+        merged = merge_groups(existing, incoming)
+        added = merged[len(existing) :]
+        for group_text in added:
+            self._add_group_row(group_text)
+        return len(added)
+
+    def _replace_groups_from_payload(self, data: dict) -> int:
+        """Replace the groups list with the site's; keep number ranges of kept ones."""
+        incoming = categories_to_groups(data.get("categories", []))
+        if not incoming:
+            return 0
+        preserved = {
+            self._list_groups.item(i).text(): (
+                self._list_groups.item(i).data(Qt.ItemDataRole.UserRole) or "1-200"
+            )
+            for i in range(self._list_groups.count())
+        }
+        self._list_groups.clear()
+        self._combo_group.clear()
+        for group_text in incoming:
+            self._add_group_row(group_text, preserved.get(group_text, "1-200"))
+        return len(incoming)
+
     def _on_merge_from_site(self) -> None:
-        lines = self._fetch_open_lines_from_site()
-        if lines is None:
+        data = self._fetch_site_payload()
+        if data is None:
             return
+        lines = self._payload_to_open_lines(data)
         existing_keys = {
             _participant_merge_key(self._list_open.item(i).text())
             for i in range(self._list_open.count())
@@ -829,15 +879,19 @@ class MainWindow(QMainWindow):
                 self._list_open.addItem(line)
                 existing_keys.add(key)
                 added += 1
+        added_groups = self._merge_groups_from_payload(data)
         self._save_all_data()
         QMessageBox.information(
-            self, "Load from site", f"Added {added} new participant(s)."
+            self,
+            "Load from site",
+            f"Added {added} new participant(s) and {added_groups} new group(s).",
         )
 
     def _on_replace_from_site(self) -> None:
-        lines = self._fetch_open_lines_from_site()
-        if lines is None:
+        data = self._fetch_site_payload()
+        if data is None:
             return
+        lines = self._payload_to_open_lines(data)
         if not lines:
             QMessageBox.warning(
                 self,
@@ -847,9 +901,12 @@ class MainWindow(QMainWindow):
             return
         self._list_open.clear()
         self._list_open.addItems(lines)
+        group_count = self._replace_groups_from_payload(data)
         self._save_all_data()
         QMessageBox.information(
-            self, "Load from site", f"Loaded {len(lines)} participant(s)."
+            self,
+            "Load from site",
+            f"Loaded {len(lines)} participant(s) and {group_count} group(s).",
         )
 
     def _on_send_to_site(self) -> None:
