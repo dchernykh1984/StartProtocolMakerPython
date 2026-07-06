@@ -892,16 +892,20 @@ class MainWindow(QMainWindow):
         if data is None:
             return
         lines = self._payload_to_open_lines(data)
+        # Groups are returned by the site independently of registrations, so sync them
+        # even with no participants yet (e.g. preparing an empty start before sign-ups).
+        group_count = self._replace_groups_from_payload(data)
         if not lines:
-            QMessageBox.warning(
+            self._save_all_data()
+            QMessageBox.information(
                 self,
                 "Load from site",
-                "No participants returned. The list was not changed.",
+                "No participants returned; participant list unchanged. "
+                f"Loaded {group_count} group(s).",
             )
             return
         self._list_open.clear()
         self._list_open.addItems(lines)
-        group_count = self._replace_groups_from_payload(data)
         self._save_all_data()
         QMessageBox.information(
             self,
