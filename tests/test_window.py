@@ -86,6 +86,42 @@ def test_replace_syncs_groups_when_no_participants(win, monkeypatch):
     assert [t for t, _ in _group_rows(win)] == ["Elite#5"]
 
 
+def test_replace_clears_groups_on_empty_categories_with_participants(win, monkeypatch):
+    # A successful response with no categories must clear groups from a prior start.
+    win._add_group_row("Old#3", "1-9")
+    payload = {
+        "participants": [
+            {
+                "category_id": None,
+                "category_name": "",
+                "last_name": "New",
+                "first_name": "Rider",
+                "birth_year": 1991,
+                "team": "",
+                "city": "",
+            }
+        ],
+        "categories": [],
+    }
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: payload)
+    win._on_replace_from_site()
+    assert "New Rider" in win._list_open.item(0).text()
+    assert _group_rows(win) == []  # stale groups cleared
+
+
+def test_replace_clears_groups_on_empty_categories_without_participants(
+    win, monkeypatch
+):
+    win._list_open.addItem("99#Keep Me#G#3#1#1990#T#C#c#0 00:00:00.000#")
+    win._add_group_row("Old#3", "1-9")
+    payload = {"participants": [], "categories": []}
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: payload)
+    win._on_replace_from_site()
+    # participant list untouched (no participants returned), but stale groups cleared.
+    assert win._list_open.count() == 1
+    assert _group_rows(win) == []
+
+
 def test_replace_replaces_participants_when_present(win, monkeypatch):
     win._list_open.addItem("99#Old One#G#3#1#1990#T#C#c#0 00:00:00.000#")
     payload = {

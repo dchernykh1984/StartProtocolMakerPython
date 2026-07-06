@@ -855,11 +855,11 @@ class MainWindow(QMainWindow):
         """Replace the groups list with the site's groups.
 
         A group that already exists keeps its current (possibly hand-tuned) range;
-        a new group takes the site's bib range.
+        a new group takes the site's bib range. Called only with a successfully fetched
+        payload, so an empty ``categories`` legitimately clears the groups (a network
+        or JSON error never reaches here -- ``_fetch_site_payload`` returns ``None``).
         """
         incoming = categories_to_group_rows(data.get("categories", []))
-        if not incoming:
-            return 0
         preserved = {
             self._list_groups.item(i).text(): (
                 self._list_groups.item(i).data(Qt.ItemDataRole.UserRole)
