@@ -90,6 +90,25 @@ jobs:
         shell: bash
         run: test -s "$ASSET"
 
+      - name: Smoke-launch the frozen app (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          # Actually start the bundled app headlessly to catch broken bundling
+          # (e.g. a missing hidden import) that "file exists" would not.
+          set +e
+          timeout 20 "$ASSET"
+          code=$?
+          set -e
+          # 124 = still running after the timeout (started fine); 0 = clean exit.
+          if [ "$code" != "124" ] && [ "$code" != "0" ]; then
+            echo "Frozen app failed to start (exit $code)"
+            exit 1
+          fi
+          echo "Frozen app started cleanly."
+
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}
