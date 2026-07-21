@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.1.0...v0.1.1) (2026-07-21)
+
+
+### Bug Fixes
+
+* reliable release builds (linux-aarch64 on ubuntu-24.04, drop Intel macOS) ([0983eb5](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/0983eb582d019d8783f23520ae0dad1a3f406e9f))
+
 ## 0.1.0 (2026-07-21)
 
 
