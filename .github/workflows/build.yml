@@ -77,7 +77,7 @@ jobs:
             ( cd dist && zip -r -y "${APP_NAME}-${{ matrix.name }}.zip" "${APP_NAME}.app" )
             echo "ASSET=dist/${APP_NAME}-${{ matrix.name }}.zip" >> "$GITHUB_ENV"
           elif [ "$RUNNER_OS" = "Windows" ]; then
-            uv run --with pyinstaller pyinstaller --onefile "${common[@]}" app/main.py
+            uv run --with pyinstaller pyinstaller --onefile --icon app/app.ico "${common[@]}" app/main.py
             mv "dist/${APP_NAME}.exe" "dist/${APP_NAME}-${{ matrix.name }}.exe"
             echo "ASSET=dist/${APP_NAME}-${{ matrix.name }}.exe" >> "$GITHUB_ENV"
           else
