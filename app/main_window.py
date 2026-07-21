@@ -45,8 +45,10 @@ from app.models import (
     save_backup,
     write_start_protocol,
 )
+from app.paths import app_path
 
-_BACKUP_PATH = "data/spm_backup.txt"
+_BACKUP_FOLDER = "data"
+_BACKUP_FILENAME = "spm_backup.txt"
 
 
 def _participant_merge_key(line: str) -> tuple[str, str, str]:
@@ -70,7 +72,7 @@ class MainWindow(QMainWindow):
         self._regexp_to: str = ""
         self._client_revision: int = 0
         self._setup_ui()
-        self._load_backup(_BACKUP_PATH)
+        self._load_backup(str(app_path(_BACKUP_FOLDER, _BACKUP_FILENAME)))
 
     # ------------------------------------------------------------------
     # UI setup
@@ -406,7 +408,7 @@ class MainWindow(QMainWindow):
 
     def _write_backup(self, folder: str, filename: str) -> None:
         save_backup(
-            path=str(Path(folder) / filename),
+            path=str(app_path(folder, filename)),
             open_items=self._open_items(),
             save_items=self._save_as_items(),
             groups=self._groups(),
