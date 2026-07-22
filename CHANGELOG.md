@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.1.1...v0.1.2) (2026-07-22)
+
+
+### Bug Fixes
+
+* embed the app icon in the macOS build ([ff6ef69](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/ff6ef699446dc4ed436ba373574ecd41154af6e9))
+
 ## [0.1.1](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.1.0...v0.1.1) (2026-07-21)
 
 
