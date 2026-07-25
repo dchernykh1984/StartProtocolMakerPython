@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.1.3...v0.1.4) (2026-07-25)
+
+
+### Bug Fixes
+
+* keep uv.lock in step with the released version ([5f5e084](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/5f5e0843c77ddf738ec91ca9942dfff8e14ac146))
+
 ## [0.1.3](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.1.2...v0.1.3) (2026-07-25)
 
 
