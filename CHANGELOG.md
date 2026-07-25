@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.1.2...v0.1.3) (2026-07-25)
+
+
+### Documentation
+
+* explain how to run the app from a release ([4e2cddb](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/4e2cddbc047236a36e98991d82cb6cab55a5d6c2))
+
 ## [0.1.2](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.1.1...v0.1.2) (2026-07-22)
 
 
