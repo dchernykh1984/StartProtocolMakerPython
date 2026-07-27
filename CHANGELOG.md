@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.6](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.1.5...v0.1.6) (2026-07-27)
+
+
+### Bug Fixes
+
+* keep the macos bundle file name free of spaces ([85d7fc3](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/85d7fc3baf608ebcefa9336c0c5e09056ae83f0c))
+
 ## [0.1.5](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.1.4...v0.1.5) (2026-07-27)
 
 
