@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.5](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.1.4...v0.1.5) (2026-07-27)
+
+
+### Bug Fixes
+
+* give the macos bundle a proper identifier and version ([741e6d0](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/741e6d08603c919bfacafd7166e6567ddfa22ffc))
+* show the full app name in the dock and task switcher ([cdc2f68](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/cdc2f68a7fea41c0874bf07074f43a2f9217f768))
+
 ## [0.1.4](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.1.3...v0.1.4) (2026-07-25)
 
 
