@@ -75,6 +75,8 @@ class MainWindow(QMainWindow):
         self._regexp_to: str = ""
         self._client_revision: int = 0
         self._auto_send_pending: bool = False
+        self._typed_first_number: str = ""
+        self._typed_delay: str = ""
         self._auto_send_suspended: bool = False
         self._auto_send_timer = QTimer(self)
         self._auto_send_timer.setSingleShot(True)
@@ -189,10 +191,12 @@ class MainWindow(QMainWindow):
         centre.addWidget(self._btn_get_number)
 
         lbl, self._edit_first_number = _lbl_edit("First number:")
+        self._edit_first_number.textEdited.connect(self._remember_shift_inputs)
         centre.addWidget(lbl)
         centre.addWidget(self._edit_first_number)
 
         lbl, self._edit_delay = _lbl_edit("Delay per number (sec):")
+        self._edit_delay.textEdited.connect(self._remember_shift_inputs)
         centre.addWidget(lbl)
         centre.addWidget(self._edit_delay)
 
@@ -515,6 +519,7 @@ class MainWindow(QMainWindow):
         self._chk_auto_send.setChecked(data.get("auto_send", False))
         self._edit_first_number.setText(data.get("first_number", ""))
         self._edit_delay.setText(data.get("delay", ""))
+        self._remember_shift_inputs()
         self._refresh_duplicate_indicator()
 
     # ------------------------------------------------------------------
@@ -664,13 +669,15 @@ class MainWindow(QMainWindow):
                 return
             row = self._list_groups.row(idx[0])
             numbers_str = self._numbers()[row] if row < len(self._numbers()) else ""
-            # A group range may carry its own "range#first#delay" override; when it
-            # does not, the values typed into the form are kept instead of wiped.
+            # A group range may carry its own "range#first#delay" override. Without
+            # one the referee's own values come back -- including after a group that
+            # did have an override, whose numbers would otherwise silently stay in
+            # the form and shift the next group by the wrong amount.
             parts = numbers_str.split("#")
-            if len(parts) > 1 and parts[1].strip():
-                self._edit_first_number.setText(parts[1].strip())
-            if len(parts) > 2 and parts[2].strip():
-                self._edit_delay.setText(parts[2].strip())
+            first_override = parts[1].strip() if len(parts) > 1 else ""
+            delay_override = parts[2].strip() if len(parts) > 2 else ""
+            self._edit_first_number.setText(first_override or self._typed_first_number)
+            self._edit_delay.setText(delay_override or self._typed_delay)
         result = auto_shift_time(
             self._edit_number.text(),
             self._edit_first_number.text(),
@@ -678,6 +685,11 @@ class MainWindow(QMainWindow):
         )
         if result is not None:
             self._edit_time_shift.setText(result)
+
+    def _remember_shift_inputs(self, _text: str = "") -> None:
+        """Track what the referee typed, so a group override can be undone later."""
+        self._typed_first_number = self._edit_first_number.text()
+        self._typed_delay = self._edit_delay.text()
 
     def _on_current_time(self) -> None:
         self._edit_time_shift.setText(get_time_from_seconds(current_local_seconds()))
