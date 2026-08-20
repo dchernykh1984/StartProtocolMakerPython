@@ -984,11 +984,10 @@ class MainWindow(QMainWindow):
         # Bump the per-device counter on every send so the server can order uploads and
         # reject a delayed/reordered one; persist it (with the list) before sending.
         self._client_revision += 1
-        self._auto_send_suspended = True  # saving here must not queue another upload
-        try:
-            self._save_all_data()  # persists the device id, counter and current list
-        finally:
-            self._auto_send_suspended = False
+        # Persist the device id, the counter and the current list -- but only that:
+        # a full save would also re-run the duplicate check, which moves the selection
+        # in the protocol list, and this can fire two seconds after the last edit.
+        self._write_backup(_BACKUP_FOLDER, _BACKUP_FILENAME)
         try:
             count = upload_start_list(
                 site_url, token, device_id, self._save_as_items(), self._client_revision

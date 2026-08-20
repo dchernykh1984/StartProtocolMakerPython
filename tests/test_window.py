@@ -342,6 +342,21 @@ def test_auto_send_does_not_reschedule_itself(win, uploads):
     assert len(uploads.calls) == 1
 
 
+def test_auto_send_leaves_the_protocol_selection_alone(win, uploads):
+    # The duplicate check jumps to the offending row; an upload two seconds after the
+    # last edit must not move the selection under the referee's hands.
+    line = "1#Runner One#Elite#5#1#1990#T#C##0 00:00:00.000#"
+    win._list_save_as.addItem(line)
+    win._list_save_as.addItem(line)
+    win._list_save_as.addItem("2#Runner Two#Elite#5#1#1991#T#C##0 00:00:00.000#")
+    win._chk_auto_send.setChecked(True)
+    win._save_all_data()
+    win._list_save_as.setCurrentRow(2)
+    win._on_auto_send_timeout()
+    assert len(uploads.calls) == 1
+    assert win._list_save_as.currentRow() == 2
+
+
 def test_auto_send_retries_after_a_failure(win, uploads):
     _arm_auto_send(win)
     uploads.error = "Connection error: timed out"
