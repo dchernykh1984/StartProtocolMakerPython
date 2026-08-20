@@ -53,7 +53,6 @@ def upload_start_list(
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310
             data = json.loads(resp.read().decode("utf-8"))
-        return int(data.get("count", len(items)))
     except urllib.error.HTTPError as exc:
         raise ValueError(f"HTTP {exc.code}: {exc.reason}") from exc
     except urllib.error.URLError as exc:
@@ -65,6 +64,15 @@ def upload_start_list(
         raise ValueError(f"Connection error: {exc}") from exc
     except (json.JSONDecodeError, ValueError) as exc:
         raise ValueError(f"Invalid response: {exc}") from exc
+    # A body that is not the expected object, or a count that is not a number, must
+    # not reach the caller as a TypeError: this runs unattended in auto mode.
+    if not isinstance(data, dict):
+        raise ValueError("Invalid response: expected a JSON object")
+    count = data.get("count", len(items))
+    try:
+        return int(count)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Invalid response: bad count {count!r}") from exc
 
 
 def fetch_participants(site_url: str, token: str) -> dict:
@@ -88,7 +96,7 @@ def fetch_participants(site_url: str, token: str) -> dict:
     )
     try:
         with urllib.request.urlopen(url, timeout=10) as resp:  # noqa: S310
-            return json.loads(resp.read().decode("utf-8"))
+            data = json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         raise ValueError(f"HTTP {exc.code}: {exc.reason}") from exc
     except urllib.error.URLError as exc:
@@ -97,3 +105,6 @@ def fetch_participants(site_url: str, token: str) -> dict:
         raise ValueError(f"Connection error: {exc}") from exc
     except (json.JSONDecodeError, ValueError) as exc:
         raise ValueError(f"Invalid response: {exc}") from exc
+    if not isinstance(data, dict):
+        raise ValueError("Invalid response: expected a JSON object")
+    return data
