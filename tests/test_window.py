@@ -187,3 +187,83 @@ def test_merge_uses_site_bib_range_for_new_groups(win, monkeypatch):
     monkeypatch.setattr(win, "_fetch_site_payload", lambda: payload)
     win._on_merge_from_site()
     assert _group_rows(win) == [("Old#1", "1-9"), ("Elite#5", "100-199")]
+
+
+# -- AutoShift keeps the form values a group range does not override ---------
+
+
+def _prepare_auto_shift(win, numbers_range: str, first: str = "", delay: str = ""):
+    """Arm the window with one group and AutoShift on, as a referee would."""
+    win._add_group_row("Elite#5", numbers_range)
+    win._combo_group.setCurrentIndex(win._combo_group.findText("Elite#5"))
+    win._edit_first_number.setText(first)
+    win._edit_delay.setText(delay)
+    win._chk_auto_shift.setChecked(True)
+
+
+def test_auto_shift_keeps_form_values_without_group_override(win):
+    _prepare_auto_shift(win, "1-50", first="1", delay="30")
+    win._edit_number.setText("3")
+    win._on_auto_shift()
+    assert win._edit_first_number.text() == "1"
+    assert win._edit_delay.text() == "30"
+    assert win._edit_time_shift.text() == "0 00:01:00.000"
+
+
+def test_auto_shift_uses_group_override(win):
+    _prepare_auto_shift(win, "1-50#10#60", first="1", delay="30")
+    win._edit_number.setText("12")
+    win._on_auto_shift()
+    assert win._edit_first_number.text() == "10"
+    assert win._edit_delay.text() == "60"
+    assert win._edit_time_shift.text() == "0 00:02:00.000"
+
+
+def test_auto_shift_partial_override_keeps_delay(win):
+    # "range#first" sets the first number only; the delay stays as typed.
+    _prepare_auto_shift(win, "1-50#10", first="1", delay="30")
+    win._edit_number.setText("12")
+    win._on_auto_shift()
+    assert win._edit_first_number.text() == "10"
+    assert win._edit_delay.text() == "30"
+
+
+def test_auto_shift_ignores_blank_override_fields(win):
+    _prepare_auto_shift(win, "1-50##", first="1", delay="30")
+    win._on_auto_shift()
+    assert win._edit_first_number.text() == "1"
+    assert win._edit_delay.text() == "30"
+
+
+# -- Editing a competitor with AutoShift on ---------------------------------
+
+
+def test_edit_keeps_the_number_the_line_already_has(win):
+    _prepare_auto_shift(win, "1-50", first="1", delay="30")
+    win._list_save_as.addItem("7#Runner One#Elite#5#1#1990#T#C##0 00:00:00.000#")
+    win._list_save_as.setCurrentRow(0)
+    win._on_edit_save_as()
+    assert win._edit_number.text() == "7"
+    assert win._edit_time_shift.text() == "0 00:03:00.000"  # (7 - 1) * 30 s
+
+
+def test_edit_assigns_a_number_when_the_line_has_none(win):
+    _prepare_auto_shift(win, "1-50", first="1", delay="30")
+    win._list_open.addItem("#Runner One#Elite#5#1#1990#T#C##0 00:00:00.000#")
+    win._list_open.setCurrentRow(0)
+    win._on_edit_open()
+    assert win._edit_number.text() == "1"
+
+
+def test_edit_restores_the_line_shift_when_auto_shift_cannot_compute(win):
+    # Nothing to compute from (no delay), so the form must show the edited line's
+    # own shift rather than the previously edited competitor's.
+    _prepare_auto_shift(win, "1-50")
+    win._list_save_as.addItem("7#First#Elite#5#1#1990#T#C##0 00:05:00.000#")
+    win._list_save_as.addItem("8#Second#Elite#5#1#1990#T#C##0 00:00:00.000#")
+    win._list_save_as.setCurrentRow(0)
+    win._on_edit_save_as()
+    assert win._edit_time_shift.text() == "0 00:05:00.000"
+    win._list_save_as.setCurrentRow(1)
+    win._on_edit_save_as()
+    assert win._edit_time_shift.text() == "0 00:00:00.000"
