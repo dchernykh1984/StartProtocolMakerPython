@@ -490,6 +490,7 @@ class MainWindow(QMainWindow):
         # competition, with its own token and revision), so drop it.
         self._auto_send_timer.stop()
         self._auto_send_pending = False
+        self._lbl_auto_send_status.setText("")  # it described the previous list
         self._auto_send_suspended = True
         try:
             self._fill_from_backup(load_backup(path))
