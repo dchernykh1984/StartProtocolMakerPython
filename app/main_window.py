@@ -478,6 +478,10 @@ class MainWindow(QMainWindow):
         self._edit_stage.setText(d["stage"] or "1")
 
     def _load_backup(self, path: str) -> None:
+        # Whatever was queued belongs to the list being replaced (possibly another
+        # competition, with its own token and revision), so drop it.
+        self._auto_send_timer.stop()
+        self._auto_send_pending = False
         self._auto_send_suspended = True
         try:
             self._fill_from_backup(load_backup(path))
