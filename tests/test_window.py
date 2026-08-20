@@ -267,3 +267,195 @@ def test_edit_restores_the_line_shift_when_auto_shift_cannot_compute(win):
     win._list_save_as.setCurrentRow(1)
     win._on_edit_save_as()
     assert win._edit_time_shift.text() == "0 00:00:00.000"
+
+
+# -- Auto upload of the start list to the site ------------------------------
+
+
+class _Recorder:
+    """Stand-in for upload_start_list that records calls (and can fail on demand)."""
+
+    def __init__(self, error: str = "") -> None:
+        self.calls: list[tuple] = []
+        self.error = error
+
+    def __call__(self, site_url, token, device_id, items, client_revision):
+        self.calls.append((site_url, token, device_id, list(items), client_revision))
+        if self.error:
+            raise ValueError(self.error)
+        return len(items)
+
+
+@pytest.fixture
+def uploads(monkeypatch):
+    recorder = _Recorder()
+    monkeypatch.setattr(mw, "upload_start_list", recorder)
+    return recorder
+
+
+def _arm_auto_send(win):
+    """Turn auto mode on with one competitor queued, and clear the initial schedule."""
+    win._list_save_as.addItem("1#Runner One#Elite#5#1#1990#T#C##0 00:00:00.000#")
+    win._chk_auto_send.setChecked(True)
+    win._auto_send_timer.stop()
+    win._auto_send_pending = False
+
+
+def test_auto_send_off_does_not_upload(win, uploads):
+    win._list_save_as.addItem("1#Runner One#Elite#5#1#1990#T#C##0 00:00:00.000#")
+    win._save_all_data()
+    assert win._auto_send_timer.isActive() is False
+    win._on_auto_send_timeout()
+    assert uploads.calls == []
+
+
+def test_auto_send_uploads_after_an_edit(win, uploads):
+    _arm_auto_send(win)
+    win._save_all_data()
+    assert win._auto_send_timer.isActive() is True  # debounced, not sent yet
+    assert uploads.calls == []
+    win._on_auto_send_timeout()
+    assert len(uploads.calls) == 1
+    site_url, token, device_id, items, revision = uploads.calls[0]
+    assert (site_url, token, device_id) == ("https://s", "tok", "dev")
+    assert items == win._save_as_items()
+    assert revision == 1
+    assert "Sent 1 competitor(s)" in win._lbl_auto_send_status.text()
+
+
+def test_auto_send_debounces_a_burst_of_edits(win, uploads):
+    _arm_auto_send(win)
+    for _ in range(3):
+        win._save_all_data()
+    win._on_auto_send_timeout()
+    assert len(uploads.calls) == 1
+
+
+def test_auto_send_does_not_reschedule_itself(win, uploads):
+    # The upload persists the bumped revision, which must not queue another upload.
+    _arm_auto_send(win)
+    win._save_all_data()
+    win._on_auto_send_timeout()
+    assert win._auto_send_pending is False
+    assert win._auto_send_timer.isActive() is False
+    win._on_auto_send_timeout()
+    assert len(uploads.calls) == 1
+
+
+def test_auto_send_retries_after_a_failure(win, uploads):
+    _arm_auto_send(win)
+    uploads.error = "Connection error: timed out"
+    win._save_all_data()
+    win._on_auto_send_timeout()
+    assert len(uploads.calls) == 1
+    assert win._auto_send_pending is True  # still owed to the site
+    assert "will retry" in win._lbl_auto_send_status.text()
+    uploads.error = ""
+    win._save_all_data()
+    win._on_auto_send_timeout()
+    assert len(uploads.calls) == 2
+    assert win._auto_send_pending is False
+
+
+def test_auto_send_reports_failures_without_a_dialog(win, uploads, monkeypatch):
+    def _fail(*a, **k):
+        raise AssertionError("auto mode must not open a dialog")
+
+    monkeypatch.setattr(mw.QMessageBox, "warning", _fail)
+    monkeypatch.setattr(mw.QMessageBox, "information", _fail)
+    _arm_auto_send(win)
+    uploads.error = "HTTP 409: Conflict"
+    win._save_all_data()
+    win._on_auto_send_timeout()
+    assert "HTTP 409: Conflict" in win._lbl_auto_send_status.text()
+
+
+def test_auto_send_needs_url_and_token(win, uploads):
+    _arm_auto_send(win)
+    win._edit_http_token.setText("")
+    win._save_all_data()
+    assert win._auto_send_timer.isActive() is False
+    assert win._lbl_auto_send_status.text() == "auto: set Site URL and Token"
+    win._on_auto_send_timeout()
+    assert uploads.calls == []
+
+
+def test_turning_auto_send_on_uploads_the_current_list(win, uploads):
+    win._list_save_as.addItem("1#Runner One#Elite#5#1#1990#T#C##0 00:00:00.000#")
+    win._chk_auto_send.setChecked(True)
+    assert win._auto_send_timer.isActive() is True
+    win._on_auto_send_timeout()
+    assert len(uploads.calls) == 1
+
+
+def test_turning_auto_send_off_drops_the_queued_upload(win, uploads):
+    _arm_auto_send(win)
+    win._save_all_data()
+    win._chk_auto_send.setChecked(False)
+    assert win._auto_send_timer.isActive() is False
+    assert win._lbl_auto_send_status.text() == ""
+    win._on_auto_send_timeout()
+    assert uploads.calls == []
+
+
+def test_loading_a_backup_does_not_upload(win, uploads, monkeypatch):
+    # Restoring a saved list is not an edit: the site already has it.
+    data = _empty_backup()
+    data["auto_send"] = True
+    data["save_items"] = ["1#Runner One#Elite#5#1#1990#T#C##0 00:00:00.000#"]
+    monkeypatch.setattr(mw, "load_backup", lambda path: data)
+    win._load_backup("/backup.txt")
+    assert win._chk_auto_send.isChecked() is True  # the setting is restored...
+    assert win._auto_send_timer.isActive() is False  # ...without an upload
+    assert win._auto_send_pending is False
+    win._on_auto_send_timeout()
+    assert uploads.calls == []
+
+
+def test_adding_a_competitor_to_the_protocol_triggers_auto_send(win, uploads):
+    win._list_open.addItem("1#Runner One#Elite#5#1#1990#T#C##0 00:00:00.000#")
+    win._list_open.setCurrentRow(0)
+    win._chk_auto_send.setChecked(True)
+    win._auto_send_timer.stop()
+    win._auto_send_pending = False
+    win._on_open_to_protocol()
+    assert win._auto_send_timer.isActive() is True
+    win._on_auto_send_timeout()
+    assert uploads.calls[0][3] == win._save_as_items()
+
+
+def test_manual_send_still_uploads_and_reports(win, uploads):
+    win._list_save_as.addItem("1#Runner One#Elite#5#1#1990#T#C##0 00:00:00.000#")
+    win._on_send_to_site()
+    assert len(uploads.calls) == 1
+    assert uploads.calls[0][4] == 1
+
+
+def test_manual_send_clears_a_queued_auto_send(win, uploads):
+    _arm_auto_send(win)
+    win._save_all_data()
+    win._on_send_to_site()
+    assert win._auto_send_timer.isActive() is False
+    assert win._auto_send_pending is False
+    win._on_auto_send_timeout()
+    assert len(uploads.calls) == 1
+
+
+def test_closing_flushes_a_queued_auto_send(win, uploads, monkeypatch):
+    _arm_auto_send(win)
+    win._save_all_data()
+    monkeypatch.setattr(
+        mw.QMessageBox,
+        "question",
+        lambda *a, **k: mw.QMessageBox.StandardButton.Yes,
+    )
+
+    class _Event:
+        def accept(self) -> None:
+            self.accepted = True
+
+        def ignore(self) -> None:
+            self.accepted = False
+
+    win.closeEvent(_Event())
+    assert len(uploads.calls) == 1

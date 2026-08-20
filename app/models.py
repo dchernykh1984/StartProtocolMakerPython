@@ -217,6 +217,7 @@ _TAG_FIRST_NUMBER = "FirstNumber"
 _TAG_DELAY = "DelayPerNumber"
 _TAG_DEVICE_ID = "DeviceId"
 _TAG_CLIENT_REVISION = "ClientRevision"
+_TAG_AUTO_SEND = "AutoSend"
 
 
 def _read_section(
@@ -236,7 +237,7 @@ def load_backup(path: str) -> dict:  # noqa: C901
     Load a StartProtocolMaker backup file.
     Returns a dict with keys: open_items, save_items, groups, numbers,
     regexp_from, regexp_to, ftp_address, start_protocol_file,
-    use_all_numbers, auto_shift.
+    use_all_numbers, auto_shift, auto_send.
     Port of C++ loadBackup logic.
     """
     result: dict = {
@@ -254,6 +255,7 @@ def load_backup(path: str) -> dict:  # noqa: C901
         "start_protocol_file": "",
         "use_all_numbers": False,
         "auto_shift": False,
+        "auto_send": False,
         "first_number": "",
         "delay": "",
     }
@@ -368,6 +370,10 @@ def load_backup(path: str) -> dict:  # noqa: C901
                 result["client_revision"] = 0
             i += 1
 
+    if i < len(lines) and lines[i] == _TAG_AUTO_SEND:
+        result["auto_send"] = True
+        i += 1
+
     return result
 
 
@@ -396,6 +402,7 @@ def save_backup(
     client_revision: int = 0,
     first_number: str = "",
     delay: str = "",
+    auto_send: bool = False,
 ) -> None:
     """Write a backup file. Port of C++ saveBackupFile logic."""
     p = Path(path)
@@ -430,6 +437,10 @@ def save_backup(
     _append_tag_value(lines, _TAG_DELAY, delay)
     _append_tag_value(lines, _TAG_DEVICE_ID, device_id)
     _append_tag_value(lines, _TAG_CLIENT_REVISION, client_revision)
+    # Tags are read back in this exact order, so a new one must stay last to keep
+    # backups written by older versions readable.
+    if auto_send:
+        lines.append(_TAG_AUTO_SEND)
     p.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 

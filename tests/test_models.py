@@ -358,6 +358,54 @@ class TestBackup:
         result = self._roundtrip(**self._defaults(auto_shift=False))
         assert result["auto_shift"] is False
 
+    def test_auto_send(self) -> None:
+        result = self._roundtrip(**self._defaults(auto_send=True))
+        assert result["auto_send"] is True
+
+    def test_auto_send_false_by_default(self) -> None:
+        result = self._roundtrip(**self._defaults())
+        assert result["auto_send"] is False
+
+    def test_auto_send_survives_the_other_trailing_tags(self) -> None:
+        # AutoSend is written last, after the tags that carry a value.
+        result = self._roundtrip(
+            **self._defaults(
+                auto_shift=True,
+                first_number="10",
+                delay="60",
+                device_id="dev",
+                client_revision=7,
+                auto_send=True,
+            )
+        )
+        assert result["client_revision"] == 7
+        assert result["auto_send"] is True
+
+    def test_backup_without_auto_send_tag_still_loads(self) -> None:
+        # Backups written by an older version end at ClientRevision.
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".txt", delete=False, encoding="utf-8"
+        ) as f:
+            f.write(
+                "List of opened competitors\n"
+                "List of competitors to save\n"
+                "List of groups\n"
+                "List of numbers\n"
+                "RegExp From\n"
+                "RegExp To\n"
+                "FTP Configuration\n"
+                "\n"
+                "DeviceId\n"
+                "dev\n"
+                "ClientRevision\n"
+                "3\n"
+            )
+            path = f.name
+        result = load_backup(path)
+        assert result["device_id"] == "dev"
+        assert result["client_revision"] == 3
+        assert result["auto_send"] is False
+
     def test_first_number(self) -> None:
         result = self._roundtrip(**self._defaults(first_number="5"))
         assert result["first_number"] == "5"

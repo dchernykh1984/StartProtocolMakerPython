@@ -188,6 +188,17 @@ The application can fetch participant lists directly from the cycling-site API.
 The application calls `GET /api/v1/participants/?competition_token=<token>` and
 populates the start list automatically.
 
+### Uploading the start list
+
+**Send start list to site** posts the current protocol to the site, keyed by the
+device id, so re-sending overwrites this device's previous upload.
+
+Tick **Auto** next to that button to have every change uploaded on its own. Edits
+are collected for a couple of seconds and sent as a single upload; the outcome
+(or the error, with an automatic retry on the next change) is shown next to the
+button instead of a dialog. The setting is stored in the backup file, so it
+survives a restart.
+
 ## Contributing
 
 Before requesting a review, make sure the CI pipeline passes on your pull request. Once the pipeline is green, request a review from [@dchernykh1984](https://github.com/dchernykh1984).
