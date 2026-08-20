@@ -15,6 +15,7 @@ import pytest
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import Qt
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
 from app import main_window as mw
@@ -192,12 +193,18 @@ def test_merge_uses_site_bib_range_for_new_groups(win, monkeypatch):
 # -- AutoShift keeps the form values a group range does not override ---------
 
 
+def _type(edit, text: str) -> None:
+    """Fill a field the way the referee does, so textEdited fires."""
+    edit.clear()
+    QTest.keyClicks(edit, text)
+
+
 def _prepare_auto_shift(win, numbers_range: str, first: str = "", delay: str = ""):
     """Arm the window with one group and AutoShift on, as a referee would."""
     win._add_group_row("Elite#5", numbers_range)
     win._combo_group.setCurrentIndex(win._combo_group.findText("Elite#5"))
-    win._edit_first_number.setText(first)
-    win._edit_delay.setText(delay)
+    _type(win._edit_first_number, first)
+    _type(win._edit_delay, delay)
     win._chk_auto_shift.setChecked(True)
 
 
@@ -233,6 +240,31 @@ def test_auto_shift_ignores_blank_override_fields(win):
     win._on_auto_shift()
     assert win._edit_first_number.text() == "1"
     assert win._edit_delay.text() == "30"
+
+
+def test_group_override_does_not_leak_into_the_next_group(win):
+    # Elite carries its own first/delay; Masters does not and must fall back to the
+    # values the referee typed, not to Elite's.
+    _prepare_auto_shift(win, "1-50#10#60", first="1", delay="30")
+    win._add_group_row("Masters#3", "51-99")
+    win._edit_number.setText("12")
+    win._on_auto_shift()
+    assert (win._edit_first_number.text(), win._edit_delay.text()) == ("10", "60")
+    win._combo_group.setCurrentIndex(win._combo_group.findText("Masters#3"))
+    win._edit_number.setText("52")
+    win._on_auto_shift()
+    assert (win._edit_first_number.text(), win._edit_delay.text()) == ("1", "30")
+    assert win._edit_time_shift.text() == "0 00:25:30.000"  # (52 - 1) * 30 s
+
+
+def test_typing_after_an_override_wins_over_it(win):
+    _prepare_auto_shift(win, "1-50#10#60", first="1", delay="30")
+    win._on_auto_shift()
+    _type(win._edit_delay, "15")
+    win._add_group_row("Masters#3", "51-99")
+    win._combo_group.setCurrentIndex(win._combo_group.findText("Masters#3"))
+    win._on_auto_shift()
+    assert win._edit_delay.text() == "15"
 
 
 # -- Editing a competitor with AutoShift on ---------------------------------
