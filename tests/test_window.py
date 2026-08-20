@@ -412,6 +412,22 @@ def test_loading_a_backup_does_not_upload(win, uploads, monkeypatch):
     assert uploads.calls == []
 
 
+def test_loading_a_backup_drops_a_queued_upload(win, uploads, monkeypatch):
+    # An upload queued from the previous list must not be sent under the loaded one.
+    _arm_auto_send(win)
+    win._save_all_data()
+    assert win._auto_send_timer.isActive() is True
+    data = _empty_backup()
+    data["auto_send"] = True
+    data["save_items"] = ["9#Other Race#Elite#5#1#1990#T#C##0 00:00:00.000#"]
+    monkeypatch.setattr(mw, "load_backup", lambda path: data)
+    win._load_backup("/other-backup.txt")
+    assert win._auto_send_timer.isActive() is False
+    assert win._auto_send_pending is False
+    win._on_auto_send_timeout()
+    assert uploads.calls == []
+
+
 def test_adding_a_competitor_to_the_protocol_triggers_auto_send(win, uploads):
     win._list_open.addItem("1#Runner One#Elite#5#1#1990#T#C##0 00:00:00.000#")
     win._list_open.setCurrentRow(0)
