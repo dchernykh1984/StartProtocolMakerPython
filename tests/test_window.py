@@ -395,6 +395,19 @@ def test_auto_send_needs_url_and_token(win, uploads):
     assert uploads.calls == []
 
 
+def test_auto_send_keeps_edits_made_before_the_site_is_configured(win, uploads):
+    _arm_auto_send(win)
+    win._edit_http_token.setText("")
+    win._save_all_data()
+    assert win._auto_send_pending is True  # owed, just not sendable yet
+    assert win._auto_send_timer.isActive() is False
+    win._edit_http_token.setText("tok")
+    win._on_save_config()
+    assert win._auto_send_timer.isActive() is True
+    win._on_auto_send_timeout()
+    assert len(uploads.calls) == 1
+
+
 def test_turning_auto_send_on_uploads_the_current_list(win, uploads):
     win._list_save_as.addItem("1#Runner One#Elite#5#1#1990#T#C##0 00:00:00.000#")
     win._chk_auto_send.setChecked(True)
