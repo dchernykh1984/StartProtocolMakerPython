@@ -52,6 +52,9 @@ _BACKUP_FILENAME = "spm_backup.txt"
 # Edits arrive in bursts (a name, then a bib, then a shift); waiting out a short
 # idle window collapses them into a single upload instead of one call per click.
 _AUTO_SEND_DELAY_MS = 2000
+# A failed upload cannot wait for the next edit: registration goes quiet exactly
+# when the list matters most, so auto mode keeps retrying on its own.
+_AUTO_SEND_RETRY_MS = 15000
 
 
 def _participant_merge_key(line: str) -> tuple[str, str, str]:
@@ -80,7 +83,6 @@ class MainWindow(QMainWindow):
         self._auto_send_suspended: bool = False
         self._auto_send_timer = QTimer(self)
         self._auto_send_timer.setSingleShot(True)
-        self._auto_send_timer.setInterval(_AUTO_SEND_DELAY_MS)
         self._auto_send_timer.timeout.connect(self._on_auto_send_timeout)
         self._setup_ui()
         self._load_backup(str(app_path(_BACKUP_FOLDER, _BACKUP_FILENAME)))
@@ -1017,6 +1019,8 @@ class MainWindow(QMainWindow):
         self._auto_send_timer.stop()
         ok, message = self._upload_to_site()
         self._auto_send_pending = not ok
+        if not ok:
+            self._retry_auto_send_later()
         self._report_auto_send(ok, message)
         if ok:
             QMessageBox.information(self, "Send to site", message)
@@ -1040,7 +1044,7 @@ class MainWindow(QMainWindow):
             self._lbl_auto_send_status.setText("auto: set Site URL and Token")
             return
         # Restarting the timer coalesces a burst of edits into a single upload.
-        self._auto_send_timer.start()
+        self._auto_send_timer.start(_AUTO_SEND_DELAY_MS)
 
     def _on_auto_send_toggled(self, checked: bool) -> None:
         if checked:
@@ -1056,9 +1060,15 @@ class MainWindow(QMainWindow):
         if not self._auto_send_pending or not self._chk_auto_send.isChecked():
             return
         ok, message = self._upload_to_site()
-        # A failed upload stays pending so the next edit retries it.
         self._auto_send_pending = not ok
+        if not ok:
+            self._retry_auto_send_later()
         self._report_auto_send(ok, message)
+
+    def _retry_auto_send_later(self) -> None:
+        """Re-arm after a failed upload; an edit may never come to trigger one."""
+        if self._chk_auto_send.isChecked():
+            self._auto_send_timer.start(_AUTO_SEND_RETRY_MS)
 
     def _report_auto_send(self, ok: bool, message: str) -> None:
         """Show the outcome next to the button: never a dialog, this runs unattended."""

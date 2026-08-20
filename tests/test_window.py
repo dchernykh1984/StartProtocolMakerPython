@@ -432,6 +432,38 @@ def test_auto_send_retries_after_a_failure(win, uploads):
     assert win._auto_send_pending is False
 
 
+def test_auto_send_retries_on_its_own_after_a_failure(win, uploads):
+    # Waiting for the next edit would leave the site stale once registration goes
+    # quiet, which is exactly when the start list has to be right.
+    _arm_auto_send(win)
+    uploads.error = "Connection error: timed out"
+    win._save_all_data()
+    win._on_auto_send_timeout()
+    assert win._auto_send_timer.isActive() is True
+    uploads.error = ""
+    win._on_auto_send_timeout()  # the retry, with no edit in between
+    assert len(uploads.calls) == 2
+    assert win._auto_send_pending is False
+    assert win._auto_send_timer.isActive() is False
+
+
+def test_a_failed_manual_send_is_retried_by_auto_mode(win, uploads):
+    _arm_auto_send(win)
+    uploads.error = "Connection error: timed out"
+    win._on_send_to_site()
+    assert win._auto_send_timer.isActive() is True
+    uploads.error = ""
+    win._on_auto_send_timeout()
+    assert len(uploads.calls) == 2
+
+
+def test_a_failed_manual_send_is_not_retried_with_auto_off(win, uploads):
+    win._list_save_as.addItem("1#Runner One#Elite#5#1#1990#T#C##0 00:00:00.000#")
+    uploads.error = "Connection error: timed out"
+    win._on_send_to_site()
+    assert win._auto_send_timer.isActive() is False
+
+
 def test_auto_send_reports_failures_without_a_dialog(win, uploads, monkeypatch):
     def _fail(*a, **k):
         raise AssertionError("auto mode must not open a dialog")

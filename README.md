@@ -195,8 +195,8 @@ device id, so re-sending overwrites this device's previous upload.
 
 Tick **Auto** next to that button to have every change uploaded on its own. Edits
 are collected for a couple of seconds and sent as a single upload; the outcome
-(or the error, with an automatic retry on the next change) is shown next to the
-button instead of a dialog. The setting is stored in the backup file, so it
+(or the error, retried every 15 seconds until it goes through) is shown under the
+button instead of in a dialog. The setting is stored in the backup file, so it
 survives a restart.
 
 ## Contributing
