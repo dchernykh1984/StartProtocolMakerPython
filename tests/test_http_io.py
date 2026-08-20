@@ -24,6 +24,16 @@ from app.models import (
 # ---------------------------------------------------------------------------
 
 
+def _make_response_body(body: str, status: int = 200) -> MagicMock:
+    """A response returning a raw body, for shapes json.dumps would not produce."""
+    mock = MagicMock()
+    mock.__enter__ = lambda s: s
+    mock.__exit__ = MagicMock(return_value=False)
+    mock.read.return_value = body.encode("utf-8")
+    mock.status = status
+    return mock
+
+
 def _make_response(data: dict, status: int = 200) -> MagicMock:
     mock = MagicMock()
     mock.__enter__ = lambda s: s
@@ -61,6 +71,12 @@ class TestFetchParticipants:
     def test_socket_timeout_raises_value_error(self) -> None:
         with patch("urllib.request.urlopen", side_effect=TimeoutError("timed out")):
             with pytest.raises(ValueError, match="Connection error"):
+                fetch_participants("https://example.com", "tok")
+
+    def test_non_object_body_raises_value_error(self) -> None:
+        # Callers index the result; a JSON array would blow up at the call site.
+        with patch("urllib.request.urlopen", return_value=_make_response_body("[]")):
+            with pytest.raises(ValueError, match="Invalid response"):
                 fetch_participants("https://example.com", "tok")
 
     def test_invalid_json_raises_value_error(self) -> None:
@@ -169,6 +185,24 @@ class TestUploadStartList:
             with pytest.raises(ValueError, match="Connection error"):
                 upload_start_list(
                     "https://example.com", "tok", "dev", [], client_revision=1
+                )
+
+    def test_null_count_raises_value_error(self) -> None:
+        with patch(
+            "urllib.request.urlopen", return_value=_make_response({"count": None})
+        ):
+            with pytest.raises(ValueError, match="Invalid response"):
+                upload_start_list(
+                    "https://example.com", "tok", "dev", ["a"], client_revision=1
+                )
+
+    def test_non_object_body_raises_value_error(self) -> None:
+        with patch(
+            "urllib.request.urlopen", return_value=_make_response_body("[1, 2]")
+        ):
+            with pytest.raises(ValueError, match="Invalid response"):
+                upload_start_list(
+                    "https://example.com", "tok", "dev", ["a"], client_revision=1
                 )
 
     def test_socket_timeout_raises_value_error(self) -> None:
