@@ -444,11 +444,16 @@ class MainWindow(QMainWindow):
         self._edit_team.setText(d["team"])
         self._edit_city.setText(d["city"])
         self._edit_comment.setText(d["comment"])
+        # Always restore the line's own shift first: AutoShift only overwrites it when
+        # it can actually compute one, and without this the field would keep the
+        # previously edited competitor's shift.
+        self._edit_time_shift.setText(d["time_shift"] or "0 00:00:00.000")
         if self._chk_auto_shift.isChecked():
-            self._on_get_number()
+            # A line that already carries a number keeps it; re-running "Get number"
+            # would hand an edited competitor a different bib.
+            if not self._edit_number.text().strip():
+                self._on_get_number()
             self._on_auto_shift()
-        else:
-            self._edit_time_shift.setText(d["time_shift"] or "0 00:00:00.000")
         self._edit_stage.setText(d["stage"] or "1")
 
     def _load_backup(self, path: str) -> None:
@@ -627,11 +632,13 @@ class MainWindow(QMainWindow):
                 return
             row = self._list_groups.row(idx[0])
             numbers_str = self._numbers()[row] if row < len(self._numbers()) else ""
+            # A group range may carry its own "range#first#delay" override; when it
+            # does not, the values typed into the form are kept instead of wiped.
             parts = numbers_str.split("#")
-            first_n = parts[1] if len(parts) > 1 else ""
-            delay = parts[2] if len(parts) > 2 else ""
-            self._edit_first_number.setText(first_n)
-            self._edit_delay.setText(delay)
+            if len(parts) > 1 and parts[1].strip():
+                self._edit_first_number.setText(parts[1].strip())
+            if len(parts) > 2 and parts[2].strip():
+                self._edit_delay.setText(parts[2].strip())
         result = auto_shift_time(
             self._edit_number.text(),
             self._edit_first_number.text(),
