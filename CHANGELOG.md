@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.2.0](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.1.6...v0.2.0) (2026-08-20)
+
+
+### Features
+
+* add auto upload of the start list to the site ([0712ec1](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/0712ec1a544f88d60c5c67af8462dcde76bddd19))
+
+
+### Bug Fixes
+
+* clear the auto send status when a backup is loaded ([3cdaec4](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/3cdaec4d6baec2ba6ab3e97280f32562ec3918ee))
+* drop a queued upload when another backup is loaded ([dbae90b](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/dbae90b63f778bce4c6ca4077b3653d9acef4f7f))
+* keep the auto upload from moving the protocol selection ([e1d3424](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/e1d3424af49233668f1b2655a02ac985b6d851f5))
+* keep unsent edits pending until the site is configured ([f93a285](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/f93a285d79cc017cd1287999490c0361436cedf4))
+* reject a malformed site response instead of raising in a slot ([45b9abb](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/45b9abbd4974c90d1b7fb5ae09735113db681e24))
+* retry a failed upload on a timer instead of on the next edit ([cdaeecd](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/cdaeecd732b632720507c48f93dbc8b713693678))
+* save the typed shift values rather than a group override ([e9def0b](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/e9def0b5d9b163f95bd622cc92c53d50e323de60))
+* stop a group time shift override from leaking to other groups ([82a1203](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/82a1203a8439bed16455b080cf89e42b92559b1e))
+* stop autoshift from clearing the first number and delay ([b17db48](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/b17db483063c5a9594a52e0581d9a8ec700e7664))
+* turn a dropped connection into a message instead of a crash ([90cf619](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/90cf619476313d9c39c1d4aaa59d30542b086444))
+
+
+### Documentation
+
+* correct where the auto send status is shown ([35e70e4](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/35e70e47e4150fd9e5ad8391955a445e14cc4bce))
+
 ## [0.1.6](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.1.5...v0.1.6) (2026-07-27)
 
 
