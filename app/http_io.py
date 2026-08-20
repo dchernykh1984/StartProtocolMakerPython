@@ -58,6 +58,11 @@ def upload_start_list(
         raise ValueError(f"HTTP {exc.code}: {exc.reason}") from exc
     except urllib.error.URLError as exc:
         raise ValueError(f"Connection error: {exc.reason}") from exc
+    except OSError as exc:
+        # urllib only wraps failures raised while sending; a socket timeout or a
+        # dropped connection while reading the response surfaces as a bare OSError,
+        # which would otherwise escape into the caller's Qt slot.
+        raise ValueError(f"Connection error: {exc}") from exc
     except (json.JSONDecodeError, ValueError) as exc:
         raise ValueError(f"Invalid response: {exc}") from exc
 
@@ -88,5 +93,7 @@ def fetch_participants(site_url: str, token: str) -> dict:
         raise ValueError(f"HTTP {exc.code}: {exc.reason}") from exc
     except urllib.error.URLError as exc:
         raise ValueError(f"Connection error: {exc.reason}") from exc
+    except OSError as exc:
+        raise ValueError(f"Connection error: {exc}") from exc
     except (json.JSONDecodeError, ValueError) as exc:
         raise ValueError(f"Invalid response: {exc}") from exc
