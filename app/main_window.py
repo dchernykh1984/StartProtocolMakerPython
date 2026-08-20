@@ -9,7 +9,7 @@ import uuid
 from pathlib import Path
 from urllib.parse import urlparse
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -49,6 +49,9 @@ from app.paths import app_path
 
 _BACKUP_FOLDER = "data"
 _BACKUP_FILENAME = "spm_backup.txt"
+# Edits arrive in bursts (a name, then a bib, then a shift); waiting out a short
+# idle window collapses them into a single upload instead of one call per click.
+_AUTO_SEND_DELAY_MS = 2000
 
 
 def _participant_merge_key(line: str) -> tuple[str, str, str]:
@@ -71,6 +74,12 @@ class MainWindow(QMainWindow):
         self._regexp_from: str = ""
         self._regexp_to: str = ""
         self._client_revision: int = 0
+        self._auto_send_pending: bool = False
+        self._auto_send_suspended: bool = False
+        self._auto_send_timer = QTimer(self)
+        self._auto_send_timer.setSingleShot(True)
+        self._auto_send_timer.setInterval(_AUTO_SEND_DELAY_MS)
+        self._auto_send_timer.timeout.connect(self._on_auto_send_timeout)
         self._setup_ui()
         self._load_backup(str(app_path(_BACKUP_FOLDER, _BACKUP_FILENAME)))
 
@@ -341,9 +350,17 @@ class MainWindow(QMainWindow):
         right.addLayout(row_http_btns)
 
         row_send = QHBoxLayout()
+        self._chk_auto_send = QCheckBox("Auto")
+        self._chk_auto_send.setToolTip(
+            "Upload the start list to the site after every change"
+        )
+        self._chk_auto_send.toggled.connect(self._on_auto_send_toggled)
+        row_send.addWidget(self._chk_auto_send)
         self._btn_send_to_site = QPushButton("Send start list to site")
         self._btn_send_to_site.clicked.connect(self._on_send_to_site)
         row_send.addWidget(self._btn_send_to_site)
+        self._lbl_auto_send_status = QLabel("")
+        row_send.addWidget(self._lbl_auto_send_status)
         right.addLayout(row_send)
 
         row7 = QHBoxLayout()
@@ -405,6 +422,7 @@ class MainWindow(QMainWindow):
                     f'Cannot save: directory for "{self._start_protocol_file}"'
                     ' does not exist.\nUse "Save as" to choose a new location.',
                 )
+        self._schedule_auto_send()
 
     def _write_backup(self, folder: str, filename: str) -> None:
         save_backup(
@@ -419,6 +437,7 @@ class MainWindow(QMainWindow):
             start_protocol_file=self._start_protocol_file,
             use_all_numbers=self._chk_use_all.isChecked(),
             auto_shift=self._chk_auto_shift.isChecked(),
+            auto_send=self._chk_auto_send.isChecked(),
             first_number=self._edit_first_number.text(),
             delay=self._edit_delay.text(),
             http_site_url=self._edit_http_site_url.text(),
@@ -457,7 +476,13 @@ class MainWindow(QMainWindow):
         self._edit_stage.setText(d["stage"] or "1")
 
     def _load_backup(self, path: str) -> None:
-        data = load_backup(path)
+        self._auto_send_suspended = True
+        try:
+            self._fill_from_backup(load_backup(path))
+        finally:
+            self._auto_send_suspended = False
+
+    def _fill_from_backup(self, data: dict) -> None:
         self._list_open.clear()
         self._list_open.addItems(data["open_items"])
         self._list_save_as.clear()
@@ -481,6 +506,7 @@ class MainWindow(QMainWindow):
         self._start_protocol_file = data["start_protocol_file"]
         self._chk_use_all.setChecked(data["use_all_numbers"])
         self._chk_auto_shift.setChecked(data["auto_shift"])
+        self._chk_auto_send.setChecked(data.get("auto_send", False))
         self._edit_first_number.setText(data.get("first_number", ""))
         self._edit_delay.setText(data.get("delay", ""))
         self._refresh_duplicate_indicator()
@@ -549,7 +575,7 @@ class MainWindow(QMainWindow):
     def _on_open_to_protocol(self) -> None:
         if self._list_open.currentItem():
             self._list_save_as.addItem(self._list_open.currentItem().text())
-            self._refresh_duplicate_indicator()
+            self._save_all_data()
 
     def _on_all_to_protocol(self) -> None:
         reply = QMessageBox.question(self, "Warning", "Are you sure?")
@@ -557,7 +583,7 @@ class MainWindow(QMainWindow):
             return
         for i in range(self._list_open.count()):
             self._list_save_as.addItem(self._list_open.item(i).text())
-        self._refresh_duplicate_indicator()
+        self._save_all_data()
 
     def _on_add_group(self) -> None:
         name = self._edit_add_group.text().strip()
@@ -935,31 +961,92 @@ class MainWindow(QMainWindow):
             f"Loaded {len(lines)} participant(s) and {group_count} group(s).",
         )
 
-    def _on_send_to_site(self) -> None:
-        """Upload the current save list (right list) to the site for this device."""
+    def _upload_to_site(self) -> tuple[bool, str]:
+        """Upload the save list (right list) to the site for this device.
+
+        Returns (succeeded, message); the message is shown either way, so the auto
+        mode can report a failure without a modal dialog.
+        """
         site_url = self._edit_http_site_url.text().strip()
         token = self._edit_http_token.text().strip()
         device_id = self._edit_device_id.text().strip()
         if not site_url or not token:
-            QMessageBox.warning(self, "Send to site", "Site URL and Token must be set.")
-            return
+            return False, "Site URL and Token must be set"
         if not device_id:
             device_id = uuid.uuid4().hex
             self._edit_device_id.setText(device_id)
         # Bump the per-device counter on every send so the server can order uploads and
         # reject a delayed/reordered one; persist it (with the list) before sending.
         self._client_revision += 1
-        self._save_all_data()  # persists the device id, counter and current list
+        self._auto_send_suspended = True  # saving here must not queue another upload
+        try:
+            self._save_all_data()  # persists the device id, counter and current list
+        finally:
+            self._auto_send_suspended = False
         try:
             count = upload_start_list(
                 site_url, token, device_id, self._save_as_items(), self._client_revision
             )
         except ValueError as exc:
-            QMessageBox.warning(self, "Send to site", str(exc))
+            return False, str(exc)
+        return True, f"Sent {count} competitor(s)"
+
+    def _on_send_to_site(self) -> None:
+        """Upload the current save list on demand (the button)."""
+        self._auto_send_timer.stop()
+        ok, message = self._upload_to_site()
+        self._auto_send_pending = not ok
+        self._report_auto_send(ok, message)
+        if ok:
+            QMessageBox.information(self, "Send to site", message)
+        else:
+            QMessageBox.warning(self, "Send to site", message)
+
+    # ------------------------------------------------------------------
+    # auto send
+    # ------------------------------------------------------------------
+
+    def _schedule_auto_send(self) -> None:
+        """Queue a debounced upload of the current list when auto mode is on."""
+        if self._auto_send_suspended or not self._chk_auto_send.isChecked():
             return
-        QMessageBox.information(
-            self, "Send to site", f"Sent {count} competitor(s) to the site."
-        )
+        site_url = self._edit_http_site_url.text().strip()
+        token = self._edit_http_token.text().strip()
+        if not site_url or not token:
+            self._lbl_auto_send_status.setText("auto: set Site URL and Token")
+            return
+        self._auto_send_pending = True
+        # Restarting the timer coalesces a burst of edits into a single upload.
+        self._auto_send_timer.start()
+
+    def _on_auto_send_toggled(self, checked: bool) -> None:
+        if checked:
+            # Turning auto on means "make the site match what I have".
+            self._schedule_auto_send()
+        else:
+            self._auto_send_timer.stop()
+            self._auto_send_pending = False
+            self._lbl_auto_send_status.setText("")
+
+    def _on_auto_send_timeout(self) -> None:
+        self._auto_send_timer.stop()
+        if not self._auto_send_pending or not self._chk_auto_send.isChecked():
+            return
+        ok, message = self._upload_to_site()
+        # A failed upload stays pending so the next edit retries it.
+        self._auto_send_pending = not ok
+        self._report_auto_send(ok, message)
+
+    def _report_auto_send(self, ok: bool, message: str) -> None:
+        """Show the outcome next to the button: never a dialog, this runs unattended."""
+        if not self._chk_auto_send.isChecked():
+            self._lbl_auto_send_status.setText("")
+        elif ok:
+            self._lbl_auto_send_status.setText(
+                f"auto: {message} at {time.strftime('%H:%M:%S')}"
+            )
+        else:
+            self._lbl_auto_send_status.setText(f"auto: {message} (will retry)")
 
     # ------------------------------------------------------------------
     # close event
@@ -968,6 +1055,11 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event) -> None:  # noqa: N802
         reply = QMessageBox.question(self, "Warning", "Are you sure to exit?")
         if reply == QMessageBox.StandardButton.Yes:
+            self._auto_send_timer.stop()
+            if self._auto_send_pending and self._chk_auto_send.isChecked():
+                # Flush what the debounce window still holds; a failure here cannot be
+                # retried, and must not keep the window from closing.
+                self._upload_to_site()
             self._write_backup("data", "spm_backup.txt")
             event.accept()
         else:
