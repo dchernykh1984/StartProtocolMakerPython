@@ -548,6 +548,18 @@ def test_loading_a_backup_drops_a_queued_upload(win, uploads, monkeypatch):
     assert uploads.calls == []
 
 
+def test_loading_a_backup_clears_a_stale_status(win, uploads, monkeypatch):
+    _arm_auto_send(win)
+    win._save_all_data()
+    win._on_auto_send_timeout()
+    assert "Sent" in win._lbl_auto_send_status.text()
+    data = _empty_backup()
+    data["auto_send"] = True  # unchanged, so the checkbox emits no signal
+    monkeypatch.setattr(mw, "load_backup", lambda path: data)
+    win._load_backup("/other-backup.txt")
+    assert win._lbl_auto_send_status.text() == ""
+
+
 def test_adding_a_competitor_to_the_protocol_triggers_auto_send(win, uploads):
     win._list_open.addItem("1#Runner One#Elite#5#1#1990#T#C##0 00:00:00.000#")
     win._list_open.setCurrentRow(0)
