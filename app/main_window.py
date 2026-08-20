@@ -1072,7 +1072,7 @@ class MainWindow(QMainWindow):
             self._auto_send_timer.start(_AUTO_SEND_RETRY_MS)
 
     def _report_auto_send(self, ok: bool, message: str) -> None:
-        """Show the outcome next to the button: never a dialog, this runs unattended."""
+        """Show the outcome under the button: never a dialog, this runs unattended."""
         if not self._chk_auto_send.isChecked():
             self._lbl_auto_send_status.setText("")
         elif ok:
