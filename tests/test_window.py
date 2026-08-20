@@ -22,6 +22,9 @@ from app import main_window as mw
 
 _app = QApplication.instance() or QApplication([])
 
+# Captured before the fixture stubs it out, for the tests that check what is saved.
+_REAL_WRITE_BACKUP = mw.MainWindow._write_backup
+
 
 def _empty_backup() -> dict:
     return {
@@ -255,6 +258,31 @@ def test_group_override_does_not_leak_into_the_next_group(win):
     win._on_auto_shift()
     assert (win._edit_first_number.text(), win._edit_delay.text()) == ("1", "30")
     assert win._edit_time_shift.text() == "0 00:25:30.000"  # (52 - 1) * 30 s
+
+
+def test_a_group_override_is_not_saved_as_the_referees_own_values(win, monkeypatch):
+    # Otherwise the override comes back as the baseline after a restart and leaks
+    # into every group that has none.
+    saved: dict = {}
+    monkeypatch.setattr(mw, "save_backup", lambda **kwargs: saved.update(kwargs))
+    _prepare_auto_shift(win, "1-50#10#60", first="1", delay="30")
+    win._add_group_row("Masters#3", "51-99")
+    win._on_auto_shift()
+    assert (win._edit_first_number.text(), win._edit_delay.text()) == ("10", "60")
+
+    _REAL_WRITE_BACKUP(win, "data", "spm_backup.txt")
+    assert (saved["first_number"], saved["delay"]) == ("1", "30")
+
+    # Restart: the saved values come back, and Masters still gets them.
+    restored = _empty_backup()
+    restored["first_number"] = saved["first_number"]
+    restored["delay"] = saved["delay"]
+    win._fill_from_backup(restored)
+    win._combo_group.setCurrentIndex(win._combo_group.findText("Masters#3"))
+    win._edit_number.setText("52")
+    win._on_auto_shift()
+    assert (win._edit_first_number.text(), win._edit_delay.text()) == ("1", "30")
+    assert win._edit_time_shift.text() == "0 00:25:30.000"
 
 
 def test_typing_after_an_override_wins_over_it(win):
