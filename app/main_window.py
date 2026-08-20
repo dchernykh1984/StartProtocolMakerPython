@@ -814,7 +814,9 @@ class MainWindow(QMainWindow):
             self._load_backup(path)
 
     def _on_save_config(self) -> None:
-        self._write_backup("data", "spm_backup.txt")
+        self._write_backup(_BACKUP_FOLDER, _BACKUP_FILENAME)
+        # Saved settings may be the site credentials an earlier edit was waiting for.
+        self._schedule_auto_send()
 
     def _on_add_into_team(self) -> None:
         if not self._list_open.currentItem():
@@ -1015,12 +1017,14 @@ class MainWindow(QMainWindow):
         """Queue a debounced upload of the current list when auto mode is on."""
         if self._auto_send_suspended or not self._chk_auto_send.isChecked():
             return
+        # Record the debt before checking the settings: an edit made while the site is
+        # not configured yet is still owed to it once the URL and token are filled in.
+        self._auto_send_pending = True
         site_url = self._edit_http_site_url.text().strip()
         token = self._edit_http_token.text().strip()
         if not site_url or not token:
             self._lbl_auto_send_status.setText("auto: set Site URL and Token")
             return
-        self._auto_send_pending = True
         # Restarting the timer coalesces a burst of edits into a single upload.
         self._auto_send_timer.start()
 
