@@ -358,10 +358,12 @@ class MainWindow(QMainWindow):
         row_send.addWidget(self._chk_auto_send)
         self._btn_send_to_site = QPushButton("Send start list to site")
         self._btn_send_to_site.clicked.connect(self._on_send_to_site)
-        row_send.addWidget(self._btn_send_to_site)
-        self._lbl_auto_send_status = QLabel("")
-        row_send.addWidget(self._lbl_auto_send_status)
+        # The button takes the rest of the row; the checkbox keeps only what it needs.
+        row_send.addWidget(self._btn_send_to_site, 1)
         right.addLayout(row_send)
+        # The status goes on its own line so a long message never squeezes the button.
+        self._lbl_auto_send_status = QLabel("")
+        right.addWidget(self._lbl_auto_send_status)
 
         row7 = QHBoxLayout()
         self._btn_backup = QPushButton("Backup")
