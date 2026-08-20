@@ -444,8 +444,10 @@ class MainWindow(QMainWindow):
             use_all_numbers=self._chk_use_all.isChecked(),
             auto_shift=self._chk_auto_shift.isChecked(),
             auto_send=self._chk_auto_send.isChecked(),
-            first_number=self._edit_first_number.text(),
-            delay=self._edit_delay.text(),
+            # The widgets may be showing a group's override; what belongs to the
+            # referee (and survives a restart) is what they typed themselves.
+            first_number=self._typed_first_number,
+            delay=self._typed_delay,
             http_site_url=self._edit_http_site_url.text(),
             http_token=self._edit_http_token.text(),
             device_id=self._edit_device_id.text().strip(),
