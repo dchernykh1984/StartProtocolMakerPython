@@ -58,6 +58,11 @@ class TestFetchParticipants:
             with pytest.raises(ValueError, match="Connection error"):
                 fetch_participants("https://no-such-host.invalid", "tok")
 
+    def test_socket_timeout_raises_value_error(self) -> None:
+        with patch("urllib.request.urlopen", side_effect=TimeoutError("timed out")):
+            with pytest.raises(ValueError, match="Connection error"):
+                fetch_participants("https://example.com", "tok")
+
     def test_invalid_json_raises_value_error(self) -> None:
         mock = MagicMock()
         mock.__enter__ = lambda s: s
@@ -161,6 +166,23 @@ class TestUploadStartList:
     def test_url_error_raises_value_error(self) -> None:
         exc = urllib.error.URLError(reason="down")
         with patch("urllib.request.urlopen", side_effect=exc):
+            with pytest.raises(ValueError, match="Connection error"):
+                upload_start_list(
+                    "https://example.com", "tok", "dev", [], client_revision=1
+                )
+
+    def test_socket_timeout_raises_value_error(self) -> None:
+        # urllib does not wrap a timeout hit while reading the response.
+        with patch("urllib.request.urlopen", side_effect=TimeoutError("timed out")):
+            with pytest.raises(ValueError, match="Connection error"):
+                upload_start_list(
+                    "https://example.com", "tok", "dev", [], client_revision=1
+                )
+
+    def test_dropped_connection_while_reading_raises_value_error(self) -> None:
+        response = _make_response({"count": 1})
+        response.read.side_effect = ConnectionResetError("peer went away")
+        with patch("urllib.request.urlopen", return_value=response):
             with pytest.raises(ValueError, match="Connection error"):
                 upload_start_list(
                     "https://example.com", "tok", "dev", [], client_revision=1
