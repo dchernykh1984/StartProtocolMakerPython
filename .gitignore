@@ -30,7 +30,10 @@ Session.vim
 # ===== AI agents =====
 
 # Claude Code (Anthropic)
-.claude/
+# The shared config (skills, hooks, settings) is committed on purpose so every
+# session starts with the same project knowledge; only per-machine overrides are not.
+.claude/settings.local.json
+CLAUDE.local.md
 
 # Cursor
 .cursor/
