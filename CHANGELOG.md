@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.2.0...v0.2.1) (2026-09-02)
+
+
+### Documentation
+
+* record how to work in this repo for coding agents ([1d23e85](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/1d23e851c143fea6f41bf6ea37efdbdecdc5289a))
+
 ## [0.2.0](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.1.6...v0.2.0) (2026-08-20)
 
 
