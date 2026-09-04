@@ -75,5 +75,14 @@ pending instead of sleeping blindly:
 gh pr checks <number> --json name,bucket | jq -e 'all(.bucket != "pending")'
 ```
 
+Take the verdict from the rollup rather than from `gh pr checks`. That command's
+per-check status lags and can still report `pending` long after the job itself has
+finished, which reads like a hung check and has already cost time here:
+
+```bash
+gh pr view <number> --json statusCheckRollup \
+  --jq '[.statusCheckRollup[] | {name:(.name//.context), s:(.conclusion//.state)}]'
+```
+
 If a check fails, fix it with another commit on the same branch; do not force-push
 over a reviewed history.
