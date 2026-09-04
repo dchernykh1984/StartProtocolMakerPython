@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.2.1...v0.2.2) (2026-09-04)
+
+
+### Documentation
+
+* take the CI verdict from the rollup, not the lagging checks list ([dfc148d](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/dfc148d2098479808f54e58ad43606a79ca77c3f))
+
 ## [0.2.1](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.2.0...v0.2.1) (2026-09-02)
 
 
