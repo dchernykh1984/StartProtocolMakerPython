@@ -881,11 +881,6 @@ class MainWindow(QMainWindow):
             for p in data.get("participants", [])
         ]
 
-    def _group_texts(self) -> list[str]:
-        return [
-            self._list_groups.item(i).text() for i in range(self._list_groups.count())
-        ]
-
     def _add_group_row(
         self, group_text: str, numbers_range: str = DEFAULT_NUMBER_RANGE
     ) -> None:
@@ -904,24 +899,28 @@ class MainWindow(QMainWindow):
         its local AutoShift override survives (see ``merge_number_range``).
         """
         rows = categories_to_group_rows(data.get("categories", []), default_range="")
-        existing = {
-            self._list_groups.item(i).text(): i
-            for i in range(self._list_groups.count())
-        }
-        added = 0
-        for group_text, site_range in rows:
-            row = existing.get(group_text)
-            if row is None:
-                self._add_group_row(group_text, site_range or DEFAULT_NUMBER_RANGE)
-                existing[group_text] = self._list_groups.count() - 1
-                added += 1
+        site_ranges = dict(rows)
+        # Nothing stops the same group text appearing twice, and lookups elsewhere
+        # resolve it with findItems(...)[0], so refresh every matching row rather than
+        # one of them -- otherwise the row actually used can keep the stale range.
+        present = set()
+        for i in range(self._list_groups.count()):
+            item = self._list_groups.item(i)
+            present.add(item.text())
+            site_range = site_ranges.get(item.text())
+            if site_range is None:
                 continue
-            item = self._list_groups.item(row)
             local_range = item.data(Qt.ItemDataRole.UserRole) or ""
             item.setData(
                 Qt.ItemDataRole.UserRole,
                 merge_number_range(site_range, local_range) or DEFAULT_NUMBER_RANGE,
             )
+        added = 0
+        for group_text, site_range in rows:
+            if group_text not in present:
+                present.add(group_text)
+                self._add_group_row(group_text, site_range or DEFAULT_NUMBER_RANGE)
+                added += 1
         return added
 
     def _replace_groups_from_payload(self, data: dict) -> int:
@@ -935,12 +934,11 @@ class MainWindow(QMainWindow):
         incoming = categories_to_group_rows(
             data.get("categories", []), default_range=""
         )
-        preserved = {
-            self._list_groups.item(i).text(): (
-                self._list_groups.item(i).data(Qt.ItemDataRole.UserRole) or ""
-            )
-            for i in range(self._list_groups.count())
-        }
+        preserved: dict[str, str] = {}
+        for i in range(self._list_groups.count()):
+            item = self._list_groups.item(i)
+            # First row wins, matching how findItems(...)[0] resolves a duplicate.
+            preserved.setdefault(item.text(), item.data(Qt.ItemDataRole.UserRole) or "")
         self._list_groups.clear()
         self._combo_group.clear()
         for group_text, site_range in incoming:
