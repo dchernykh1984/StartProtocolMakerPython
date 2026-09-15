@@ -68,21 +68,32 @@ gh pr view <number> --json headRefOid,state,mergeable
 
 Never report a green pipeline without reading the output, and check that the reported
 run belongs to the current head SHA -- a fresh push starts a new run while the old
-one still shows as passed. When waiting, poll in a loop that exits once nothing is
-pending instead of sleeping blindly:
-
-```bash
-gh pr checks <number> --json name,bucket | jq -e 'all(.bucket != "pending")'
-```
+one still shows as passed.
 
 Take the verdict from the rollup rather than from `gh pr checks`. That command's
 per-check status lags and can still report `pending` long after the job itself has
 finished, which reads like a hung check and has already cost time here:
 
 ```bash
-gh pr view <number> --json statusCheckRollup \
-  --jq '[.statusCheckRollup[] | {name:(.name//.context), s:(.conclusion//.state)}]'
+gh pr view <number> --json headRefOid,state,mergeable,statusCheckRollup \
+  --jq '[.statusCheckRollup[] | "\(.name // .context): \(.status) \(.conclusion)"] | .[]'
 ```
+
+**Read `.status`, not `.conclusion`.** A check that is still running reports
+`conclusion` as an *empty string*, and jq's `//` falls back only on `null` and
+`false` -- so `(.conclusion // .state)` yields `""` and a filter like
+`select(.conclusion != "PENDING")` treats a running job as finished. That is how a
+loop here once announced a green pipeline while five of the six checks were still
+in progress. The trustworthy test is:
+
+```bash
+gh pr view <number> --json statusCheckRollup \
+  --jq '[.statusCheckRollup[].status] | all(. == "COMPLETED")'
+```
+
+When waiting, poll with that in a loop that exits once every check is `COMPLETED`,
+instead of sleeping blindly. Then read each `conclusion` to see whether completed
+means `SUCCESS`.
 
 If a check fails, fix it with another commit on the same branch; do not force-push
 over a reviewed history.
