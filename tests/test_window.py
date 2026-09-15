@@ -187,9 +187,18 @@ def test_replace_updates_the_range_of_a_group_already_present(win, monkeypatch):
 def test_replace_keeps_the_autoshift_override_of_a_kept_group(win, monkeypatch):
     # Only the interval comes from the site; "#first#delay" is the referee's own.
     win._add_group_row("Elite#5", "1-50#10#60")
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: _elite_payload(1, 200))
+    win._on_replace_from_site()
+    assert _group_rows(win) == [("Elite#5", "1-200#10#60")]
+
+
+def test_replace_rebases_a_first_bib_left_outside_the_new_range(win, monkeypatch):
+    # The category was renumbered; keeping first=10 against 100-199 would start the
+    # whole group 90 delay steps late.
+    win._add_group_row("Elite#5", "1-50#10#60")
     monkeypatch.setattr(win, "_fetch_site_payload", lambda: _elite_payload())
     win._on_replace_from_site()
-    assert _group_rows(win) == [("Elite#5", "100-199#10#60")]
+    assert _group_rows(win) == [("Elite#5", "100-199#100#60")]
 
 
 def test_replace_keeps_the_local_range_when_the_site_has_none(win, monkeypatch):
@@ -235,9 +244,16 @@ def test_merge_updates_the_range_of_a_group_already_present(win, monkeypatch):
 
 def test_merge_keeps_the_autoshift_override_of_an_existing_group(win, monkeypatch):
     win._add_group_row("Elite#5", "1-50#10#60")
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: _elite_payload(1, 200))
+    win._on_merge_from_site()
+    assert _group_rows(win) == [("Elite#5", "1-200#10#60")]
+
+
+def test_merge_rebases_a_first_bib_left_outside_the_new_range(win, monkeypatch):
+    win._add_group_row("Elite#5", "1-50#10#60")
     monkeypatch.setattr(win, "_fetch_site_payload", lambda: _elite_payload())
     win._on_merge_from_site()
-    assert _group_rows(win) == [("Elite#5", "100-199#10#60")]
+    assert _group_rows(win) == [("Elite#5", "100-199#100#60")]
 
 
 def test_merge_keeps_the_local_range_when_the_site_has_none(win, monkeypatch):
@@ -275,9 +291,9 @@ def test_replace_keeps_the_first_duplicate_override(win, monkeypatch):
     # Same resolution order on the replace path: the row lookups would have used.
     win._add_group_row("Elite#5", "1-50#10#60")
     win._add_group_row("Elite#5", "1-50#20#90")
-    monkeypatch.setattr(win, "_fetch_site_payload", lambda: _elite_payload())
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: _elite_payload(1, 200))
     win._on_replace_from_site()
-    assert _group_rows(win) == [("Elite#5", "100-199#10#60")]
+    assert _group_rows(win) == [("Elite#5", "1-200#10#60")]
 
 
 def test_merge_leaves_a_group_the_site_no_longer_has(win, monkeypatch):
