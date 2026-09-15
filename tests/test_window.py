@@ -261,6 +261,25 @@ def test_merge_counts_only_groups_it_added(win, monkeypatch):
     assert "0 new group(s)" in messages[0]
 
 
+def test_merge_refreshes_every_row_of_a_duplicated_group(win, monkeypatch):
+    # Nothing stops a group text being added twice, and "Get number" resolves it with
+    # findItems(...)[0] -- so refreshing only one row leaves the used one stale.
+    win._add_group_row("Elite#5", "1-50")
+    win._add_group_row("Elite#5", "1-50")
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: _elite_payload())
+    win._on_merge_from_site()
+    assert _group_rows(win) == [("Elite#5", "100-199"), ("Elite#5", "100-199")]
+
+
+def test_replace_keeps_the_first_duplicate_override(win, monkeypatch):
+    # Same resolution order on the replace path: the row lookups would have used.
+    win._add_group_row("Elite#5", "1-50#10#60")
+    win._add_group_row("Elite#5", "1-50#20#90")
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: _elite_payload())
+    win._on_replace_from_site()
+    assert _group_rows(win) == [("Elite#5", "100-199#10#60")]
+
+
 def test_merge_leaves_a_group_the_site_no_longer_has(win, monkeypatch):
     win._add_group_row("Old#1", "1-9#2#30")
     monkeypatch.setattr(win, "_fetch_site_payload", lambda: _elite_payload())
