@@ -166,18 +166,51 @@ def test_replace_uses_site_bib_range_for_new_groups(win, monkeypatch):
     assert _group_rows(win) == [("Elite#5", "100-199")]
 
 
-def test_replace_keeps_existing_range_for_kept_group(win, monkeypatch):
-    # A group already present keeps its hand-tuned range instead of the site's.
+def _elite_payload(bib_from=100, bib_to=199) -> dict:
+    cat = {"id": 1, "name": "Elite", "laps": 5}
+    if bib_from is not None:
+        cat["bib_from"] = bib_from
+    if bib_to is not None:
+        cat["bib_to"] = bib_to
+    return {"participants": [], "categories": [cat]}
+
+
+def test_replace_updates_the_range_of_a_group_already_present(win, monkeypatch):
+    # The organizer moved the category's bibs on the site; a re-download has to
+    # follow, or "Get number" keeps handing out bibs from the old range.
+    win._add_group_row("Elite#5", "1-50")
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: _elite_payload())
+    win._on_replace_from_site()
+    assert _group_rows(win) == [("Elite#5", "100-199")]
+
+
+def test_replace_keeps_the_autoshift_override_of_a_kept_group(win, monkeypatch):
+    # Only the interval comes from the site; "#first#delay" is the referee's own.
+    win._add_group_row("Elite#5", "1-50#10#60")
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: _elite_payload())
+    win._on_replace_from_site()
+    assert _group_rows(win) == [("Elite#5", "100-199#10#60")]
+
+
+def test_replace_keeps_the_local_range_when_the_site_has_none(win, monkeypatch):
+    # A category without bib_from/bib_to says nothing about the range, so a
+    # hand-tuned local one must not be replaced by the default.
     win._add_group_row("Elite#5", "7-7")
-    payload = {
-        "participants": [],
-        "categories": [
-            {"id": 1, "name": "Elite", "laps": 5, "bib_from": 100, "bib_to": 199}
-        ],
-    }
-    monkeypatch.setattr(win, "_fetch_site_payload", lambda: payload)
+    monkeypatch.setattr(
+        win, "_fetch_site_payload", lambda: _elite_payload(bib_from=None, bib_to=None)
+    )
     win._on_replace_from_site()
     assert _group_rows(win) == [("Elite#5", "7-7")]
+
+
+def test_replace_falls_back_to_the_default_for_a_new_group_without_a_range(
+    win, monkeypatch
+):
+    monkeypatch.setattr(
+        win, "_fetch_site_payload", lambda: _elite_payload(bib_from=None, bib_to=None)
+    )
+    win._on_replace_from_site()
+    assert _group_rows(win) == [("Elite#5", mw.DEFAULT_NUMBER_RANGE)]
 
 
 def test_merge_uses_site_bib_range_for_new_groups(win, monkeypatch):
@@ -191,6 +224,48 @@ def test_merge_uses_site_bib_range_for_new_groups(win, monkeypatch):
     monkeypatch.setattr(win, "_fetch_site_payload", lambda: payload)
     win._on_merge_from_site()
     assert _group_rows(win) == [("Old#1", "1-9"), ("Elite#5", "100-199")]
+
+
+def test_merge_updates_the_range_of_a_group_already_present(win, monkeypatch):
+    win._add_group_row("Elite#5", "1-50")
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: _elite_payload())
+    win._on_merge_from_site()
+    assert _group_rows(win) == [("Elite#5", "100-199")]
+
+
+def test_merge_keeps_the_autoshift_override_of_an_existing_group(win, monkeypatch):
+    win._add_group_row("Elite#5", "1-50#10#60")
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: _elite_payload())
+    win._on_merge_from_site()
+    assert _group_rows(win) == [("Elite#5", "100-199#10#60")]
+
+
+def test_merge_keeps_the_local_range_when_the_site_has_none(win, monkeypatch):
+    win._add_group_row("Elite#5", "7-7")
+    monkeypatch.setattr(
+        win, "_fetch_site_payload", lambda: _elite_payload(bib_from=None, bib_to=None)
+    )
+    win._on_merge_from_site()
+    assert _group_rows(win) == [("Elite#5", "7-7")]
+
+
+def test_merge_counts_only_groups_it_added(win, monkeypatch):
+    # Refreshing a range is not adding a group; the message must not claim it is.
+    win._add_group_row("Elite#5", "1-50")
+    messages: list[str] = []
+    monkeypatch.setattr(
+        mw.QMessageBox, "information", lambda *a, **k: messages.append(a[2])
+    )
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: _elite_payload())
+    win._on_merge_from_site()
+    assert "0 new group(s)" in messages[0]
+
+
+def test_merge_leaves_a_group_the_site_no_longer_has(win, monkeypatch):
+    win._add_group_row("Old#1", "1-9#2#30")
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: _elite_payload())
+    win._on_merge_from_site()
+    assert _group_rows(win) == [("Old#1", "1-9#2#30"), ("Elite#5", "100-199")]
 
 
 # -- AutoShift keeps the form values a group range does not override ---------
