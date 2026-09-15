@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.2.3](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.2.2...v0.2.3) (2026-09-15)
+
+
+### Bug Fixes
+
+* rebase the autoshift first bib when the site moves the range ([1094ccc](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/1094ccc7e281c55bf01b9ababe9c887035ccdebe))
+* rebase the first bib only when the interval actually moved ([6792bad](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/6792bad44e0e8f613e3930d0288c3d7c64b08062))
+* refresh a group bib range from the site on every download ([6ae1e75](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/6ae1e757a1be1d69327110305b2e40e9e60ae18c))
+* refresh every row of a duplicated group, not just the last ([a0f4583](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/a0f4583db54466e1273ccd8e97a29f26718068f9))
+
+
+### Documentation
+
+* read the ci check status, not the empty conclusion field ([718eb5e](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/718eb5e16b6999943d644597dfdca25659ec083c))
+
 ## [0.2.2](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.2.1...v0.2.2) (2026-09-04)
 
 
