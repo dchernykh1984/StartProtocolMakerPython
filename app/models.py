@@ -518,20 +518,25 @@ def merge_number_range(site_range: str, local_range: str) -> str:
     suffix = local_range.split("#")[1:]
     if not suffix:
         return interval
-    suffix[0] = _rebased_first_number(interval, suffix[0])
+    if interval.strip() != local_range.split("#")[0].strip():
+        # Only a moved interval can strand the first bib. While it stands still, a
+        # first outside it is a deliberate offset (bib 101 starting one step after
+        # the previous group's 100) and must survive every download.
+        suffix[0] = _rebased_first_number(interval, suffix[0])
     return "#".join([interval, *suffix])
 
 
 def _rebased_first_number(interval: str, first: str) -> str:
-    """Keep an AutoShift ``first`` bib meaningful after the interval moved.
+    """Keep an AutoShift ``first`` bib meaningful after the interval has moved.
 
     ``auto_shift_time`` computes ``(number - first) * delay``, so a ``first`` left over
     from a renumbered category shifts the whole group by the distance between the old
     and the new bibs -- 1 kept against a new 101-150 range starts rider 101 an hour and
     forty minutes late at a 60s step. A ``first`` still inside the interval is a
-    deliberate offset and is kept; otherwise it falls back to the first bib. Blank and
-    non-numeric values are left alone: they disable the override, and turning one into
-    a live setting would change more than the interval.
+    deliberate offset and is kept; otherwise it falls back to the first bib. Called
+    only for an interval that actually changed. Blank and non-numeric values are left
+    alone: they disable the override, and turning one into a live setting would change
+    more than the interval.
     """
     low, high = _parse_number_range(interval)
     if low > high:

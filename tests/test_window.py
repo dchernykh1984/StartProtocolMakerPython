@@ -249,6 +249,15 @@ def test_merge_keeps_the_autoshift_override_of_an_existing_group(win, monkeypatc
     assert _group_rows(win) == [("Elite#5", "1-200#10#60")]
 
 
+def test_replace_keeps_a_deliberate_offset_when_the_range_did_not_move(
+    win, monkeypatch
+):
+    win._add_group_row("Elite#5", "101-150#100#60")
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: _elite_payload(101, 150))
+    win._on_replace_from_site()
+    assert _group_rows(win) == [("Elite#5", "101-150#100#60")]
+
+
 def test_merge_rebases_a_first_bib_left_outside_the_new_range(win, monkeypatch):
     win._add_group_row("Elite#5", "1-50#10#60")
     monkeypatch.setattr(win, "_fetch_site_payload", lambda: _elite_payload())

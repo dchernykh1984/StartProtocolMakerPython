@@ -459,6 +459,11 @@ class TestMergeNumberRange:
         # rider 90 steps late.
         assert merge_number_range("100-199", "1-50#10#60") == "100-199#100#60"
 
+    def test_first_bib_outside_an_unchanged_interval_is_kept(self) -> None:
+        # Bib 101 starting one 60s step after the previous group's bib 100 is a
+        # deliberate offset; a download that changes nothing must not undo it.
+        assert merge_number_range("101-150", "101-150#100#60") == "101-150#100#60"
+
     def test_partial_override_survives(self) -> None:
         assert merge_number_range("100-199", "1-50#10") == "100-199#100"
 
