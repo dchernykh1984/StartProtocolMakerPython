@@ -17,6 +17,7 @@ from app.models import (
     get_next_number,
     get_time_from_seconds,
     load_backup,
+    merge_number_range,
     parse_competitor_line,
     save_backup,
     write_start_protocol,
@@ -442,6 +443,33 @@ class TestBackup:
 # ---------------------------------------------------------------------------
 # write_start_protocol
 # ---------------------------------------------------------------------------
+
+
+class TestMergeNumberRange:
+    """The site owns the interval; the referee owns the AutoShift suffix."""
+
+    def test_site_range_replaces_the_local_interval(self) -> None:
+        assert merge_number_range("100-199", "1-50") == "100-199"
+
+    def test_local_override_survives_a_new_interval(self) -> None:
+        assert merge_number_range("100-199", "1-50#10#60") == "100-199#10#60"
+
+    def test_partial_override_survives(self) -> None:
+        assert merge_number_range("100-199", "1-50#10") == "100-199#10"
+
+    def test_empty_site_range_keeps_the_local_value(self) -> None:
+        # The category carries no bib range, so the site is saying nothing about it.
+        assert merge_number_range("", "1-50#10#60") == "1-50#10#60"
+
+    def test_empty_local_value_takes_the_site_range(self) -> None:
+        assert merge_number_range("100-199", "") == "100-199"
+
+    def test_both_empty(self) -> None:
+        assert merge_number_range("", "") == ""
+
+    def test_site_range_suffix_is_ignored(self) -> None:
+        # Defensive: only the interval is ever taken from the site.
+        assert merge_number_range("100-199#1#5", "1-50#10#60") == "100-199#10#60"
 
 
 class TestWriteStartProtocol:

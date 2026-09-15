@@ -40,6 +40,7 @@ from app.models import (
     get_next_number,
     get_time_from_seconds,
     load_backup,
+    merge_number_range,
     parse_competitor_line,
     participant_to_open_line,
     save_backup,
@@ -898,39 +899,56 @@ class MainWindow(QMainWindow):
     def _merge_groups_from_payload(self, data: dict) -> int:
         """Add site groups not already present; returns how many were added.
 
-        New groups take the site's bib range; existing groups keep their current range.
+        A group already in the list keeps its place but takes the site's bib range,
+        because the organizer may have moved or widened it since the last download;
+        its local AutoShift override survives (see ``merge_number_range``).
         """
-        present = set(self._group_texts())
+        rows = categories_to_group_rows(data.get("categories", []), default_range="")
+        existing = {
+            self._list_groups.item(i).text(): i
+            for i in range(self._list_groups.count())
+        }
         added = 0
-        for group_text, numbers_range in categories_to_group_rows(
-            data.get("categories", [])
-        ):
-            if group_text not in present:
-                present.add(group_text)
-                self._add_group_row(group_text, numbers_range)
+        for group_text, site_range in rows:
+            row = existing.get(group_text)
+            if row is None:
+                self._add_group_row(group_text, site_range or DEFAULT_NUMBER_RANGE)
+                existing[group_text] = self._list_groups.count() - 1
                 added += 1
+                continue
+            item = self._list_groups.item(row)
+            local_range = item.data(Qt.ItemDataRole.UserRole) or ""
+            item.setData(
+                Qt.ItemDataRole.UserRole,
+                merge_number_range(site_range, local_range) or DEFAULT_NUMBER_RANGE,
+            )
         return added
 
     def _replace_groups_from_payload(self, data: dict) -> int:
         """Replace the groups list with the site's groups.
 
-        A group that already exists keeps its current (possibly hand-tuned) range;
-        a new group takes the site's bib range. Called only with a successfully fetched
+        Every group takes the site's bib range, keeping only its local AutoShift
+        override (see ``merge_number_range``). Called only with a successfully fetched
         payload, so an empty ``categories`` legitimately clears the groups (a network
         or JSON error never reaches here -- ``_fetch_site_payload`` returns ``None``).
         """
-        incoming = categories_to_group_rows(data.get("categories", []))
+        incoming = categories_to_group_rows(
+            data.get("categories", []), default_range=""
+        )
         preserved = {
             self._list_groups.item(i).text(): (
-                self._list_groups.item(i).data(Qt.ItemDataRole.UserRole)
-                or DEFAULT_NUMBER_RANGE
+                self._list_groups.item(i).data(Qt.ItemDataRole.UserRole) or ""
             )
             for i in range(self._list_groups.count())
         }
         self._list_groups.clear()
         self._combo_group.clear()
-        for group_text, numbers_range in incoming:
-            self._add_group_row(group_text, preserved.get(group_text, numbers_range))
+        for group_text, site_range in incoming:
+            local_range = preserved.get(group_text, "")
+            self._add_group_row(
+                group_text,
+                merge_number_range(site_range, local_range) or DEFAULT_NUMBER_RANGE,
+            )
         return len(incoming)
 
     def _on_merge_from_site(self) -> None:

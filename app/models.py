@@ -503,6 +503,22 @@ def category_number_range(category: dict, default: str = DEFAULT_NUMBER_RANGE) -
     return f"{bib_from}-{bib_to}"
 
 
+def merge_number_range(site_range: str, local_range: str) -> str:
+    """Combine the site's bib range with the group's local start-shift override.
+
+    The interval belongs to the site: an organizer can widen or move a category's bibs
+    between downloads, and "Get number" has to follow. The optional ``#first#delay``
+    suffix is the referee's own AutoShift setting for that group and has to survive a
+    re-download. An empty ``site_range`` means the category carries no range at all, so
+    the local value is kept untouched rather than replaced by a made-up default.
+    """
+    if not site_range:
+        return local_range
+    interval = site_range.split("#")[0]
+    suffix = local_range.split("#")[1:]
+    return "#".join([interval, *suffix]) if suffix else interval
+
+
 def categories_to_group_rows(
     categories: list[dict], default_range: str = DEFAULT_NUMBER_RANGE
 ) -> list[tuple[str, str]]:
