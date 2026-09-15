@@ -516,7 +516,31 @@ def merge_number_range(site_range: str, local_range: str) -> str:
         return local_range
     interval = site_range.split("#")[0]
     suffix = local_range.split("#")[1:]
-    return "#".join([interval, *suffix]) if suffix else interval
+    if not suffix:
+        return interval
+    suffix[0] = _rebased_first_number(interval, suffix[0])
+    return "#".join([interval, *suffix])
+
+
+def _rebased_first_number(interval: str, first: str) -> str:
+    """Keep an AutoShift ``first`` bib meaningful after the interval moved.
+
+    ``auto_shift_time`` computes ``(number - first) * delay``, so a ``first`` left over
+    from a renumbered category shifts the whole group by the distance between the old
+    and the new bibs -- 1 kept against a new 101-150 range starts rider 101 an hour and
+    forty minutes late at a 60s step. A ``first`` still inside the interval is a
+    deliberate offset and is kept; otherwise it falls back to the first bib. Blank and
+    non-numeric values are left alone: they disable the override, and turning one into
+    a live setting would change more than the interval.
+    """
+    low, high = _parse_number_range(interval)
+    if low > high:
+        return first
+    try:
+        value = int(first.strip())
+    except ValueError:
+        return first
+    return first if low <= value <= high else str(low)
 
 
 def categories_to_group_rows(

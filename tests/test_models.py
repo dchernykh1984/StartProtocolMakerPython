@@ -451,11 +451,26 @@ class TestMergeNumberRange:
     def test_site_range_replaces_the_local_interval(self) -> None:
         assert merge_number_range("100-199", "1-50") == "100-199"
 
-    def test_local_override_survives_a_new_interval(self) -> None:
-        assert merge_number_range("100-199", "1-50#10#60") == "100-199#10#60"
+    def test_override_survives_when_the_first_bib_is_still_in_range(self) -> None:
+        assert merge_number_range("1-200", "1-50#10#60") == "1-200#10#60"
+
+    def test_first_bib_outside_the_new_range_is_rebased(self) -> None:
+        # (number - first) * delay: keeping 10 against 100-199 would start the first
+        # rider 90 steps late.
+        assert merge_number_range("100-199", "1-50#10#60") == "100-199#100#60"
 
     def test_partial_override_survives(self) -> None:
-        assert merge_number_range("100-199", "1-50#10") == "100-199#10"
+        assert merge_number_range("100-199", "1-50#10") == "100-199#100"
+
+    def test_blank_first_bib_is_left_alone(self) -> None:
+        # An empty part disables the override; it must not become a live setting.
+        assert merge_number_range("100-199", "1-50##60") == "100-199##60"
+
+    def test_non_numeric_first_bib_is_left_alone(self) -> None:
+        assert merge_number_range("100-199", "1-50#x#60") == "100-199#x#60"
+
+    def test_unparseable_interval_leaves_the_override_untouched(self) -> None:
+        assert merge_number_range("open", "1-50#10#60") == "open#10#60"
 
     def test_empty_site_range_keeps_the_local_value(self) -> None:
         # The category carries no bib range, so the site is saying nothing about it.
@@ -469,7 +484,7 @@ class TestMergeNumberRange:
 
     def test_site_range_suffix_is_ignored(self) -> None:
         # Defensive: only the interval is ever taken from the site.
-        assert merge_number_range("100-199#1#5", "1-50#10#60") == "100-199#10#60"
+        assert merge_number_range("100-199#1#5", "1-50#10#60") == "100-199#100#60"
 
 
 class TestWriteStartProtocol:
