@@ -562,8 +562,10 @@ class MainWindow(QMainWindow):
         self._btn_search.setText(f"Find ({len(lines)})")
 
     def _on_search_open(self) -> None:
-        self._update_open_scripts()
+        # The search itself refreshes the index; showing the scripts afterwards reads
+        # what it found rather than walking the list a second time.
         self._find_next(self._list_open, self._edit_search.text(), self._open_search)
+        self._show_open_scripts()
 
     def _on_search_save_as(self) -> None:
         self._find_next(
@@ -587,7 +589,7 @@ class MainWindow(QMainWindow):
             return
         # Indexing the list is what costs; refresh() re-reduces it only when the list
         # itself changed, so repeated searches walk the forms built once.
-        index.refresh([widget.item(i).text() for i in range(count)])
+        index.refresh([widget.item(row).text() for row in range(count)])
         forms = search_forms(query)
         start = widget.currentRow() + 1
         for offset in range(count):
@@ -599,9 +601,11 @@ class MainWindow(QMainWindow):
 
     def _update_open_scripts(self) -> None:
         """Index the pre-registration list, when it changed, and show its scripts."""
-        self._open_search.refresh(
-            [self._list_open.item(i).text() for i in range(self._list_open.count())]
-        )
+        self._open_search.refresh(self._open_items())
+        self._show_open_scripts()
+
+    def _show_open_scripts(self) -> None:
+        """Put what the index already knows on the debug line."""
         names = ", ".join(self._open_search.scripts)
         self._lbl_open_scripts.setText(f"Scripts in list: {names or '-'}")
 

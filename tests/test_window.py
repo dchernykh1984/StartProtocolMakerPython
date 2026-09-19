@@ -902,6 +902,17 @@ def test_scripts_line_on_an_empty_list(win):
     assert win._lbl_open_scripts.text() == "Scripts in list: -"
 
 
+def test_scripts_line_catches_up_on_the_next_search(win):
+    # The search refreshes the index anyway, so the line reports what it found even
+    # for a change that did not come through a load path.
+    _fill_open(win, "Petrov Ivan")
+    assert win._lbl_open_scripts.text() == "Scripts in list: Latin"
+    win._list_open.addItem(f"2#{_PETROV}#########")
+    win._edit_search.setText("Petrov")
+    win._on_search_open()
+    assert win._lbl_open_scripts.text() == "Scripts in list: Cyrillic, Latin"
+
+
 def test_scripts_line_follows_a_backup_load(win):
     data = _empty_backup()
     data["open_items"] = [f"1#{_DENIS_CHERNYKH}#########"]
