@@ -19,6 +19,7 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
 from app import main_window as mw
+from app import search as app_search
 
 _app = QApplication.instance() or QApplication([])
 
@@ -726,3 +727,183 @@ def test_closing_flushes_a_queued_auto_send(win, uploads, monkeypatch):
 
     win.closeEvent(_Event())
     assert len(uploads.calls) == 1
+
+
+# -- Transliteration-aware search ------------------------------------------
+
+# Cyrillic fixtures as escapes, to keep this file ASCII (see CLAUDE.md).
+_DEN = "\u0414\u0435\u043d"  # Den
+# Denis Chernykh
+_DENIS_CHERNYKH = "\u0414\u0435\u043d\u0438\u0441 \u0427\u0435\u0440\u043d\u044b\u0445"
+_PETROV = "\u041f\u0435\u0442\u0440\u043e\u0432 \u0418\u0432\u0430\u043d"  # Petrov Ivan
+
+
+def _line(number: str, name: str) -> str:
+    return f"{number}#{name}#Elite#5#1#1990#Team#City##0 00:00:00.000#"
+
+
+def _fill_open(win, *names: str) -> None:
+    win._list_open.clear()
+    for i, name in enumerate(names, start=1):
+        win._list_open.addItem(_line(str(i), name))
+    win._list_open.setCurrentRow(-1)
+    win._update_open_scripts()
+
+
+def test_search_finds_a_latin_rider_by_a_cyrillic_fragment(win):
+    # The example from the field: registered as "Denis Chernykh", looked up as "Den"
+    # typed in Cyrillic.
+    _fill_open(win, "Petrov Ivan", "Denis Chernykh")
+    win._edit_search.setText(_DEN)
+    win._on_search_open()
+    assert win._list_open.currentRow() == 1
+
+
+def test_search_finds_a_cyrillic_rider_by_a_latin_fragment(win):
+    _fill_open(win, "Petrov Ivan", _DENIS_CHERNYKH)
+    win._edit_search.setText("Chernykh")
+    win._on_search_open()
+    assert win._list_open.currentRow() == 1
+
+
+def test_search_still_finds_a_plain_substring(win):
+    _fill_open(win, "Petrov Ivan", "Denis Chernykh")
+    win._edit_search.setText("1990")
+    win._on_search_open()
+    assert win._list_open.currentRow() == 0
+
+
+def test_search_wraps_around_from_the_current_row(win):
+    # Find-next behaviour is unchanged: the search starts below the selection.
+    _fill_open(win, "Denis Chernykh", "Petrov Ivan", _DENIS_CHERNYKH)
+    win._edit_search.setText(_DEN)
+    win._on_search_open()
+    assert win._list_open.currentRow() == 0
+    win._on_search_open()
+    assert win._list_open.currentRow() == 2
+    win._on_search_open()
+    assert win._list_open.currentRow() == 0
+
+
+def test_search_reports_no_match_and_keeps_the_selection(win, monkeypatch):
+    shown: list[str] = []
+    monkeypatch.setattr(
+        mw.QMessageBox, "information", lambda *a, **k: shown.append(a[2])
+    )
+    _fill_open(win, "Denis Chernykh")
+    win._list_open.setCurrentRow(0)
+    win._edit_search.setText("Sidorov")
+    win._on_search_open()
+    assert shown == ["No matches found."]
+    assert win._list_open.currentRow() == 0
+
+
+def test_an_empty_query_does_nothing(win, monkeypatch):
+    monkeypatch.setattr(
+        mw.QMessageBox, "information", lambda *a, **k: pytest.fail("no dialog expected")
+    )
+    _fill_open(win, "Denis Chernykh")
+    win._edit_search.setText("")
+    win._on_search_open()
+    assert win._list_open.currentRow() == -1
+
+
+def test_searching_an_empty_list_reports_no_match(win, monkeypatch):
+    shown: list[str] = []
+    monkeypatch.setattr(
+        mw.QMessageBox, "information", lambda *a, **k: shown.append(a[2])
+    )
+    win._list_open.clear()
+    win._edit_search.setText(_DEN)
+    win._on_search_open()
+    assert shown == ["No matches found."]
+
+
+def test_the_protocol_search_transliterates_too(win):
+    win._list_save_as.addItem(_line("1", "Petrov Ivan"))
+    win._list_save_as.addItem(_line("2", "Denis Chernykh"))
+    win._list_save_as.setCurrentRow(-1)
+    win._edit_search_save_as.setText(_DEN)
+    win._on_search_save_as()
+    assert win._list_save_as.currentRow() == 1
+
+
+def test_a_search_after_a_site_load_sees_the_new_riders(win, monkeypatch):
+    _fill_open(win, "Petrov Ivan")
+    payload = {
+        "participants": [
+            {
+                "category_id": 1,
+                "category_name": "Elite",
+                "last_name": "Chernykh",
+                "first_name": "Denis",
+                "birth_year": 1990,
+                "team": "",
+                "city": "",
+            }
+        ],
+        "categories": [
+            {"id": 1, "name": "Elite", "laps": 5, "bib_from": 1, "bib_to": 50}
+        ],
+    }
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: payload)
+    win._on_replace_from_site()
+    win._list_open.setCurrentRow(-1)
+    win._edit_search.setText(_DEN)
+    win._on_search_open()
+    assert win._list_open.currentRow() == 0
+
+
+# -- The list is reduced once per change, the query on every search ---------
+
+
+def test_the_list_is_reduced_only_when_it_changes(win, monkeypatch):
+    calls: list[str] = []
+    real = app_search.search_forms
+
+    def counting(text: str):
+        calls.append(text)
+        return real(text)
+
+    # Patched on the module the index reaches through, not on the name main_window
+    # imported -- so this counts list reductions, not query reductions.
+    monkeypatch.setattr(app_search, "search_forms", counting)
+    _fill_open(win, "Petrov Ivan", "Denis Chernykh")
+    assert len(calls) == 2  # indexed once, on the change
+
+    win._edit_search.setText(_DEN)
+    win._on_search_open()
+    win._on_search_open()
+    assert len(calls) == 2  # two more searches, no re-reduction
+
+    win._list_open.addItem(_line("3", "Sidorov Ivan"))
+    win._on_search_open()
+    assert len(calls) == 5  # the list changed, so all three lines were reduced
+
+
+# -- The scripts line under the pre-registration list ----------------------
+
+
+def test_scripts_line_names_both_scripts(win):
+    _fill_open(win, "Denis Chernykh", _DENIS_CHERNYKH)
+    assert win._lbl_open_scripts.text() == "Scripts in list: Cyrillic, Latin"
+
+
+def test_scripts_line_names_one_script(win):
+    # No Latin anywhere in the line, not even in the group or the team.
+    win._list_open.clear()
+    win._list_open.addItem(f"1#{_PETROV}#########")
+    win._update_open_scripts()
+    assert win._lbl_open_scripts.text() == "Scripts in list: Cyrillic"
+
+
+def test_scripts_line_on_an_empty_list(win):
+    _fill_open(win)
+    assert win._lbl_open_scripts.text() == "Scripts in list: -"
+
+
+def test_scripts_line_follows_a_backup_load(win):
+    data = _empty_backup()
+    data["open_items"] = [f"1#{_DENIS_CHERNYKH}#########"]
+    win._fill_from_backup(data)
+    assert win._lbl_open_scripts.text() == "Scripts in list: Cyrillic"

@@ -47,6 +47,7 @@ from app.models import (
     write_start_protocol,
 )
 from app.paths import app_path
+from app.search import SearchIndex, search_forms
 
 _BACKUP_FOLDER = "data"
 _BACKUP_FILENAME = "spm_backup.txt"
@@ -80,6 +81,8 @@ class MainWindow(QMainWindow):
         self._client_revision: int = 0
         self._auto_send_pending: bool = False
         self._typed_first_number: str = ""
+        self._open_search = SearchIndex()
+        self._save_as_search = SearchIndex()
         self._typed_delay: str = ""
         self._auto_send_suspended: bool = False
         self._auto_send_timer = QTimer(self)
@@ -118,6 +121,11 @@ class MainWindow(QMainWindow):
         self._list_open.setMinimumWidth(350)
         self._list_open.itemDoubleClicked.connect(self._on_edit_open)
         left.addWidget(self._list_open)
+
+        # Which scripts the list actually holds -- the search transliterates between
+        # them, and this is how a referee sees what it had to work with.
+        self._lbl_open_scripts = QLabel()
+        left.addWidget(self._lbl_open_scripts)
 
         row2 = QHBoxLayout()
         self._btn_edit_open = QPushButton("Edit ->")
@@ -501,6 +509,7 @@ class MainWindow(QMainWindow):
     def _fill_from_backup(self, data: dict) -> None:
         self._list_open.clear()
         self._list_open.addItems(data["open_items"])
+        self._update_open_scripts()
         self._list_save_as.clear()
         self._list_save_as.addItems(data["save_items"])
         self._list_groups.clear()
@@ -549,41 +558,52 @@ class MainWindow(QMainWindow):
             lines = []
         self._list_open.clear()
         self._list_open.addItems(lines)
+        self._update_open_scripts()
         self._btn_search.setText(f"Find ({len(lines)})")
 
     def _on_search_open(self) -> None:
-        term = self._edit_search.text().lower()
-        if not term:
+        self._update_open_scripts()
+        self._find_next(self._list_open, self._edit_search.text(), self._open_search)
+
+    def _on_search_save_as(self) -> None:
+        self._find_next(
+            self._list_save_as,
+            self._edit_search_save_as.text(),
+            self._save_as_search,
+        )
+
+    def _find_next(self, widget: QListWidget, query: str, index: SearchIndex) -> None:
+        """Select the next line matching query, wrapping around, as before.
+
+        Only the test for a match changed: a line counts when the query appears in it
+        as typed, or in either transliteration (see app.search), so a rider entered as
+        "Denis Chernykh" is found by a Cyrillic fragment and the other way round.
+        """
+        if not query:
             return
-        count = self._list_open.count()
+        count = widget.count()
         if count == 0:
             QMessageBox.information(self, "Search", "No matches found.")
             return
-        start = self._list_open.currentRow() + 1
+        # Indexing the list is what costs; refresh() re-reduces it only when the list
+        # itself changed, so repeated searches walk the forms built once.
+        index.refresh([widget.item(i).text() for i in range(count)])
+        forms = search_forms(query)
+        start = widget.currentRow() + 1
         for offset in range(count):
             idx = (start + offset) % count
-            item = self._list_open.item(idx)
-            if item and term in item.text().lower():
-                self._list_open.setCurrentRow(idx)
+            if index.matches(idx, forms):
+                widget.setCurrentRow(idx)
                 return
         QMessageBox.information(self, "Search", "No matches found.")
 
-    def _on_search_save_as(self) -> None:
-        term = self._edit_search_save_as.text().lower()
-        if not term:
-            return
-        count = self._list_save_as.count()
-        if count == 0:
-            QMessageBox.information(self, "Search", "No matches found.")
-            return
-        start = self._list_save_as.currentRow() + 1
-        for offset in range(count):
-            idx = (start + offset) % count
-            item = self._list_save_as.item(idx)
-            if item and term in item.text().lower():
-                self._list_save_as.setCurrentRow(idx)
-                return
-        QMessageBox.information(self, "Search", "No matches found.")
+    def _update_open_scripts(self) -> None:
+        """Index the pre-registration list, when it changed, and show its scripts."""
+        self._open_search.refresh(
+            [self._list_open.item(i).text() for i in range(self._list_open.count())]
+        )
+        names = ", ".join(self._open_search.scripts)
+        self._lbl_open_scripts.setText(f"Scripts in list: {names or '-'}")
 
     def _on_edit_open(self) -> None:
         if self._list_open.currentItem():
@@ -969,6 +989,7 @@ class MainWindow(QMainWindow):
                 existing_keys.add(key)
                 added += 1
         added_groups = self._merge_groups_from_payload(data)
+        self._update_open_scripts()
         self._save_all_data()
         QMessageBox.information(
             self,
@@ -995,6 +1016,7 @@ class MainWindow(QMainWindow):
             return
         self._list_open.clear()
         self._list_open.addItems(lines)
+        self._update_open_scripts()
         self._save_all_data()
         QMessageBox.information(
             self,
