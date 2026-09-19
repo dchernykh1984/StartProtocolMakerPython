@@ -162,11 +162,15 @@ class TestScriptsIn:
     def test_both(self) -> None:
         assert scripts_in("Denis " + CHERNYKH) == {"Cyrillic", "Latin"}
 
+    def test_accented_latin_is_latin(self) -> None:
+        assert scripts_in("Jos\u00e9") == {"Latin"}
+
     def test_digits_and_punctuation_are_not_a_script(self) -> None:
         assert scripts_in("12#5#1990#") == set()
 
-    def test_another_script_is_named_too(self) -> None:
-        assert scripts_in("\u03b1\u03b2") == {"Greek"}
+    def test_anything_else_is_reported_as_other(self) -> None:
+        # Greek here; the search cannot transliterate it, and says so.
+        assert scripts_in("\u03b1\u03b2") == {"Other"}
 
 
 class TestSearchIndex:
