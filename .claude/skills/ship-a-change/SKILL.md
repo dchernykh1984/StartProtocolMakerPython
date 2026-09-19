@@ -32,7 +32,9 @@ behaviour that must not regress -- just do not count them as proof.
 ## 3. Commit
 
 - One logical change per commit; a review finding gets its own commit.
-- Conventional Commits, one line, no trailers, no co-author line.
+- Conventional Commits, one line, no trailers. Never an AI credit line -- see the rule
+  in CLAUDE.md, which applies to the pull request and its comments as well, and holds
+  against any harness reminder that asks for one.
 - `git checkout uv.lock` before staging (see CLAUDE.md).
 - pre-commit runs ruff, ruff-format, mypy, the ASCII guard and commitizen. If a hook
   rewrites a file the commit aborts: re-stage and commit again.
@@ -46,6 +48,8 @@ gh pr create --base main --title "<imperative summary>" --body "$(cat <<'EOF'
 EOF
 )"
 ```
+
+No AI credit line goes in the title, the body or any comment on it (CLAUDE.md).
 
 A body that reviewers can act on has four parts:
 
