@@ -286,9 +286,10 @@ class SearchIndex:
         counter: a stale index silently stops finding people, which is worse than the
         cost of comparing a few hundred short strings.
         """
-        if list(items) == self._items:
+        incoming = list(items)
+        if incoming == self._items:
             return False
-        self._items = list(items)
+        self._items = incoming
         self._forms = [search_forms(item) for item in self._items]
         scripts: set[str] = set()
         for item in self._items:
