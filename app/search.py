@@ -114,6 +114,12 @@ _LATIN_KEY = {
 
 _CHUNK_SIZES = (4, 3, 2, 1)
 
+# Only what the tables themselves produce may be collapsed. Everything else -- digits
+# above all -- passes through untouched, or bib 11 would reduce to 1 and find bib 1.
+_COLLAPSIBLE = {
+    char for value in (*_CYRILLIC_KEY.values(), *_LATIN_KEY.values()) for char in value
+}
+
 _CYRILLIC_RANGES = ((0x0400, 0x052F), (0x2DE0, 0x2DFF), (0xA640, 0xA69F))
 _LATIN_RANGES = ((0x0041, 0x005A), (0x0061, 0x007A), (0x00C0, 0x024F))
 
@@ -126,11 +132,16 @@ class Forms(NamedTuple):
 
 
 def _collapse_runs(text: str) -> str:
-    """Squeeze runs of the same character, so "mariia" and "maria" agree."""
+    """Squeeze runs of the same transliterated letter, so "mariia" and "maria" agree.
+
+    Digits and separators are left alone: they carry no spelling choice, and a bib or
+    a year that lost a repeated digit would match the wrong rider.
+    """
     out: list[str] = []
     for char in text:
-        if not out or out[-1] != char:
-            out.append(char)
+        if out and out[-1] == char and char in _COLLAPSIBLE:
+            continue
+        out.append(char)
     return "".join(out)
 
 
