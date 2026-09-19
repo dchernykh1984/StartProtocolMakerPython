@@ -72,6 +72,15 @@ class TestSearchKey:
         # What lets "mariia" meet "maria".
         assert search_key("Anna") == "ana"
 
+    def test_repeated_digits_do_not_collapse(self) -> None:
+        # A bib that lost a digit would find the wrong rider.
+        assert search_key("11") == "11"
+        assert search_key("1988") == "1988"
+        assert search_key("100") == "100"
+
+    def test_repeated_separators_do_not_collapse(self) -> None:
+        assert search_key("1##Elite") == "1##elite"
+
     def test_empty(self) -> None:
         assert search_key("") == ""
 
@@ -135,6 +144,22 @@ class TestFormsMatch:
 
     def test_a_number_still_matches(self) -> None:
         assert forms_match(self.LINE, search_forms("1990")) is True
+
+    def test_a_bib_does_not_match_a_shorter_one(self) -> None:
+        assert (
+            forms_match(search_forms("1#Ivanov Ivan#Elite#"), search_forms("11"))
+            is False
+        )
+        assert (
+            forms_match(search_forms("11#Petrov Ivan#Elite#"), search_forms("11"))
+            is True
+        )
+
+    def test_a_year_does_not_match_a_shorter_one(self) -> None:
+        assert (
+            forms_match(search_forms("1#Ivanov#Elite#5#1#1980##"), search_forms("1988"))
+            is False
+        )
 
     def test_an_exact_substring_still_matches(self) -> None:
         assert forms_match(self.LINE, search_forms("#Elite#")) is True

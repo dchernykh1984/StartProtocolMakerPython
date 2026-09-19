@@ -773,6 +773,18 @@ def test_search_still_finds_a_plain_substring(win):
     assert win._list_open.currentRow() == 0
 
 
+def test_searching_a_bib_does_not_select_a_shorter_one(win):
+    # The reduction must not touch digits: bib 11 is not bib 1.
+    win._list_open.clear()
+    win._list_open.addItem(_line("1", "Ivanov Ivan"))
+    win._list_open.addItem(_line("11", "Petrov Ivan"))
+    win._list_open.setCurrentRow(-1)
+    win._update_open_scripts()
+    win._edit_search.setText("11")
+    win._on_search_open()
+    assert win._list_open.currentRow() == 1
+
+
 def test_search_wraps_around_from_the_current_row(win):
     # Find-next behaviour is unchanged: the search starts below the selection.
     _fill_open(win, "Denis Chernykh", "Petrov Ivan", _DENIS_CHERNYKH)
