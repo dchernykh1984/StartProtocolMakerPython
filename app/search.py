@@ -23,6 +23,7 @@ non-ASCII bytes in source files (see CLAUDE.md).
 
 from __future__ import annotations
 
+import unicodedata
 from collections.abc import Sequence
 from typing import NamedTuple
 
@@ -67,6 +68,17 @@ _CYRILLIC_KEY = {
     "\u044d": "e",
     "\u044e": "iu",
     "\u044f": "ia",
+    # Kazakh, and the letters Uzbek and Tajik share with it. They sound like
+    # the Russian letter a speller would reach for, so they share its key.
+    "\u04d9": "a",
+    "\u0493": "g",
+    "\u049b": "k",
+    "\u04a3": "n",
+    "\u04e9": "o",
+    "\u04b1": "u",
+    "\u04af": "u",
+    "\u04bb": "h",
+    "\u04b3": "h",
 }
 
 # Latin sequence -> search key, longest match first, so "shch" wins over "sh" and "kh"
@@ -109,6 +121,20 @@ _LATIN_KEY = {
     "w": "v",
     "x": "ks",
     "y": "i",
+    # Kazakh and Turkish Latin: dropping the mark would lose the sound, and the
+    # Cyrillic letters they stand for are digraphs here.
+    "\u015f": "sh",
+    "\u00e7": "ch",
+    # Latin letters with no combining mark to strip: a bar, a slash or a
+    # ligature is part of the letter, so each needs its own entry.
+    "\u0131": "i",
+    "\u00f8": "o",
+    "\u0142": "l",
+    "\u0111": "d",
+    "\u00f0": "d",
+    "\u00e6": "ae",
+    "\u0153": "oe",
+    "\u00df": "ss",
     "z": "z",
 }
 
@@ -145,6 +171,43 @@ def _collapse_runs(text: str) -> str:
     return "".join(out)
 
 
+def _strip_marks(text: str) -> str:
+    """Drop combining marks, so an accented letter reaches its plain entry.
+
+    The Latin alphabet Kazakhstan moved to writes Gibadat as "Gibadat" with a breve,
+    and a Spanish or Turkish name arrives accented too; decomposing and dropping the
+    marks lands all of them on the ASCII table. Cyrillic letters that decompose (short
+    i, yo, the Ukrainian yi) reach the same key this way that their own entries give.
+    """
+    return "".join(
+        char
+        for char in unicodedata.normalize("NFD", text)
+        if not unicodedata.combining(char)
+    )
+
+
+def _key_for_char(char: str) -> str:
+    """The key for one character the tables do not spell out.
+
+    A letter the tables know is used as it is. Otherwise the marks come off and the
+    tables are asked again, which is how an accented Latin letter reaches its plain
+    entry and how Cyrillic letters that decompose (short i, yo, the Ukrainian yi) land
+    on the same key their own entries give. Anything still unknown passes through, so
+    a script this module cannot read at least keeps matching itself.
+    """
+    mapped = _CYRILLIC_KEY.get(char)
+    if mapped is not None:
+        return mapped
+    base = _strip_marks(char)
+    if base == char:
+        return char
+    for table in (_LATIN_KEY, _CYRILLIC_KEY):
+        mapped = table.get(base)
+        if mapped is not None:
+            return mapped
+    return base
+
+
 def search_key(text: str) -> str:
     """Reduce text to the coarse spelling two scripts can be compared in."""
     lowered = text.lower()
@@ -158,8 +221,7 @@ def search_key(text: str) -> str:
                 position += size
                 break
         else:
-            char = lowered[position]
-            out.append(_CYRILLIC_KEY.get(char, char))
+            out.append(_key_for_char(lowered[position]))
             position += 1
     return _collapse_runs("".join(out))
 
