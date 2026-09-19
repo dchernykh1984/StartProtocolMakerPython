@@ -8,11 +8,16 @@ either.
 
 Both sides are therefore reduced to one **search key**: a coarse Latin spelling in
 which the letters a speller has a choice about land on the same result. The i-like
-letters (i, y, j and Cyrillic i, iy, yeru, and the Ukrainian ones) all become ``i``;
+letters (i, y, j and the Cyrillic i, short i, yeru and dotted i) all become ``i``;
 "kh" and Cyrillic kha both become ``h``; the iotated vowels become ``ia`` and ``iu``,
 which is what "ya" and "yu" reduce to anyway; and a run of the same letter collapses,
 so "mariia" and "maria" meet. A line also keeps its text as typed, so an exact
 substring still matches exactly as it did before this existed.
+
+The alphabets covered are the ones these races are run in: Kazakh, Russian and Latin,
+including the Latin alphabet Kazakhstan is moving to. Other Cyrillic alphabets are
+deliberately absent -- a letter with no entry still matches itself, and adding one is
+a single line when a race needs it.
 
 Building keys for a whole list is the expensive half, so :class:`SearchIndex` does it
 once per change of that list; the query is reduced on every search.
@@ -34,16 +39,13 @@ _CYRILLIC_KEY = {
     "\u0431": "b",
     "\u0432": "v",
     "\u0433": "g",
-    "\u0491": "g",
     "\u0434": "d",
     "\u0435": "e",
     "\u0451": "e",
-    "\u0454": "e",
     "\u0436": "zh",
     "\u0437": "z",
     "\u0438": "i",
     "\u0456": "i",
-    "\u0457": "i",
     "\u0439": "i",
     "\u044b": "i",
     "\u043a": "k",
@@ -56,7 +58,6 @@ _CYRILLIC_KEY = {
     "\u0441": "s",
     "\u0442": "t",
     "\u0443": "u",
-    "\u045e": "u",
     "\u0444": "f",
     "\u0445": "h",
     "\u0446": "ts",
@@ -68,8 +69,8 @@ _CYRILLIC_KEY = {
     "\u044d": "e",
     "\u044e": "iu",
     "\u044f": "ia",
-    # Kazakh, and the letters Uzbek and Tajik share with it. They sound like
-    # the Russian letter a speller would reach for, so they share its key.
+    # Kazakh. Each sounds like the Russian letter a speller would reach for, so it
+    # shares that letter's key.
     "\u04d9": "a",
     "\u0493": "g",
     "\u049b": "k",
@@ -78,7 +79,6 @@ _CYRILLIC_KEY = {
     "\u04b1": "u",
     "\u04af": "u",
     "\u04bb": "h",
-    "\u04b3": "h",
 }
 
 # Latin sequence -> search key, longest match first, so "shch" wins over "sh" and "kh"
@@ -177,7 +177,7 @@ def _strip_marks(text: str) -> str:
     The Latin alphabet Kazakhstan moved to writes Gibadat as "Gibadat" with a breve,
     and a Spanish or Turkish name arrives accented too; decomposing and dropping the
     marks lands all of them on the ASCII table. Cyrillic letters that decompose (short
-    i, yo, the Ukrainian yi) reach the same key this way that their own entries give.
+    i and yo) reach the same key this way that their own entries give.
     """
     return "".join(
         char
@@ -191,8 +191,8 @@ def _key_for_char(char: str) -> str:
 
     A letter the tables know is used as it is. Otherwise the marks come off and the
     tables are asked again, which is how an accented Latin letter reaches its plain
-    entry and how Cyrillic letters that decompose (short i, yo, the Ukrainian yi) land
-    on the same key their own entries give. Anything still unknown passes through, so
+    entry and how Cyrillic letters that decompose (short i and yo) land on the same key
+    their own entries give. Anything still unknown passes through, so
     a script this module cannot read at least keeps matching itself.
     """
     mapped = _CYRILLIC_KEY.get(char)
