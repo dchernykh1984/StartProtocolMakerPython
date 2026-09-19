@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.3.0](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.2.3...v0.3.0) (2026-09-19)
+
+
+### Features
+
+* cover the kazakh alphabet and accented latin in search ([059057d](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/059057d4ccf6f644618a9e77eb0aae1705fde23e))
+* find riders by transliteration in either direction ([ed8d6be](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/ed8d6be6c8d4f967593df2729da9d899c6eb2f66))
+
+
+### Bug Fixes
+
+* call an accented latin letter latin on the debug line ([b78056b](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/b78056b4efebd5fcdb1076c48340667180d36b5c))
+* keep digits out of the run collapsing so bib 11 is not bib 1 ([0b1dab4](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/0b1dab43e658fde602e585666c8e29c96e1a5ee3))
+* match a name across its alternative latin spellings ([07fdaa3](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/07fdaa3e2e74d948bf38ebfbc81362769ab64062))
+* name only the scripts the debug line can tell apart ([4e43333](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/4e433339a4007e50abb7e979eb75da395e5b0441))
+
+
+### Documentation
+
+* forbid ai credit lines in commits, prs and comments ([05828b6](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/05828b6032755d7de9f0b1ba490da1d9814e3919))
+
 ## [0.2.3](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.2.2...v0.2.3) (2026-09-15)
 
 
