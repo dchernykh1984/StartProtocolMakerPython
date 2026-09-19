@@ -147,7 +147,6 @@ _COLLAPSIBLE = {
 }
 
 _CYRILLIC_RANGES = ((0x0400, 0x052F), (0x2DE0, 0x2DFF), (0xA640, 0xA69F))
-_LATIN_RANGES = ((0x0041, 0x005A), (0x0061, 0x007A), (0x00C0, 0x024F))
 
 
 class Forms(NamedTuple):
@@ -248,16 +247,20 @@ def scripts_in(text: str) -> set[str]:
     Only the two the search actually transliterates between are named; any other
     letter is reported as "Other", which is honest about what this can tell apart
     and still shows the referee that something unexpected is in the list.
+
+    A letter counts as Latin when the reduction can reach it -- through its own entry
+    or by dropping its marks -- rather than by sitting in a fixed block, so an
+    accented letter is not reported as unreadable when the search reads it fine.
     """
     found: set[str] = set()
     for char in text:
         if not char.isalpha():
             continue
         code = ord(char)
-        if any(low <= code <= high for low, high in _LATIN_RANGES):
-            found.add("Latin")
-        elif any(low <= code <= high for low, high in _CYRILLIC_RANGES):
+        if any(low <= code <= high for low, high in _CYRILLIC_RANGES):
             found.add("Cyrillic")
+        elif char in _LATIN_KEY or _strip_marks(char).isascii():
+            found.add("Latin")
         else:
             found.add("Other")
     return found

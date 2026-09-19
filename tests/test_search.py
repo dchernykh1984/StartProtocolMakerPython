@@ -81,6 +81,11 @@ class TestSearchKey:
     def test_repeated_separators_do_not_collapse(self) -> None:
         assert search_key("1##Elite") == "1##elite"
 
+    def test_an_unreadable_letter_passes_through(self) -> None:
+        # Greek alpha with tonos: the marks come off, and the bare letter is in no
+        # table, so it stands for itself and at least keeps matching itself.
+        assert search_key("\u03ac") == "\u03b1"
+
     def test_empty(self) -> None:
         assert search_key("") == ""
 
@@ -268,6 +273,17 @@ class TestScriptsIn:
     def test_anything_else_is_reported_as_other(self) -> None:
         # Greek here; the search cannot transliterate it, and says so.
         assert scripts_in("\u03b1\u03b2") == {"Other"}
+
+    def test_a_letter_the_search_can_read_is_not_called_other(self) -> None:
+        # Vietnamese e with circumflex and tilde: outside the Latin blocks a range
+        # check would cover, but the reduction handles it, so the line must not
+        # claim the search cannot read this rider.
+        assert scripts_in("Nguy\u1ec5n") == {"Latin"}
+        assert search_key("Nguy\u1ec5n") == "nguien"
+
+    def test_a_letter_with_no_mark_to_strip_is_latin(self) -> None:
+        assert scripts_in("Almat\u0131") == {"Latin"}
+        assert scripts_in("Stra\u00dfe") == {"Latin"}
 
 
 class TestSearchIndex:
