@@ -8,85 +8,105 @@ from __future__ import annotations
 
 from typing import ClassVar
 
+import pytest
+
 from app.search import (
     Forms,
     SearchIndex,
     forms_match,
     scripts_in,
     search_forms,
-    transliterate_to_cyrillic,
-    transliterate_to_latin,
+    search_key,
 )
 
-DEN = "\u0414\u0435\u043d"
-CHERNYKH = "\u0427\u0435\u0440\u043d\u044b\u0445"
+DEN = "\u0414\u0435\u043d"  # Den
+CHERNYKH = "\u0427\u0435\u0440\u043d\u044b\u0445"  # Chernykh
+# Denis Chernykh
 DENIS_CHERNYKH = "\u0414\u0435\u043d\u0438\u0441 \u0427\u0435\u0440\u043d\u044b\u0445"
-IGOR = "\u0418\u0433\u043e\u0440\u044c"
-ALYONA = "\u0410\u043b\u0451\u043d\u0430"
-ALENA = "\u0410\u043b\u0435\u043d\u0430"
-SOFT = "\u044c"
-SHCHUKIN = "\u0429\u0443\u043a\u0438\u043d"
-TSVET = "\u0426\u0432\u0435\u0442"
-ZHUK = "\u0416\u0443\u043a"
+MARIA = "\u041c\u0430\u0440\u0438\u044f"  # Maria
+SERGEY = "\u0421\u0435\u0440\u0433\u0435\u0439"  # Sergey
+DMITRY = "\u0414\u043c\u0438\u0442\u0440\u0438\u0439"  # Dmitry
+YULIA = "\u042e\u043b\u0438\u044f"  # Yulia
+NIKOLAY = "\u041d\u0438\u043a\u043e\u043b\u0430\u0439"  # Nikolay
+EVGENY = "\u0415\u0432\u0433\u0435\u043d\u0438\u0439"  # Evgeny
+SHCHUKIN = "\u0429\u0443\u043a\u0438\u043d"  # Shchukin
+TSVET = "\u0426\u0432\u0435\u0442"  # Tsvet
+ZHUK = "\u0416\u0443\u043a"  # Zhuk
+IGOR = "\u0418\u0433\u043e\u0440\u044c"  # Igor with a soft sign
+SOFT = "\u044c"  # a lone soft sign
+ALYONA = "\u0410\u043b\u0451\u043d\u0430"  # Alyona, with yo
+ALENA = "\u0410\u043b\u0435\u043d\u0430"  # Alena, with ye
+PETROV = "\u041f\u0435\u0442\u0440\u043e\u0432 \u0418\u0432\u0430\u043d"  # Petrov Ivan
 
 
-class TestTransliterateToLatin:
-    def test_a_cyrillic_name(self) -> None:
-        assert transliterate_to_latin(CHERNYKH) == "chernykh"
+class TestSearchKey:
+    def test_a_cyrillic_name_reduces_to_latin(self) -> None:
+        assert search_key(CHERNYKH) == "chernih"
+
+    def test_the_latin_spelling_reduces_to_the_same_key(self) -> None:
+        assert search_key("Chernykh") == search_key(CHERNYKH)
+
+    def test_a_spelling_without_the_k_reduces_to_the_same_key(self) -> None:
+        # Both "kh" and a bare "h" stand for the same Cyrillic letter.
+        assert search_key("Chernyh") == search_key(CHERNYKH)
 
     def test_digraphs(self) -> None:
-        assert transliterate_to_latin(SHCHUKIN) == "shchukin"
-        assert transliterate_to_latin(TSVET) == "tsvet"
-        assert transliterate_to_latin(ZHUK) == "zhuk"
+        assert search_key(SHCHUKIN) == "schukin"
+        assert search_key("Shchukin") == "schukin"
+        assert search_key(TSVET) == "tsvet"
+        assert search_key(ZHUK) == "zhuk"
 
-    def test_latin_text_is_only_lowercased(self) -> None:
-        assert transliterate_to_latin("Denis Chernykh") == "denis chernykh"
+    def test_latin_text_is_reduced_too(self) -> None:
+        assert search_key("Denis") == "denis"
 
     def test_punctuation_and_digits_survive(self) -> None:
-        assert transliterate_to_latin("12#" + DEN + "#5") == "12#den#5"
+        assert search_key("12#Den#5") == "12#den#5"
 
     def test_soft_sign_disappears(self) -> None:
-        assert transliterate_to_latin(IGOR) == "igor"
+        assert search_key(IGOR) == "igor"
+
+    def test_yo_and_ye_reduce_together(self) -> None:
+        assert search_key(ALYONA) == search_key(ALENA)
+
+    def test_runs_of_one_letter_collapse(self) -> None:
+        # What lets "mariia" meet "maria".
+        assert search_key("Anna") == "ana"
 
     def test_empty(self) -> None:
-        assert transliterate_to_latin("") == ""
+        assert search_key("") == ""
 
 
-class TestTransliterateToCyrillic:
-    def test_a_latin_name(self) -> None:
-        assert transliterate_to_cyrillic("Chernykh") == CHERNYKH.lower()
+class TestAlternativeSpellings:
+    """One name, several Latin spellings: all of them have to meet."""
 
-    def test_longest_digraph_wins(self) -> None:
-        # "kh" must beat "k" then "h", and "shch" must beat "sh".
-        assert transliterate_to_cyrillic("Shchukin") == SHCHUKIN.lower()
-
-    def test_cyrillic_text_is_only_lowercased(self) -> None:
-        assert transliterate_to_cyrillic(DEN) == DEN.lower()
-
-    def test_yo_and_ye_fold_together(self) -> None:
-        # One spelling has to compare equal to the other, or a search for the plain
-        # spelling misses the rider entered with the dots.
-        assert transliterate_to_cyrillic(ALYONA) == transliterate_to_cyrillic(ALENA)
-
-    def test_punctuation_and_digits_survive(self) -> None:
-        assert transliterate_to_cyrillic("12#Den#5") == "12#" + DEN.lower() + "#5"
-
-    def test_empty(self) -> None:
-        assert transliterate_to_cyrillic("") == ""
+    @pytest.mark.parametrize(
+        ("cyrillic", "spellings"),
+        [
+            (MARIA, ["Maria", "Mariya", "Mariia"]),
+            (SERGEY, ["Sergey", "Sergei", "Sergej"]),
+            (DMITRY, ["Dmitry", "Dmitriy", "Dmitrii"]),
+            (YULIA, ["Yulia", "Iuliia", "Julia"]),
+            (NIKOLAY, ["Nikolay", "Nikolai"]),
+            (EVGENY, ["Evgeny", "Yevgeniy", "Evgenii"]),
+        ],
+    )
+    def test_every_spelling_reduces_to_the_cyrillic_key(
+        self, cyrillic: str, spellings: list[str]
+    ) -> None:
+        for spelling in spellings:
+            assert search_key(spelling) == search_key(cyrillic), spelling
 
 
 class TestSearchForms:
-    def test_three_forms_of_a_latin_line(self) -> None:
+    def test_keeps_the_text_as_typed_and_the_key(self) -> None:
         forms = search_forms("Denis")
         assert forms.plain == "denis"
-        assert forms.latin == "denis"
-        assert forms.cyrillic == transliterate_to_cyrillic("denis")
+        assert forms.key == search_key("Denis")
 
-    def test_three_forms_of_a_cyrillic_line(self) -> None:
+    def test_a_cyrillic_line(self) -> None:
         forms = search_forms(DEN)
         assert forms.plain == DEN.lower()
-        assert forms.latin == "den"
-        assert forms.cyrillic == DEN.lower()
+        assert forms.key == "den"
 
 
 class TestFormsMatch:
@@ -107,21 +127,26 @@ class TestFormsMatch:
     def test_cyrillic_fragment_finds_a_cyrillic_line(self) -> None:
         assert forms_match(self.CYRILLIC_LINE, search_forms(CHERNYKH)) is True
 
+    def test_an_alternative_spelling_finds_the_line(self) -> None:
+        assert forms_match(self.CYRILLIC_LINE, search_forms("Chernyh")) is True
+
     def test_case_is_ignored(self) -> None:
         assert forms_match(self.LINE, search_forms("CHERNYKH")) is True
 
     def test_a_number_still_matches(self) -> None:
         assert forms_match(self.LINE, search_forms("1990")) is True
 
+    def test_an_exact_substring_still_matches(self) -> None:
+        assert forms_match(self.LINE, search_forms("#Elite#")) is True
+
     def test_a_stranger_does_not_match(self) -> None:
         assert forms_match(self.LINE, search_forms("Petrov")) is False
         assert forms_match(self.CYRILLIC_LINE, search_forms("Petrov")) is False
 
-    def test_a_query_that_transliterates_to_nothing_matches_nothing(self) -> None:
-        # The soft sign has no Latin letter, so its Latin form is empty -- and an
-        # empty form is a substring of everything.
-        line = search_forms("Denis")
-        assert forms_match(line, search_forms(SOFT)) is False
+    def test_a_query_that_reduces_to_nothing_matches_nothing(self) -> None:
+        # The soft sign has no Latin letter, so its key is empty -- and an empty key
+        # is a substring of everything.
+        assert forms_match(search_forms("Denis"), search_forms(SOFT)) is False
 
     def test_the_line_it_does_belong_to_still_matches_it(self) -> None:
         assert forms_match(search_forms(IGOR), search_forms(SOFT)) is True
@@ -191,14 +216,6 @@ class TestSearchIndex:
     def test_a_fresh_index_matches_nothing(self) -> None:
         assert SearchIndex().matches(0, search_forms("Denis")) is False
 
-    def test_forms_are_reused_between_searches(self) -> None:
-        # The point of the index: reducing the list happens once per change, so a
-        # second search must not rebuild it.
-        index = SearchIndex()
-        index.refresh(self.LINES)
-        assert index.refresh(self.LINES) is False
-        assert index.matches(1, search_forms("Chernykh")) is True
 
-
-def test_forms_is_a_plain_triple() -> None:
-    assert tuple(Forms("a", "b", "c")) == ("a", "b", "c")
+def test_forms_is_a_plain_pair() -> None:
+    assert tuple(Forms("a", "b")) == ("a", "b")
