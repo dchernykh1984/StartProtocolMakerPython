@@ -85,6 +85,78 @@ class TestSearchKey:
         assert search_key("") == ""
 
 
+# The Kazakh alphabet, in order; the first letter is the one that sounds like a but
+# is not the Russian a.
+KAZAKH_ALPHABET = (
+    "\u0430\u04d9\u0431\u0432\u0433\u0493\u0434\u0435\u0451\u0436"
+    "\u0437\u0438\u0439\u043a\u049b\u043b\u043c\u043d\u04a3\u043e"
+    "\u04e9\u043f\u0440\u0441\u0442\u0443\u04b1\u04af\u0444\u0445"
+    "\u04bb\u0446\u0447\u0448\u0449\u044a\u044b\u0456\u044c\u044d"
+    "\u044e\u044f"
+)
+GIBADAT = "\u0492\u0438\u0431\u0430\u0434\u0430\u0442"  # Gibadat, with Kazakh ghe
+ASET = "\u04d8\u0441\u0435\u0442"  # Aset, with Kazakh ae
+KAIRAT = "\u049a\u0430\u0439\u0440\u0430\u0442"  # Kairat, with Kazakh qa
+OMIR = "\u04e8\u043c\u0456\u0440"  # Omir, with Kazakh oe
+UMIT = "\u04ae\u043c\u0456\u0442"  # Umit, with Kazakh ue
+ULY = "\u04b0\u043b\u044b"  # Uly, with Kazakh u with stroke
+ANIP = "\u04a2\u04d9\u0441\u0456\u043f"  # Nasip, with Kazakh ng
+SHYMKENT = "\u0428\u044b\u043c\u043a\u0435\u043d\u0442"  # Shymkent
+ALMATY = "\u0410\u043b\u043c\u0430\u0442\u044b"  # Almaty
+
+
+class TestKazakh:
+    """Start lists here are Kazakh as often as they are Russian."""
+
+    @pytest.mark.parametrize(
+        ("cyrillic", "latin"),
+        [
+            (GIBADAT, "Gibadat"),
+            (ASET, "Aset"),
+            (KAIRAT, "Kairat"),
+            (OMIR, "Omir"),
+            (UMIT, "Umit"),
+            (ULY, "Uly"),
+            (ANIP, "Nasip"),
+        ],
+    )
+    def test_a_kazakh_name_meets_its_latin_spelling(
+        self, cyrillic: str, latin: str
+    ) -> None:
+        assert search_key(cyrillic) == search_key(latin)
+
+    def test_the_kazakh_alphabet_is_fully_mapped(self) -> None:
+        # A letter with no entry passes through as itself, and then only an exact
+        # match finds that rider -- which is how the Kazakh letters were missed.
+        leaked = [
+            letter for letter in KAZAKH_ALPHABET if not search_key(letter).isascii()
+        ]
+        assert leaked == []
+
+    def test_the_kazakh_ae_is_not_the_russian_a(self) -> None:
+        # Same key, because a speller reaches for "a" either way, but a different
+        # letter: the plain form still tells them apart.
+        assert search_key(ASET) == search_key("Aset")
+        assert ASET.lower() != "\u0430\u0441\u0435\u0442"
+
+    def test_the_new_kazakh_latin_alphabet_meets_the_cyrillic(self) -> None:
+        # Marks come off (breve, umlaut), and the letters that carry their sound in
+        # the mark keep it.
+        assert search_key("G\u011fibadat") == search_key(GIBADAT)
+        assert search_key("\u015eymkent") == search_key(SHYMKENT)
+        assert search_key("Almat\u0131") == search_key(ALMATY)
+
+    def test_a_latin_name_with_marks_meets_its_plain_spelling(self) -> None:
+        assert search_key("S\u00f8ren") == search_key("Soren")
+        assert search_key("Stra\u00dfe") == search_key("Strasse")
+
+    def test_a_kazakh_line_is_found_by_either_spelling(self) -> None:
+        line = search_forms("7#Bizhan " + GIBADAT + "#Elite#5#1#2009#Apex team##")
+        assert forms_match(line, search_forms("Gibadat")) is True
+        assert forms_match(line, search_forms(GIBADAT)) is True
+        assert forms_match(line, search_forms("Petrov")) is False
+
+
 class TestAlternativeSpellings:
     """One name, several Latin spellings: all of them have to meet."""
 
