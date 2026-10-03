@@ -264,6 +264,28 @@ class TestParticipantToOpenLine:
         assert parsed["team"] == "Team A"
         assert parsed["city"] == "Moscow"
 
+    @pytest.mark.parametrize(
+        "info",
+        [
+            "Road bike with aerobars",
+            "https://www.strava.com/athletes/7",
+            "",
+            "Other information",
+        ],
+    )
+    def test_additional_info_becomes_protocol_comment(self, info: str) -> None:
+        participant = self._make_participant(additional_info=info)
+        line = participant_to_open_line(participant, [])
+        parsed = parse_competitor_line(line)
+        assert parsed["comment"] == info
+        assert parsed["time_shift"] == "0 00:00:00.000"
+
+    def test_missing_additional_info_leaves_comment_empty(self) -> None:
+        participant = self._make_participant()
+        del participant["additional_info"]
+        line = participant_to_open_line(participant, [])
+        assert parse_competitor_line(line)["comment"] == ""
+
     def test_category_with_laps(self) -> None:
         p = self._make_participant(category_id=10, category_name="Elite")
         cats = [{"id": 10, "name": "Elite", "laps": 3}]

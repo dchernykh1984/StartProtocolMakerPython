@@ -482,7 +482,7 @@ def participant_to_open_line(participant: dict, categories: list[dict]) -> str:
         year_of_birth=year_of_birth,
         team=participant.get("team", ""),
         city=city,
-        comment="",
+        comment=participant.get("additional_info", ""),
         time_shift="0 00:00:00.000",
     )
 
