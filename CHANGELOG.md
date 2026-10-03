@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.3.0...v0.3.1) (2026-10-03)
+
+
+### Bug Fixes
+
+* keep additional info from splitting protocol records ([f03392d](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/f03392d136669b9216d86404b0f813fcb1f56774))
+* preserve participant additional info in start protocols ([f953433](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/f953433c24475b421d47883e87f6ebb9eba51cd0))
+
 ## [0.3.0](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.2.3...v0.3.0) (2026-09-19)
 
 
