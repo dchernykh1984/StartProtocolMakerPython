@@ -20,6 +20,7 @@ from PySide6.QtWidgets import QApplication
 
 from app import main_window as mw
 from app import search as app_search
+from app.models import write_start_protocol
 
 _app = QApplication.instance() or QApplication([])
 
@@ -72,6 +73,51 @@ def _group_rows(win) -> list[tuple[str, str]]:
 
 
 # -- Replace syncs groups even with no participants (review point 1) -------
+
+
+@pytest.mark.parametrize(
+    "load_method", ["_on_replace_from_site", "_on_merge_from_site"]
+)
+@pytest.mark.parametrize("edit_before_save", [False, True])
+def test_site_additional_info_survives_protocol_save_and_upload(
+    win, monkeypatch, tmp_path, load_method, edit_before_save
+):
+    info = "Road bike with aerobars"
+    payload = {
+        "participants": [
+            {
+                "first_name": "Test",
+                "last_name": "Rider",
+                "birth_year": 1990,
+                "category_id": 1,
+                "category_name": "Elite",
+                "additional_info": info,
+            }
+        ],
+        "categories": [{"id": 1, "name": "Elite", "laps": 1}],
+    }
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: payload)
+    getattr(win, load_method)()
+    win._list_open.setCurrentRow(0)
+    if edit_before_save:
+        win._on_edit_open()
+        assert win._edit_comment.text() == info
+        win._edit_number.setText("120")
+        win._on_save_to_file()
+    else:
+        win._on_open_to_protocol()
+    path = tmp_path / "start.txt"
+    monkeypatch.setattr(mw, "write_start_protocol", write_start_protocol)
+    win._start_protocol_file = str(path)
+    win._on_save_start()
+    saved_line = path.read_text(encoding="utf-8").strip()
+    assert mw.parse_competitor_line(saved_line)["comment"] == info
+    uploads = []
+    monkeypatch.setattr(
+        mw, "upload_start_list", lambda *args: uploads.append(args[3]) or len(args[3])
+    )
+    assert win._upload_to_site()[0] is True
+    assert uploads == [[saved_line]]
 
 
 def test_replace_syncs_groups_when_no_participants(win, monkeypatch):
