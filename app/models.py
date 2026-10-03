@@ -482,7 +482,13 @@ def participant_to_open_line(participant: dict, categories: list[dict]) -> str:
         year_of_birth=year_of_birth,
         team=participant.get("team", ""),
         city=city,
-        comment=participant.get("additional_info", ""),
+        # The legacy protocol has no escaping: '#' separates fields, and any
+        # splitlines() separator breaks protocol or backup records.
+        comment=re.sub(
+            r"[#\r\n\v\f\x1c-\x1e\x85\u2028\u2029]+",
+            " ",
+            participant.get("additional_info", ""),
+        ),
         time_shift="0 00:00:00.000",
     )
 

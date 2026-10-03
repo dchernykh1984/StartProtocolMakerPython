@@ -79,10 +79,17 @@ def _group_rows(win) -> list[tuple[str, str]]:
     "load_method", ["_on_replace_from_site", "_on_merge_from_site"]
 )
 @pytest.mark.parametrize("edit_before_save", [False, True])
+@pytest.mark.parametrize(
+    ("info", "expected"),
+    [
+        ("Road bike with aerobars", "Road bike with aerobars"),
+        ("Road#bike\r\nwith aerobars", "Road bike with aerobars"),
+        ("\u0428\u043e\u0441\u0441\u0435", "\u0428\u043e\u0441\u0441\u0435"),
+    ],
+)
 def test_site_additional_info_survives_protocol_save_and_upload(
-    win, monkeypatch, tmp_path, load_method, edit_before_save
+    win, monkeypatch, tmp_path, load_method, edit_before_save, info, expected
 ):
-    info = "Road bike with aerobars"
     payload = {
         "participants": [
             {
@@ -101,7 +108,7 @@ def test_site_additional_info_survives_protocol_save_and_upload(
     win._list_open.setCurrentRow(0)
     if edit_before_save:
         win._on_edit_open()
-        assert win._edit_comment.text() == info
+        assert win._edit_comment.text() == expected
         win._edit_number.setText("120")
         win._on_save_to_file()
     else:
@@ -111,7 +118,8 @@ def test_site_additional_info_survives_protocol_save_and_upload(
     win._start_protocol_file = str(path)
     win._on_save_start()
     saved_line = path.read_text(encoding="utf-8").strip()
-    assert mw.parse_competitor_line(saved_line)["comment"] == info
+    assert len(saved_line.splitlines()) == 1
+    assert mw.parse_competitor_line(saved_line)["comment"] == expected
     uploads = []
     monkeypatch.setattr(
         mw, "upload_start_list", lambda *args: uploads.append(args[3]) or len(args[3])

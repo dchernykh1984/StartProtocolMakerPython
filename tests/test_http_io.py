@@ -286,6 +286,34 @@ class TestParticipantToOpenLine:
         line = participant_to_open_line(participant, [])
         assert parse_competitor_line(line)["comment"] == ""
 
+    @pytest.mark.parametrize(
+        "separator",
+        [
+            "#",
+            "\r\n",
+            "\r",
+            "\n",
+            "\v",
+            "\f",
+            "\x1c",
+            "\x1d",
+            "\x1e",
+            "\x85",
+            "\u2028",
+            "\u2029",
+        ],
+    )
+    def test_additional_info_cannot_split_protocol_fields_or_lines(
+        self, separator: str
+    ) -> None:
+        participant = self._make_participant(additional_info=f"Road{separator}bike")
+        line = participant_to_open_line(participant, [])
+        assert len(line.splitlines()) == 1
+        assert len(line.split("#")) == 11
+        parsed = parse_competitor_line(line)
+        assert parsed["comment"] == "Road bike"
+        assert parsed["time_shift"] == "0 00:00:00.000"
+
     def test_category_with_laps(self) -> None:
         p = self._make_participant(category_id=10, category_name="Elite")
         cats = [{"id": 10, "name": "Elite", "laps": 3}]
