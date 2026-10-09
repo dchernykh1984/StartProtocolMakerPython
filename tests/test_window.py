@@ -1022,3 +1022,16 @@ def test_replace_leaves_the_number_empty_when_nothing_is_charged(win, monkeypatc
     monkeypatch.setattr(win, "_fetch_site_payload", lambda: _unpaid_payload(False))
     win._on_replace_from_site()
     assert win._list_open.item(0).text().split("#")[0] == ""
+
+
+def test_selecting_an_unpaid_rider_keeps_the_marking(win):
+    # The marking has to survive until the referee has dealt with the rider, so
+    # the AutoShift bib allocator must not quietly overwrite it on selection the
+    # way it fills an empty bib. Nothing is computed from a non-numeric bib
+    # either, which is what keeps this from raising.
+    _prepare_auto_shift(win, "1-50", first="1", delay="30")
+    win._list_open.addItem("NOT_PAID#Owes Money#Elite#5#1#1991####0 00:00:00.000#")
+    win._list_open.setCurrentRow(0)
+    win._parse_and_fill_form(win._list_open.item(0).text())
+    assert win._edit_number.text() == "NOT_PAID"
+    assert win._edit_time_shift.text() == "0 00:00:00.000"

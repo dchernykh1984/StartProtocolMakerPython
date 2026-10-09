@@ -565,3 +565,16 @@ class TestCategoriesToGroupRows:
             {"name": "X", "bib_from": 2, "bib_to": 8},
         ]
         assert categories_to_group_rows(cats) == [("X", "2-8")]
+
+
+def test_get_next_number_does_not_treat_not_paid_as_a_taken_bib():
+    # An unpaid rider carries NOT_PAID where a bib would be; it reserves nothing,
+    # so the first bib of the range is still free.
+    result = get_next_number(
+        group_index=0,
+        open_items=["NOT_PAID#Owes Money#Elite#5#1#1991####0 00:00:00.000#"],
+        save_as_items=[],
+        numbers_items=["1-50"],
+        use_all_numbers=False,
+    )
+    assert result == "1"
