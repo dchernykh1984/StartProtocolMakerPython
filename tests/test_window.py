@@ -984,3 +984,41 @@ def test_scripts_line_follows_a_backup_load(win):
     data["open_items"] = [f"1#{_DENIS_CHERNYKH}#########"]
     win._fill_from_backup(data)
     assert win._lbl_open_scripts.text() == "Scripts in list: Cyrillic"
+
+
+# -- require_payment travels from the payload into the start list ------------
+
+
+def _unpaid_payload(require_payment: bool) -> dict:
+    return {
+        "require_payment": require_payment,
+        "participants": [
+            {
+                "category_id": 1,
+                "category_name": "Elite",
+                "last_name": "Owes",
+                "first_name": "Money",
+                "birth_year": 1991,
+                "team": "",
+                "city": "",
+                "is_paid": False,
+            }
+        ],
+        "categories": [
+            {"id": 1, "name": "Elite", "laps": 5, "bib_from": 1, "bib_to": 50}
+        ],
+    }
+
+
+def test_replace_marks_an_unpaid_participant(win, monkeypatch):
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: _unpaid_payload(True))
+    win._on_replace_from_site()
+    line = win._list_open.item(0).text()
+    assert line.split("#")[0] == "NOT_PAID"
+    assert "Owes Money" in line
+
+
+def test_replace_leaves_the_number_empty_when_nothing_is_charged(win, monkeypatch):
+    monkeypatch.setattr(win, "_fetch_site_payload", lambda: _unpaid_payload(False))
+    win._on_replace_from_site()
+    assert win._list_open.item(0).text().split("#")[0] == ""
