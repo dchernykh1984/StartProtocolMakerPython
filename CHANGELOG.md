@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.3.1...v0.4.0) (2026-10-09)
+
+
+### Features
+
+* show participants who have not paid, marked NOT_PAID in the bib column ([1b2f6c8](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/1b2f6c8e376158b7479ef5830398835e835e7aab))
+
 ## [0.3.1](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.3.0...v0.3.1) (2026-10-03)
 
 
