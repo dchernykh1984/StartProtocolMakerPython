@@ -444,8 +444,25 @@ def save_backup(
     p.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def participant_to_open_line(participant: dict, categories: list[dict]) -> str:
-    """Convert an API participant dict to a start-protocol open-list line."""
+#: What stands in the bib column for somebody who signed up but has not paid.
+#: The pre-registration list carries no bibs -- they are handed out at the start
+#: -- so the column is free until the referee registers the rider on the day,
+#: which is exactly the moment this has to be visible. The real bib overwrites
+#: it at that point.
+NOT_PAID = "NOT_PAID"
+
+
+def participant_to_open_line(
+    participant: dict, categories: list[dict], require_payment: bool = False
+) -> str:
+    """Convert an API participant dict to a start-protocol open-list line.
+
+    ``require_payment`` comes from the competition, not the participant, and both
+    are needed: ``is_paid`` on its own is not the question. On an event that
+    charges nothing the flag is set at sign-up, so it normally reads true -- but
+    not always, and a rider on a free event must never be marked a debtor on the
+    strength of one stray false.
+    """
     cat_id = participant.get("category_id")
     cat_name = participant.get("category_name", "")
     laps = ""
@@ -474,8 +491,9 @@ def participant_to_open_line(participant: dict, categories: list[dict]) -> str:
         name = f"{last} {first}".strip()
         year_of_birth = str(participant.get("birth_year", ""))
         city = participant.get("city", "")
+    unpaid = require_payment and not participant.get("is_paid", True)
     return build_competitor_line(
-        number="",
+        number=NOT_PAID if unpaid else "",
         name=name,
         group_with_laps=group_with_laps,
         stage="1",

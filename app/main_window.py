@@ -900,8 +900,9 @@ class MainWindow(QMainWindow):
     @staticmethod
     def _payload_to_open_lines(data: dict) -> list[str]:
         categories = data.get("categories", [])
+        require_payment = bool(data.get("require_payment", False))
         return [
-            participant_to_open_line(p, categories)
+            participant_to_open_line(p, categories, require_payment)
             for p in data.get("participants", [])
         ]
 

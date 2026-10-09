@@ -89,10 +89,13 @@ def fetch_participants(site_url: str, token: str) -> dict:
     Raises:
         ValueError: On HTTP error, network error, or invalid JSON response.
     """
+    # include_unpaid asks for the people who signed up but have not paid. The
+    # site withholds them unless asked, because a client that cannot mark them
+    # would list them as if they had paid; this one marks them, so it asks.
     url = (
         site_url.rstrip("/")
         + "/api/v1/participants/?"
-        + urllib.parse.urlencode({"competition_token": token})
+        + urllib.parse.urlencode({"competition_token": token, "include_unpaid": "true"})
     )
     try:
         with urllib.request.urlopen(url, timeout=10) as resp:  # noqa: S310

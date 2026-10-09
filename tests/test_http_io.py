@@ -13,6 +13,7 @@ import pytest
 
 from app.http_io import fetch_participants, upload_start_list
 from app.models import (
+    NOT_PAID,
     load_backup,
     parse_competitor_line,
     participant_to_open_line,
@@ -121,6 +122,20 @@ class TestFetchParticipants:
         with patch("urllib.request.urlopen", side_effect=fake_urlopen):
             fetch_participants("https://site.com", "abc-uuid")
         assert "competition_token=abc-uuid" in calls[0]
+
+    def test_asks_for_unpaid_participants(self) -> None:
+        # Without this the site withholds everybody who has not paid, and the
+        # referee at the start line never learns they signed up.
+        payload: dict[str, list] = {"participants": [], "categories": []}
+        calls: list[str] = []
+
+        def fake_urlopen(url, timeout):
+            calls.append(url)
+            return _make_response(payload)
+
+        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+            fetch_participants("https://site.com", "tok")
+        assert "include_unpaid=true" in calls[0]
 
 
 # ---------------------------------------------------------------------------
@@ -379,6 +394,37 @@ class TestParticipantToOpenLine:
         line = participant_to_open_line(p, [])
         parts = line.split("#")
         assert parts[1] == "Petrov Ivan"
+
+    def test_number_is_empty_for_a_paid_participant(self) -> None:
+        p = self._make_participant(is_paid=True)
+        line = participant_to_open_line(p, [], require_payment=True)
+        assert parse_competitor_line(line)["number"] == ""
+
+    def test_number_says_not_paid_for_an_unpaid_participant(self) -> None:
+        p = self._make_participant(is_paid=False)
+        line = participant_to_open_line(p, [], require_payment=True)
+        parsed = parse_competitor_line(line)
+        assert parsed["number"] == NOT_PAID
+        # Everything else about the rider is unchanged by the marking.
+        assert parsed["name"] == "Petrov Ivan"
+        assert parsed["city"] == "Moscow"
+
+    def test_free_event_never_marks_a_rider_unpaid(self) -> None:
+        # is_paid is written at sign-up on events that charge nothing and is not
+        # always true there; by itself it is not the question being asked.
+        p = self._make_participant(is_paid=False)
+        line = participant_to_open_line(p, [], require_payment=False)
+        assert parse_competitor_line(line)["number"] == ""
+
+    def test_require_payment_defaults_to_not_marking(self) -> None:
+        p = self._make_participant(is_paid=False)
+        assert parse_competitor_line(participant_to_open_line(p, []))["number"] == ""
+
+    def test_missing_is_paid_is_treated_as_paid(self) -> None:
+        p = self._make_participant()
+        del p["is_paid"]
+        line = participant_to_open_line(p, [], require_payment=True)
+        assert parse_competitor_line(line)["number"] == ""
 
 
 # ---------------------------------------------------------------------------
