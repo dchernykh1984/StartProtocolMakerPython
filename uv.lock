@@ -628,7 +628,7 @@ wheels = [
 
 [[package]]
 name = "start-protocol-maker"
-version = "0.3.1"
+version = "0.4.0"
 source = { virtual = "." }
 default-groups = "all"
 dependencies = [
