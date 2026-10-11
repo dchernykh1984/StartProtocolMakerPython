@@ -19,6 +19,7 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
 from app import main_window as mw
+from app import paths
 from app import search as app_search
 from app.models import write_start_protocol
 
@@ -1035,3 +1036,32 @@ def test_selecting_an_unpaid_rider_keeps_the_marking(win):
     win._parse_and_fill_form(win._list_open.item(0).text())
     assert win._edit_number.text() == "NOT_PAID"
     assert win._edit_time_shift.text() == "0 00:00:00.000"
+
+
+def test_upload_reads_relative_protocol_from_app_folder(win, monkeypatch, tmp_path):
+    from unittest.mock import MagicMock
+
+    race = tmp_path / "race"
+    race.mkdir()
+    unrelated = tmp_path / "working"
+    unrelated.mkdir()
+    monkeypatch.chdir(unrelated)
+    monkeypatch.setattr(paths, "base_dir", lambda: race)
+    monkeypatch.setattr(mw, "write_start_protocol", write_start_protocol)
+    win._start_protocol_file = "start.txt"
+    win._list_save_as.clear()
+    win._list_save_as.addItem("12#Rider#GroupA#")
+    win._edit_ftp_address.setText("ftp://host/path/#login#password")
+    ftp = MagicMock()
+    ftp.__enter__.return_value = ftp
+    sent = []
+    ftp.storbinary.side_effect = lambda command, stream: sent.append(
+        (command, stream.read())
+    )
+    monkeypatch.setattr(mw.ftplib, "FTP", lambda *args: ftp)
+
+    win._on_upload()
+
+    assert sent == [("STOR start.txt", b"12#Rider#GroupA#\n")]
+    assert (race / "start.txt").exists()
+    assert win._start_protocol_file == "start.txt"

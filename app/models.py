@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import re
 import time
-from pathlib import Path
+
+from app.paths import app_path
 
 # ---------------------------------------------------------------------------
 # time helpers
@@ -260,7 +261,7 @@ def load_backup(path: str) -> dict:  # noqa: C901
         "delay": "",
     }
 
-    p = Path(path)
+    p = app_path(path)
     if not p.exists():
         return result
 
@@ -405,7 +406,7 @@ def save_backup(
     auto_send: bool = False,
 ) -> None:
     """Write a backup file. Port of C++ saveBackupFile logic."""
-    p = Path(path)
+    p = app_path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     lines: list[str] = []
     lines.append(_SECTION_OPEN)
@@ -599,4 +600,4 @@ def categories_to_group_rows(
 def write_start_protocol(path: str, save_items: list[str]) -> None:
     """Write save_items to a start protocol file (one line per competitor)."""
     content = "\n".join(save_items)
-    Path(path).write_text(content + "\n" if content else "", encoding="utf-8")
+    app_path(path).write_text(content + "\n" if content else "", encoding="utf-8")

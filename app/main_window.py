@@ -817,7 +817,7 @@ class MainWindow(QMainWindow):
             remote_dir = parsed.path or "/"
             with ftplib.FTP(host, login, password) as ftp:  # noqa: S321
                 ftp.cwd(remote_dir)
-                with Path(self._start_protocol_file).open("rb") as f:
+                with app_path(self._start_protocol_file).open("rb") as f:
                     ftp.storbinary(f"STOR {filename}", f)
         except Exception as exc:
             QMessageBox.warning(self, "Upload", f"Exception during file upload: {exc}")
