@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.1](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.4.0...v0.4.1) (2026-10-11)
+
+
+### Bug Fixes
+
+* resolve runtime files beside the portable application ([fa0e814](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/fa0e81497fd1666b5cb457d4c950f4fab1f5fc3e))
+
+
+### Documentation
+
+* clarify portable runtime paths for coding agents ([d99c84a](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/d99c84a57bc228c59626bd2f80b572ea37f8ec0a))
+
 ## [0.4.0](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.3.1...v0.4.0) (2026-10-09)
 
 
