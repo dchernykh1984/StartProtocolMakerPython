@@ -5,6 +5,12 @@ protocols offline and push them to the cycling site. Its sibling repository,
 WindowsChronometerPython, records finish and group-start times against the same site
 API; the two share conventions, so most of what follows applies there as well.
 
+Runtime file I/O uses `app.paths.app_path()`: relative paths belong next to the
+portable executable (outside the `.app` bundle on macOS), and absolute paths stay
+unchanged. Keep the path strings stored in backups unchanged. Finder may launch
+the app with `/` as its working directory; test restored relative protocol paths
+with a different working directory, including saving and uploading the file.
+
 ## Conventions
 
 - Python 3.14. Everything runs through `uv`: `uv run pytest`, `uv run ruff check .`,
