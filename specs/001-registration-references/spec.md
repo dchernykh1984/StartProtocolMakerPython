@@ -11,17 +11,18 @@
 that link is lost when registrations are loaded into Start Protocol Maker. The site side is in
 the [issued bib exchange contract](https://github.com/dchernykh1984/cycling-site/blob/349-external-photo-albums/specs/349-external-photo-albums/contracts/start-list-bindings.md).
 
-**Open decision (maintainer)**: the site contract offers variant A, a trailing field on the line
-(this specification, recommended), and variant B, structured bindings beside unchanged lines plus
-an offline sidecar file. If B is chosen, this specification is rewritten before planning.
+**Decision (maintainer, 2026-10-25)**: variant A of the site contract -- a trailing field on the
+line, shown as an ordinary field of the form. FinishProtocolGenerator and the chronometers stay
+unchanged and ignore it; the site reads it from the start-list upload.
 
 ## User Scenarios & Testing
 
 ### User Story 1 - A loaded registration keeps its link through numbering (Priority: P1)
 
-The referee loads registrations from the site, gives each rider a bib with Get number and
-AutoShift, fixes a typo in a name and saves. Each protocol line still says which site registration
-it came from, in the same text line, with nothing else to keep beside it.
+The referee loads registrations from the site. Registration on the spot is: open a
+pre-registration line in the form, give it a bib with Get number and AutoShift, fix a typo, save
+it to the protocol list. Each protocol line still says which site registration it came from, in
+the same text line, with nothing else to keep beside it: the field is on both lists.
 
 **Why this priority**: Without it the site cannot show a rider their own photos or results without
 asking for the bib again, and guessing by name is not acceptable.
@@ -58,20 +59,21 @@ references in member order.
 
 ### User Story 3 - The referee sees and controls the link (Priority: P2)
 
-The form shows whether the current line is linked to a site registration, and lets the referee
-remove the link when the line is reused for a different person.
+The reference is a visible field of the form, next to team and city -- not hidden state. The
+referee sees which site registration the line belongs to and can clear the field when the form is
+reused for a different person.
 
 **Why this priority**: The form is reused all day; a link carried onto the wrong person would give
 one rider another rider's photos.
 
-**Independent Test**: Open a linked line, unlink, save; the new line has no reference. Clear the
+**Independent Test**: Open a linked line, clear the field, save; the new line has no reference. Clear the
 form and type a new entrant; the line has no reference.
 
 **Acceptance Scenarios**:
 
-1. **Given** a line opened from the open list, **Then** the form shows the registration it is
-   linked to (reference and name as loaded).
-2. **Given** the referee presses Unlink, **Then** the saved line has an empty reference field.
+1. **Given** a line opened from the open list, **Then** the form's reference field shows its
+   tokens, for example `r1234`.
+2. **Given** the referee clears that field, **Then** the saved line has an empty reference field.
 3. **Given** an emptied form and a hand-typed on-the-day entrant, **Then** the saved line has no
    reference; nothing is inferred from the name.
 
@@ -112,8 +114,9 @@ form and type a new entrant; the line has no reference.
 - **FR-001**: Add one optional field after the start delay (index 10): empty, or comma-separated
   tokens. Version 1 defines `r<registration id>` (decimal). No spaces, `#` or line breaks.
 - **FR-002**: Loading from the site writes `r<id>` from each participant's `id` into the line.
-- **FR-003**: Opening a line in the form keeps its tokens as form state; Save writes them back.
-  Clearing the form, or Unlink, empties them. The form shows the current link.
+- **FR-003**: The form has a visible, editable reference field. Opening a line from either list
+  fills it; Save writes it into the new line. Clearing the form empties it; the referee may also
+  clear or type it by hand (the site ignores a token it does not recognise for the event).
 - **FR-004**: "Add into team" appends the added registration's tokens to the form's tokens, in
   member order, without duplicates.
 - **FR-005**: Every path that copies a line verbatim keeps the field, and anything after it.
@@ -143,7 +146,7 @@ form and type a new entrant; the line has no reference.
 ## Assumptions
 
 - The site reads references from uploaded lines (cycling-site contract, variant A); until it does,
-  the field is carried and ignored.
+  the field is carried and ignored. FinishProtocolGenerator and the chronometers are not changed.
 - Unmaintained C++ tools are not considered (maintainer, 2026-10-25).
 - An older Start Protocol Maker keeps loaded lines but drops the field when it rebuilds a line from
   its form; the site contract says how it treats that loss.
