@@ -37,6 +37,12 @@ with a different working directory, including saving and uploading the file.
   `uv run ruff format --check .`, `uv run mypy app tests`. pre-commit runs the same
   set again on commit.
 
+## Specifications
+
+Changes to a file format, the site exchange or what the referee sees start as a specification:
+see [`specs/README.md`](specs/README.md) and the constitution in
+[`.specify/memory/constitution.md`](.specify/memory/constitution.md).
+
 ## What the tests actually cover
 
 `app/main.py` and `app/main_window.py` are excluded from coverage
