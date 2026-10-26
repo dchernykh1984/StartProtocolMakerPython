@@ -89,6 +89,15 @@ def test_two_unlinked_lines_with_the_same_name_are_not_guessed():
     assert (added, ambiguous, len(merged)) == (1, 1, 3)
 
 
+@pytest.mark.parametrize("order", [("r1", "r2"), ("r2", "r1")])
+def test_one_old_line_and_two_same_named_registrations_link_neither(order):
+    incoming = [_line("Ivanov Ivan", year="1984", refs=r) for r in order]
+    merged, added, ambiguous = merge_open_lines([OLD], incoming)
+    assert (added, ambiguous) == (2, 2)
+    assert merged[0] == OLD  # the bib stays on the unlinked old line
+    assert [parse_competitor_line(m)["refs"] for m in merged[1:]] == list(order)
+
+
 def test_lines_without_references_merge_by_name_as_before():
     merged, added, _ = merge_open_lines([OLD], [OLD, _line("Petrov")])
     assert (added, len(merged)) == (1, 2)
