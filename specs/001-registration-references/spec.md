@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-25
 
-**Status**: Draft for maintainer review; no application change in this pull request
+**Status**: Implemented in this pull request
 
 **Input**: cycling-site issue [#349](https://github.com/dchernykh1984/cycling-site/issues/349)
 (event photos found by bib). The site needs to know which registration received which bib, and

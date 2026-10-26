@@ -61,6 +61,10 @@ def parse_competitor_line(line: str) -> dict[str, str]:
         "city": f(7),
         "comment": f(8) if get_n_fields(line) > 8 else "",
         "time_shift": f(9) if get_n_fields(line) > 9 else "0 00:00:00.000",
+        # The site registrations the line belongs to. A line this version writes always
+        # has the field (11 separators); an older writer's line does not, and the site
+        # tells "unlinked" (present, empty) from "unknown" (absent).
+        "refs": f(REFS_FIELD) if has_refs_field(line) else "",
     }
 
 
@@ -74,16 +78,55 @@ def build_competitor_line(
     city: str,
     comment: str,
     time_shift: str,
+    refs: str = "",
 ) -> str:
-    """Build the #-delimited line stored in listBoxCompetitorsListSaveAs."""
+    """Build the #-delimited line stored in listBoxCompetitorsListSaveAs.
+
+    The site-registration field is always written, even empty, so the line says it was
+    written by a program that knows the field.
+    """
     # A group without a lap count is just its name (the combo box shows it so); the
     # laps field must still be there, empty, or every later field lands one place early.
     if "#" not in group_with_laps:
         group_with_laps += "#"
     return (
         f"{number}#{name}#{group_with_laps}#{stage}#"
-        f"{year_of_birth}#{team}#{city}#{comment}#{time_shift}#"
+        f"{year_of_birth}#{team}#{city}#{comment}#{time_shift}#{join_refs(split_refs(refs))}#"
     )
+
+
+# ---------------------------------------------------------------------------
+# site registration references (field 10)
+# ---------------------------------------------------------------------------
+
+REFS_FIELD = 10
+_REF_SEPARATORS = re.compile(r"[\s,;]+")
+
+
+def has_refs_field(line: str) -> bool:
+    return get_n_fields(line) > REFS_FIELD
+
+
+def split_refs(text: str) -> list[str]:
+    """Tokens of a refs field, in order, without blanks, duplicates or a '#'."""
+    tokens = [t for t in _REF_SEPARATORS.split(text.replace("#", " ")) if t]
+    return list(dict.fromkeys(tokens))
+
+
+def join_refs(tokens: list[str]) -> str:
+    return ",".join(tokens)
+
+
+def set_refs(line: str, refs: str) -> str:
+    """The line with its refs field replaced, every other field kept as it is."""
+    parts = line.split("#")
+    value = join_refs(split_refs(refs))
+    if has_refs_field(line):
+        parts[REFS_FIELD] = value
+        return "#".join(parts)
+    while len(parts) < REFS_FIELD + 1:
+        parts.append("")
+    return "#".join([*parts[:REFS_FIELD], value, ""])
 
 
 # ---------------------------------------------------------------------------
@@ -513,7 +556,84 @@ def participant_to_open_line(
             participant.get("additional_info", ""),
         ),
         time_shift="0 00:00:00.000",
+        refs=registration_ref(participant),
     )
+
+
+def participant_merge_key(line: str) -> tuple[str, str, str]:
+    """(last name, first name, year), lower case: how unreferenced lines match."""
+    parts = line.split("#")
+    name = parts[1] if len(parts) > 1 else ""
+    name_split = name.split(" ", 1)
+    last_name = name_split[0].lower()
+    first_name = name_split[1].lower() if len(name_split) > 1 else ""
+    year = parts[5] if len(parts) > 5 else ""
+    return (last_name, first_name, year)
+
+
+def merge_open_lines(
+    existing: list[str], incoming: list[str]
+) -> tuple[list[str], int, int]:
+    """Merge the site's lines into the open list: (new list, added, ambiguous).
+
+    A line with a reference matches only a line with the same reference -- two
+    registrations of one person (two distances) are two lines even with equal names.
+    The name/year key is a fallback for an old line that has no reference yet, and only
+    when exactly one such line fits; that line then takes the reference. Anything less
+    certain is added, and counted as ambiguous, never merged silently.
+    """
+    result = list(existing)
+    known_refs = {
+        r for line in result for r in split_refs(parse_competitor_line(line)["refs"])
+    }
+    added = ambiguous = 0
+    for line in incoming:
+        if "#" not in line:
+            continue
+        refs = split_refs(parse_competitor_line(line)["refs"])
+        if refs and set(refs) & known_refs:
+            continue
+        key = participant_merge_key(line)
+        same_key = [
+            i
+            for i, old in enumerate(result)
+            if "#" in old and participant_merge_key(old) == key
+        ]
+        if not refs:
+            if not same_key:
+                result.append(line)
+                added += 1
+            continue
+        unlinked = [
+            i
+            for i in same_key
+            if not split_refs(parse_competitor_line(result[i])["refs"])
+        ]
+        if len(unlinked) == 1:
+            result[unlinked[0]] = set_refs(result[unlinked[0]], join_refs(refs))
+        else:
+            result.append(line)
+            added += 1
+            ambiguous += len(unlinked) > 1
+        known_refs.update(refs)
+    return result, added, ambiguous
+
+
+def duplicate_ref_row(items: list[str]) -> int:
+    """The first protocol line whose reference already appears above it, or -1."""
+    seen: set[str] = set()
+    for row, line in enumerate(items):
+        refs = split_refs(parse_competitor_line(line)["refs"])
+        if seen & set(refs):
+            return row
+        seen.update(refs)
+    return -1
+
+
+def registration_ref(participant: dict) -> str:
+    """``r<id>`` for a participant the site sent with its registration id, else ""."""
+    pid = participant.get("id")
+    return f"r{pid}" if isinstance(pid, int) and not isinstance(pid, bool) else ""
 
 
 DEFAULT_NUMBER_RANGE = "1-200"
