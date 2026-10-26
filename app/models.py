@@ -76,6 +76,10 @@ def build_competitor_line(
     time_shift: str,
 ) -> str:
     """Build the #-delimited line stored in listBoxCompetitorsListSaveAs."""
+    # A group without a lap count is just its name (the combo box shows it so); the
+    # laps field must still be there, empty, or every later field lands one place early.
+    if "#" not in group_with_laps:
+        group_with_laps += "#"
     return (
         f"{number}#{name}#{group_with_laps}#{stage}#"
         f"{year_of_birth}#{team}#{city}#{comment}#{time_shift}#"

@@ -117,6 +117,26 @@ class TestCompetitorLine:
         )
         assert line == self._LINE
 
+    def test_a_group_without_laps_keeps_every_field_in_place(self) -> None:
+        line = build_competitor_line(
+            number="7",
+            name="Ann",
+            group_with_laps="Open",
+            stage="1",
+            year_of_birth="1990",
+            team="T",
+            city="C",
+            comment="",
+            time_shift="0 00:00:00.000",
+        )
+        d = parse_competitor_line(line)
+        assert (d["group"], d["laps"], d["stage"], d["time_shift"]) == (
+            "Open",
+            "",
+            "1",
+            "0 00:00:00.000",
+        )
+
     def test_parse(self) -> None:
         d = parse_competitor_line(self._LINE)
         assert d["number"] == "42"
