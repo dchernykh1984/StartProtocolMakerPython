@@ -78,6 +78,8 @@ empty laps field, so every later field stays in place. Readers that exist:
 - The form's "Site entry" field shows and edits it; saving a rider clears it for the next one, and
   "Join Team" adds the joined rider's reference and keeps the team's already issued bib,
   including with AutoShift enabled.
+  Text field separators (`#` and line breaks) become spaces before serialization,
+  including category names, so supplied text cannot shift the registration reference.
 - `POST /api/v1/start-list/` sends the protocol list as `items` with `device_id` and an increasing
   `client_revision`; the site keeps one snapshot per device and answers 409 to a stale one.
 - With **Auto** ticked, edits are sent 2 seconds after the last one; a failure is shown under the

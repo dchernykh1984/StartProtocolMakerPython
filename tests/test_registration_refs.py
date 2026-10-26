@@ -198,6 +198,29 @@ def test_joining_a_team_keeps_its_issued_bib(win, auto_shift):
     assert win._edit_refs.text() == "r1,r2"
 
 
+@pytest.mark.parametrize(
+    "field",
+    [
+        "first_name",
+        "last_name",
+        "team",
+        "city",
+        "category_name",
+        "participant_names",
+        "participant_cities",
+    ],
+)
+def test_site_text_cannot_shift_the_registration_reference(field):
+    participant = {"id": 7, "last_name": "Rider", "first_name": "A", "birth_year": 1990}
+    if field.startswith("participant_"):
+        participant["participant_names"] = "First / Second"
+    participant[field] = "One#Two\u2028Three"
+    line = participant_to_open_line(participant, [])
+    assert line.count("#") == 11
+    assert len(line.splitlines()) == 1
+    assert parse_competitor_line(line)["refs"] == "r7"
+
+
 def test_the_reference_survives_a_restart(win, monkeypatch, tmp_path):
     from app.models import load_backup, save_backup
 
