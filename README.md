@@ -186,7 +186,10 @@ The application can fetch participant lists directly from the cycling-site API.
    logged in as an organizer or admin.
 
 The application calls `GET /api/v1/participants/?competition_token=<token>` and
-populates the start list automatically.
+populates the start list automatically. Each line keeps the site registration it came
+from in the "Site entry" field (`r<id>`, after the start delay), so the site knows
+which registration got which bib -- for its photo albums. Clear the field when a line
+is reused for somebody else.
 
 ### Uploading the start list
 

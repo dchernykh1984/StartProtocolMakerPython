@@ -37,13 +37,17 @@ from app.models import (
     categories_to_group_rows,
     check_duplicate_fields,
     current_local_seconds,
+    duplicate_ref_row,
     get_next_number,
     get_time_from_seconds,
+    join_refs,
     load_backup,
     merge_number_range,
+    merge_open_lines,
     parse_competitor_line,
     participant_to_open_line,
     save_backup,
+    split_refs,
     write_start_protocol,
 )
 from app.paths import app_path
@@ -57,17 +61,6 @@ _AUTO_SEND_DELAY_MS = 2000
 # A failed upload cannot wait for the next edit: registration goes quiet exactly
 # when the list matters most, so auto mode keeps retrying on its own.
 _AUTO_SEND_RETRY_MS = 15000
-
-
-def _participant_merge_key(line: str) -> tuple[str, str, str]:
-    """Return (last_name_lower, first_name_lower, birth_year) for dedup."""
-    parts = line.split("#")
-    name = parts[1] if len(parts) > 1 else ""
-    name_split = name.split(" ", 1)
-    last_name = name_split[0].lower()
-    first_name = name_split[1].lower() if len(name_split) > 1 else ""
-    year = parts[5] if len(parts) > 5 else ""
-    return (last_name, first_name, year)
 
 
 class MainWindow(QMainWindow):
@@ -180,6 +173,16 @@ class MainWindow(QMainWindow):
         lbl, self._edit_comment = _lbl_edit("Comment:")
         centre.addWidget(lbl)
         centre.addWidget(self._edit_comment)
+
+        # The site registrations this line belongs to (r<id>, comma-separated): filled
+        # when a line comes from the site, kept through registration on the spot, and
+        # cleared to unlink a line reused for somebody else.
+        lbl, self._edit_refs = _lbl_edit("Site entry:")
+        self._edit_refs.setToolTip(
+            "Site registration of this rider, e.g. r1234; a team lists one per member."
+        )
+        centre.addWidget(lbl)
+        centre.addWidget(self._edit_refs)
 
         lbl, self._edit_time_shift = _lbl_edit("Time shift:", "0 00:00:00.000")
         centre.addWidget(lbl)
@@ -421,6 +424,10 @@ class MainWindow(QMainWindow):
 
     def _refresh_duplicate_indicator(self) -> None:
         found, idx = check_duplicate_fields(self._save_as_items(), 0, False)
+        # One site registration on two protocol lines is as wrong as a repeated bib.
+        ref_row = duplicate_ref_row(self._save_as_items())
+        if ref_row >= 0:
+            found, idx = True, (idx if idx >= 0 else ref_row)
         self._lbl_error.setVisible(found)
         if found and idx >= 0:
             self._list_save_as.setCurrentRow(idx)
@@ -482,6 +489,7 @@ class MainWindow(QMainWindow):
         self._edit_team.setText(d["team"])
         self._edit_city.setText(d["city"])
         self._edit_comment.setText(d["comment"])
+        self._edit_refs.setText(d["refs"])
         # Always restore the line's own shift first: AutoShift only overwrites it when
         # it can actually compute one, and without this the field would keep the
         # previously edited competitor's shift.
@@ -666,10 +674,12 @@ class MainWindow(QMainWindow):
             city=self._edit_city.text().strip(),
             comment=self._edit_comment.text().strip(),
             time_shift=self._edit_time_shift.text().strip() or "0 00:00:00.000",
+            refs=self._edit_refs.text(),
         )
         self._list_save_as.addItem(line)
         self._edit_name.clear()
         self._edit_number.clear()
+        self._edit_refs.clear()
         self._save_all_data()
 
     def _on_get_number(self) -> None:
@@ -867,7 +877,13 @@ class MainWindow(QMainWindow):
         saved_yob = self._edit_yob.text()
         saved_city = self._edit_city.text()
         saved_team = self._edit_team.text()
+        saved_refs = split_refs(self._edit_refs.text())
         self._parse_and_fill_form(self._list_open.currentItem().text())
+        self._edit_refs.setText(
+            join_refs(
+                list(dict.fromkeys(saved_refs + split_refs(self._edit_refs.text())))
+            )
+        )
         self._edit_name.setText(saved_name + " / " + self._edit_name.text())
         self._edit_yob.setText(saved_yob + " / " + self._edit_yob.text())
         if self._edit_team.text() != saved_team:
@@ -979,27 +995,22 @@ class MainWindow(QMainWindow):
         if data is None:
             return
         lines = self._payload_to_open_lines(data)
-        existing_keys = {
-            _participant_merge_key(self._list_open.item(i).text())
-            for i in range(self._list_open.count())
-            if "#" in self._list_open.item(i).text()
-        }
-        added = 0
-        for line in lines:
-            if "#" not in line:
-                continue
-            key = _participant_merge_key(line)
-            if key not in existing_keys:
-                self._list_open.addItem(line)
-                existing_keys.add(key)
-                added += 1
+        merged, added, ambiguous = merge_open_lines(self._open_items(), lines)
+        self._list_open.clear()
+        self._list_open.addItems(merged)
         added_groups = self._merge_groups_from_payload(data)
         self._update_open_scripts()
         self._save_all_data()
+        note = (
+            f" {ambiguous} of them match more than one unlinked line by name;"
+            " check them by hand."
+            if ambiguous
+            else ""
+        )
         QMessageBox.information(
             self,
             "Load from site",
-            f"Added {added} new participant(s) and {added_groups} new group(s).",
+            f"Added {added} new participant(s) and {added_groups} new group(s).{note}",
         )
 
     def _on_replace_from_site(self) -> None:
