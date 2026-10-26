@@ -34,6 +34,13 @@ def current_local_seconds() -> float:
 # field parsing
 # ---------------------------------------------------------------------------
 
+_FIELD_BREAKS = re.compile(r"[#\r\n\v\f\x1c-\x1e\x85\u2028\u2029]+")
+
+
+def _protocol_text(value: str) -> str:
+    """The legacy format has no escaping for field or record separators."""
+    return _FIELD_BREAKS.sub(" ", value)
+
 
 def get_field(line: str, idx: int, sep: str = "#") -> str:
     """Return idx-th token from a sep-delimited string."""
@@ -87,12 +94,21 @@ def build_competitor_line(
     """
     # A group without a lap count is just its name (the combo box shows it so); the
     # laps field must still be there, empty, or every later field lands one place early.
-    if "#" not in group_with_laps:
-        group_with_laps += "#"
-    return (
-        f"{number}#{name}#{group_with_laps}#{stage}#"
-        f"{year_of_birth}#{team}#{city}#{comment}#{time_shift}#{join_refs(split_refs(refs))}#"
-    )
+    group, _, laps = group_with_laps.partition("#")
+    fields = [
+        number,
+        name,
+        group,
+        laps,
+        stage,
+        year_of_birth,
+        team,
+        city,
+        comment,
+        time_shift,
+        join_refs(split_refs(refs)),
+    ]
+    return "#".join(_protocol_text(value) for value in fields) + "#"
 
 
 # ---------------------------------------------------------------------------
@@ -525,7 +541,7 @@ def participant_to_open_line(
                 break
     # Always include the # separator so field positions are consistent with
     # parse_competitor_line expectations (group=f(2), laps=f(3), stage=f(4)).
-    group_with_laps = f"{cat_name}#{laps}"
+    group_with_laps = f"{_protocol_text(cat_name)}#{laps}"
     p_names = participant.get("participant_names", "")
     if p_names:
         name = p_names
@@ -550,11 +566,7 @@ def participant_to_open_line(
         city=city,
         # The legacy protocol has no escaping: '#' separates fields, and any
         # splitlines() separator breaks protocol or backup records.
-        comment=re.sub(
-            r"[#\r\n\v\f\x1c-\x1e\x85\u2028\u2029]+",
-            " ",
-            participant.get("additional_info", ""),
-        ),
+        comment=participant.get("additional_info", ""),
         time_shift="0 00:00:00.000",
         refs=registration_ref(participant),
     )
@@ -718,7 +730,7 @@ def categories_to_group_rows(
     rows: list[tuple[str, str]] = []
     seen: set[str] = set()
     for cat in categories:
-        name = (cat.get("name") or "").strip()
+        name = _protocol_text(cat.get("name") or "").strip()
         if not name:
             continue
         laps_val = cat.get("laps")
