@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.5.0](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.4.1...v0.5.0) (2026-10-26)
+
+
+### Features
+
+* keep the site registration on every start protocol line, through the form, teams and merges ([d0029bf](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/d0029bf182224785d63e262a605d1901279fb332))
+
+
+### Bug Fixes
+
+* keep the laps field in a line saved for a group without laps ([0d9781c](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/0d9781c15e69b1d50b4a46339554bfa221e662e4))
+* link an old line to a site registration only when the name match is one-to-one ([f689a7f](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/f689a7f54b9fd87ce9b14f2f176e241736db511b))
+
+
+### Documentation
+
+* adopt a constitution for spec-first changes ([a5fdbe8](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/a5fdbe855a9823fa5c8a21c85ca73935102f6eaf))
+* describe the start protocol line, the backup and the site exchange as they work today ([ba0200b](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/ba0200b2c3142c75d33cd05a9bed4864b5b90e77))
+* show the site registration as a form field and keep it on both lists ([d9e9ab5](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/d9e9ab55bc91a5d7eb799fdf6f51c3de464db0dd))
+* specify keeping the site registration on every start protocol line ([25f6a28](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/25f6a28c842b1745db282adca50ab256c2d2bd35))
+* write the reference field even when empty, and never merge two references by name ([194be5b](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/194be5bdb38f75209e59e3ebeb3fd9cd67efbc07))
+
 ## [0.4.1](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.4.0...v0.4.1) (2026-10-11)
 
 
