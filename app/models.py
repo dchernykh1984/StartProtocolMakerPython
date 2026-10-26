@@ -579,13 +579,21 @@ def merge_open_lines(
     A line with a reference matches only a line with the same reference -- two
     registrations of one person (two distances) are two lines even with equal names.
     The name/year key is a fallback for an old line that has no reference yet, and only
-    when exactly one such line fits; that line then takes the reference. Anything less
+    when exactly one such line fits and exactly one site line has that key; that line
+    then takes the reference. Anything less
     certain is added, and counted as ambiguous, never merged silently.
     """
     result = list(existing)
     known_refs = {
         r for line in result for r in split_refs(parse_competitor_line(line)["refs"])
     }
+    # How many referenced site lines share each name/year key: an old line is linked
+    # only when the match is one-to-one from both sides, whatever order the site sends.
+    incoming_keys: dict[tuple[str, str, str], int] = {}
+    for line in incoming:
+        if "#" in line and split_refs(parse_competitor_line(line)["refs"]):
+            key = participant_merge_key(line)
+            incoming_keys[key] = incoming_keys.get(key, 0) + 1
     added = ambiguous = 0
     for line in incoming:
         if "#" not in line:
@@ -609,12 +617,12 @@ def merge_open_lines(
             for i in same_key
             if not split_refs(parse_competitor_line(result[i])["refs"])
         ]
-        if len(unlinked) == 1:
+        if len(unlinked) == 1 and incoming_keys[key] == 1:
             result[unlinked[0]] = set_refs(result[unlinked[0]], join_refs(refs))
         else:
             result.append(line)
             added += 1
-            ambiguous += len(unlinked) > 1
+            ambiguous += len(unlinked) > 0
         known_refs.update(refs)
     return result, added, ambiguous
 
