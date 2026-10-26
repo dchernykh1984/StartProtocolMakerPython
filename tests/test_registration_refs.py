@@ -187,6 +187,17 @@ def test_a_team_carries_every_members_reference(win, monkeypatch):
     assert win._edit_refs.text() == "r21,r17"
 
 
+@pytest.mark.parametrize("auto_shift", [False, True])
+def test_joining_a_team_keeps_its_issued_bib(win, auto_shift):
+    win._parse_and_fill_form(_line("First Rider", refs="r1", number="120"))
+    win._chk_auto_shift.setChecked(auto_shift)
+    win._list_open.addItem(_line("Second Rider", refs="r2"))
+    win._list_open.setCurrentRow(0)
+    win._on_add_into_team()
+    assert win._edit_number.text() == "120"
+    assert win._edit_refs.text() == "r1,r2"
+
+
 def test_the_reference_survives_a_restart(win, monkeypatch, tmp_path):
     from app.models import load_backup, save_backup
 

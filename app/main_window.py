@@ -472,9 +472,13 @@ class MainWindow(QMainWindow):
             client_revision=self._client_revision,
         )
 
-    def _parse_and_fill_form(self, line: str) -> None:
+    def _parse_and_fill_form(
+        self, line: str, number_override: str | None = None
+    ) -> None:
         d = parse_competitor_line(line)
-        self._edit_number.setText(d["number"])
+        self._edit_number.setText(
+            d["number"] if number_override is None else number_override
+        )
         self._edit_name.setText(d["name"])
         group_with_laps = d["group"] + "#" + d["laps"] if d["laps"] else d["group"]
         idx = self._combo_group.findText(group_with_laps)
@@ -878,7 +882,11 @@ class MainWindow(QMainWindow):
         saved_city = self._edit_city.text()
         saved_team = self._edit_team.text()
         saved_refs = split_refs(self._edit_refs.text())
-        self._parse_and_fill_form(self._list_open.currentItem().text())
+        # Adding a member must not issue a different bib to a team already numbered.
+        self._parse_and_fill_form(
+            self._list_open.currentItem().text(),
+            self._edit_number.text().strip() or None,
+        )
         self._edit_refs.setText(
             join_refs(
                 list(dict.fromkeys(saved_refs + split_refs(self._edit_refs.text())))
