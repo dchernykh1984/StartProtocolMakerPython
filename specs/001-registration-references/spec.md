@@ -73,7 +73,8 @@ form and type a new entrant; the line has no reference.
 
 1. **Given** a line opened from the open list, **Then** the form's reference field shows its
    tokens, for example `r1234`.
-2. **Given** the referee clears that field, **Then** the saved line has an empty reference field.
+2. **Given** the referee clears that field, **Then** the saved line keeps the field, empty
+   (`...##`), so the site sees an explicit unlink.
 3. **Given** an emptied form and a hand-typed on-the-day entrant, **Then** the saved line has no
    reference; nothing is inferred from the name.
 
@@ -84,7 +85,12 @@ form and type a new entrant; the line has no reference.
 1. **Given** a registration renamed on the site after it was loaded, **When** the referee merges
    from the site again, **Then** the existing open-list line is recognised by its reference and no
    second line is added.
-2. **Given** one reference on two protocol lines, **Then** the duplicate indicator reports it like
+2. **Given** two registrations of one athlete (two distances, same name and year), **When** the
+   referee merges from the site twice, **Then** the open list holds exactly two lines, one per
+   reference.
+3. **Given** an old open-list line without a reference and two site registrations with its name and
+   year, **Then** neither is merged into it; both are added and the ambiguity is reported.
+4. **Given** one reference on two protocol lines, **Then** the duplicate indicator reports it like
    a repeated bib.
 
 ### User Story 5 - Nothing else changes for other programs (Priority: P1)
@@ -112,7 +118,11 @@ form and type a new entrant; the line has no reference.
 ### Functional Requirements
 
 - **FR-001**: Add one optional field after the start delay (index 10): empty, or comma-separated
-  tokens. Version 1 defines `r<registration id>` (decimal). No spaces, `#` or line breaks.
+  tokens. Version 1 defines `r<registration id>` (decimal). No spaces, `#` or line breaks. This
+  version always writes the field, even empty, so its lines have at least 11 `#` separators
+  (`...#0 00:00:00.000##` when unlinked). A line with the legacy 10 separators comes from a writer
+  that does not know the field; the site treats the two differently (an unlink withdraws the
+  binding, an absent field keeps it for review).
 - **FR-002**: Loading from the site writes `r<id>` from each participant's `id` into the line.
 - **FR-003**: The form has a visible, editable reference field. Opening a line from either list
   fills it; Save writes it into the new line. Clearing the form empties it; the referee may also
@@ -120,8 +130,11 @@ form and type a new entrant; the line has no reference.
 - **FR-004**: "Add into team" appends the added registration's tokens to the form's tokens, in
   member order, without duplicates.
 - **FR-005**: Every path that copies a line verbatim keeps the field, and anything after it.
-- **FR-006**: Merge from site matches by reference first, then by the current
-  `(last name, first name, year)` key.
+- **FR-006**: Merge from site matches a line by reference. Different non-empty references are
+  different registrations even with equal names and years (one person entered for two distances).
+  The legacy `(last name, first name, year)` key is used only against an existing line without any
+  reference, and only when exactly one such line matches; that line then takes the reference.
+  Otherwise the site's line is added and the ambiguity is reported, never merged silently.
 - **FR-007**: The duplicate indicator also reports a reference used on two protocol lines.
 - **FR-008**: The start list upload, the start protocol file, FTP push and the backup carry the
   lines as they are; no new request field, file or backup tag.
