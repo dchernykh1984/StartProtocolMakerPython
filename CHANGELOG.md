@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.5.0...v0.5.1) (2026-10-27)
+
+
+### Bug Fixes
+
+* keep text separators from shifting registration references ([2e207bd](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/2e207bdf072c30f119997d9e83cd689e9d0b212e))
+* keep the issued team bib when adding a member ([d8cf61e](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/d8cf61e47e8d93959987de249c130c9dcfa45867))
+
 ## [0.5.0](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.4.1...v0.5.0) (2026-10-26)
 
 
