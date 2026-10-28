@@ -336,3 +336,14 @@ class TestSearchIndex:
 
 def test_forms_is_a_plain_pair() -> None:
     assert tuple(Forms("a", "b")) == ("a", "b")
+
+
+def test_find_does_not_stop_on_a_chip_id():
+    rider = "15#Kim A#Elite#5#1#1990#T#C##0 00:00:00.000##E28011700000020A#"
+    bib_117 = "117#Lee B#Elite#5#1#1991#T#C##0 00:00:00.000##B1#"
+    index = SearchIndex()
+    index.refresh([rider, bib_117])
+    query = search_forms("117")
+    assert not index.matches(0, query)
+    assert index.matches(1, query)
+    assert index.matches(0, search_forms("Kim"))

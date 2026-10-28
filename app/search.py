@@ -32,6 +32,8 @@ import unicodedata
 from collections.abc import Sequence
 from typing import NamedTuple
 
+from app.models import CHIPS_FIELD
+
 # Cyrillic letter -> search key. Several letters share a key on purpose: that is what
 # lets one Latin spelling of a name find another.
 _CYRILLIC_KEY = {
@@ -266,6 +268,18 @@ def scripts_in(text: str) -> set[str]:
     return found
 
 
+def _without_chips(line: str) -> str:
+    """The line without its chip ids (field 11).
+
+    Hex EPCs that share a prefix (E2801170...) would match bib numbers and short
+    name fragments on every rider who carries a chip.
+    """
+    fields = line.split("#")
+    if len(fields) > CHIPS_FIELD + 1:
+        del fields[CHIPS_FIELD]
+    return "#".join(fields)
+
+
 class SearchIndex:
     """The reduced forms of one list, rebuilt only when that list changes."""
 
@@ -290,7 +304,7 @@ class SearchIndex:
         if incoming == self._items:
             return False
         self._items = incoming
-        self._forms = [search_forms(item) for item in self._items]
+        self._forms = [search_forms(_without_chips(item)) for item in self._items]
         scripts: set[str] = set()
         for item in self._items:
             scripts |= scripts_in(item)
