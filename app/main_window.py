@@ -439,14 +439,15 @@ class MainWindow(QMainWindow):
         return result
 
     def _refresh_duplicate_indicator(self) -> None:
-        found, idx = check_duplicate_fields(self._save_as_items(), 0, False)
+        items = self._save_as_items()
+        found, idx = check_duplicate_fields(items, 0, False)
         # One site registration on two protocol lines is as wrong as a repeated bib.
-        ref_row = duplicate_ref_row(self._save_as_items())
+        ref_row = duplicate_ref_row(items)
         if ref_row >= 0:
             found, idx = True, (idx if idx >= 0 else ref_row)
-        # A chip on two lines makes every read of it ambiguous; the chronometers
+        # A chip under two bibs makes every read of it ambiguous; the chronometers
         # would leave both riders untimed rather than guess.
-        chip_row = duplicate_chip_row(self._save_as_items())
+        chip_row = duplicate_chip_row(items)
         if chip_row >= 0:
             found, idx = True, (idx if idx >= 0 else chip_row)
         self._lbl_error.setVisible(found)
