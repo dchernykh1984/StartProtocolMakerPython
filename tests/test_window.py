@@ -1104,7 +1104,7 @@ def test_saving_writes_the_chips_and_clears_the_field(win):
     win._on_save_to_file()
     # The spaces were dropped: the first Save shows the ids, the second saves them.
     assert win._save_as_items() == []
-    assert win._edit_chips.text() == "E28011700000020A, E2801170000002AB"
+    assert win._edit_chips.text() == "E28011700000020A, E2801170000002AB, "
     win._on_save_to_file()
     saved = win._save_as_items()[0]
     assert saved.endswith("#E28011700000020A,E2801170000002AB#")
@@ -1113,7 +1113,7 @@ def test_saving_writes_the_chips_and_clears_the_field(win):
 
 def test_opening_a_line_fills_the_chip_field(win):
     win._parse_and_fill_form(_chip_line("A1,B2"))
-    assert win._edit_chips.text() == "A1,B2"
+    assert win._edit_chips.text() == "A1,B2, "
 
 
 def test_changing_the_bib_keeps_the_chips(win):
@@ -1177,7 +1177,7 @@ def test_a_site_relays_members_count_when_a_member_is_added(win):
     win._list_open.addItem(_chip_line("C1", number=""))
     win._list_open.setCurrentRow(0)
     win._on_add_into_team()
-    assert win._edit_chips.text() == "; ; C1"
+    assert win._edit_chips.text() == "; ; C1, "
 
 
 def test_chips_scanned_before_the_first_member_are_that_members(win):
@@ -1185,7 +1185,7 @@ def test_chips_scanned_before_the_first_member_are_that_members(win):
     win._list_open.addItems([_chip_line(number=""), _chip_line(number="")])
     win._list_open.setCurrentRow(0)
     win._on_add_into_team()
-    assert win._edit_chips.text() == "A1"
+    assert win._edit_chips.text() == "A1, "
     win._list_open.setCurrentRow(1)
     win._on_add_into_team()
     assert win._edit_chips.text() == "A1; "
@@ -1214,6 +1214,15 @@ def test_one_chip_typed_for_two_riders_is_shown_before_saving(win, monkeypatch):
     assert win._save_as_items() == []
     assert win._edit_chips.text() == "A1; "
     assert "Rider 2: (no chips)" in shown[0]
+
+
+def test_a_scan_after_chips_the_form_put_there_is_an_id_of_its_own(win):
+    win._parse_and_fill_form(_chip_line("A1,B2", number="5"))
+    win._edit_chips.insert("E2801170000002AB")  # cursor at the end, as after setText
+    win._on_save_to_file()
+    assert parse_competitor_line(win._save_as_items()[0])["chips"] == (
+        "A1,B2,E2801170000002AB"
+    )
 
 
 def test_a_scan_into_the_middle_of_the_chip_field_is_separated_there(win):
@@ -1269,7 +1278,7 @@ def test_a_team_merge_still_asks_before_saving_a_cleaned_id(win):
     win._on_add_into_team()
     win._on_save_to_file()
     assert win._save_as_items() == []
-    assert win._edit_chips.text() == "E2801170, 0000020A; B1"
+    assert win._edit_chips.text() == "E2801170, 0000020A; B1, "
 
 
 def test_a_member_added_to_a_team_saved_without_chips_takes_the_next_stage(win):
@@ -1278,7 +1287,7 @@ def test_a_member_added_to_a_team_saved_without_chips_takes_the_next_stage(win):
     win._list_open.addItem(_chip_line("C1", number=""))
     win._list_open.setCurrentRow(0)
     win._on_add_into_team()
-    assert win._edit_chips.text() == "; ; C1"
+    assert win._edit_chips.text() == "; ; C1, "
 
 
 def test_starting_a_team_takes_the_stage_of_its_first_line_not_the_last_saved(win):
@@ -1298,7 +1307,7 @@ def test_the_first_member_added_to_an_empty_form_is_the_first_rider(win):
     win._on_add_into_team()  # the name becomes " / Ivanov Ivan"
     win._list_open.setCurrentRow(1)
     win._on_add_into_team()
-    assert win._edit_chips.text() == "C1; D1"
+    assert win._edit_chips.text() == "C1; D1, "
 
 
 def test_adding_a_member_keeps_the_teams_stage_count(win):
@@ -1308,7 +1317,7 @@ def test_adding_a_member_keeps_the_teams_stage_count(win):
     win._list_open.setCurrentRow(0)
     win._on_add_into_team()
     assert win._edit_stage.text() == "3"
-    assert win._edit_chips.text() == "A1; B1"
+    assert win._edit_chips.text() == "A1; B1, "
 
 
 def test_a_team_carries_every_members_chips(win):
@@ -1316,11 +1325,11 @@ def test_a_team_carries_every_members_chips(win):
     win._list_open.addItem(_chip_line("B2,C3", number=""))
     win._list_open.setCurrentRow(0)
     win._on_add_into_team()
-    assert win._edit_chips.text() == "A1, B2; B2, C3"
+    assert win._edit_chips.text() == "A1, B2; B2, C3, "
     assert win._edit_number.text() == "120"
     # B2 for both riders: the first Save shows it dropped, the second saves.
     win._on_save_to_file()
-    assert win._edit_chips.text() == "A1, B2; C3"
+    assert win._edit_chips.text() == "A1, B2; C3, "
     win._on_save_to_file()
     assert parse_competitor_line(win._save_as_items()[0])["chips"] == "A1,B2;C3"
 
@@ -1361,7 +1370,7 @@ def test_a_protocol_line_opened_for_correction_shows_its_own_chips(win):
     win._list_save_as.addItem(_chip_line("B1", number="5"))
     win._list_save_as.setCurrentRow(0)
     win._on_edit_save_as()
-    assert win._edit_chips.text() == "B1"
+    assert win._edit_chips.text() == "B1, "
 
 
 def test_chips_left_from_an_opened_line_are_not_carried_to_the_next(win):
