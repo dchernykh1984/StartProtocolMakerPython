@@ -37,7 +37,6 @@ from app.models import (
     build_competitor_line,
     categories_to_group_rows,
     check_duplicate_fields,
-    chip_field_not_ascii,
     chip_rows,
     cleaned_chip_text,
     current_local_seconds,
@@ -619,11 +618,13 @@ class MainWindow(QMainWindow):
         self._update_open_scripts()
         self._btn_search.setText(f"Find ({len(lines)})")
         # A file prepared elsewhere bypasses the form's check; "to protocol" copies
-        # lines as they are, so say now which chips would never match a reader.
+        # lines as they are, so say now which chips would never match a reader. The
+        # form writes ASCII only, and readers drop anything else (a lost full-width
+        # comma joins two ids).
         foreign = [
             ln
             for ln in lines
-            if has_chips_field(ln) and chip_field_not_ascii(get_field(ln, CHIPS_FIELD))
+            if has_chips_field(ln) and not get_field(ln, CHIPS_FIELD).isascii()
         ]
         if foreign:
             QMessageBox.warning(
