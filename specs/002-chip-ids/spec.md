@@ -165,7 +165,9 @@ principle II).
 - **FR-007**: A second indicator next to the duplicate one reports a protocol line whose chips a
   reader cannot use as they are: an id with a letter or digit outside ASCII (a line copied verbatim
   from a file made elsewhere never met the form's check) or a relay with more riders than stages;
-  the line is selected. The duplicate indicator also reports a chip bound to two different bibs.
+  it names the line and leaves the selection where the registrar put it, since the problem lasts
+  until fixed and a jump on every save would aim the next Delete at another rider. The duplicate
+  indicator also reports a chip bound to two different bibs.
   An id with a foreign letter is compared as typed, so two of them never look alike. A line binds
   its chips the way the chronometers read it: with N > 1 stages and a numeric bib, the k-th rider's
   chips (counting from 0) bind to bib + k -- FinishProtocolGenerator and the site number the stage
