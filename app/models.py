@@ -159,6 +159,9 @@ CHIPS_FIELD = 11
 # A semicolon separates the riders of a team, in stage order; a comma separates the
 # ids of one rider.
 _RIDER_SEPARATOR = ";"
+# A team member without chips: keeps the riders after it on their stage, where an
+# empty place could not be told from a semicolon typed ahead of the next member.
+_EMPTY_RIDER = "-"
 _NOT_CHIP_CHARS = re.compile(r"[^A-Za-z0-9]")
 
 
@@ -191,21 +194,23 @@ def _foreign(c: str) -> bool:
 
 def _raw_riders(text: str) -> list[list[str]]:
     """The typed ids of each rider as typed: riders between semicolons, ids between
-    commas, stripped, empty ones dropped. Every other chip helper starts here."""
-    return [
+    commas, stripped, empty ones dropped. A semicolon with nothing after it at the end
+    starts no rider. Every other chip helper starts here."""
+    riders = [
         [t.strip() for t in part.split(",") if t.strip()]
         for part in _plain_chip_text(text).split(_RIDER_SEPARATOR)
     ]
+    while riders and not riders[-1]:
+        riders.pop()
+    return riders
 
 
-def _rider_groups(
-    text: str, keep_foreign: bool = False, trim: bool = True
-) -> list[list[str]]:
+def _rider_groups(text: str, keep_foreign: bool = False) -> list[list[str]]:
     """The ids of each rider, in order, without repeats across the whole text.
 
-    An empty group in the middle stays: it keeps the riders after it on their own
-    stage; ``trim`` drops empty groups at the end. With ``keep_foreign`` an id
-    holding a foreign letter is kept as typed, so the form can still stop on it.
+    A rider without chips (``-``, or nothing between two semicolons) is an empty
+    group that keeps the riders after it on their own stage. With ``keep_foreign``
+    an id holding a foreign letter is kept as typed, so the form can still stop on it.
     """
     seen: set[str] = set()
     groups: list[list[str]] = []
@@ -221,8 +226,6 @@ def _rider_groups(
                 seen.add(chip)
                 group.append(chip)
         groups.append(group)
-    while trim and groups and not groups[-1]:
-        groups.pop()
     return groups
 
 
@@ -232,11 +235,12 @@ def format_chips(text: str) -> str:
     A space inside an id is dropped like any punctuation, whatever the grouping a
     label printed; only a comma or a semicolon starts the next id.
     """
-    return _RIDER_SEPARATOR.join(",".join(g) for g in _rider_groups(text))
+    groups = _rider_groups(text)
+    return _RIDER_SEPARATOR.join(",".join(g) or _EMPTY_RIDER for g in groups)
 
 
 def _show_chips(groups: list[list[str]]) -> str:
-    return "; ".join(", ".join(g) for g in groups)
+    return "; ".join(", ".join(g) or _EMPTY_RIDER for g in groups)
 
 
 def cleaned_chip_text(text: str) -> str | None:
@@ -246,7 +250,7 @@ def cleaned_chip_text(text: str) -> str | None:
     pasted without a comma or one id cut in two, which only the registrar can tell,
     so the form shows the result and asks for Save again.
     """
-    tokens = (t for rider in _raw_riders(text) for t in rider)
+    tokens = (t for rider in _raw_riders(text) for t in rider if t != _EMPTY_RIDER)
     if all(_normalise_chip(t) == t.upper() for t in tokens):
         return None
     return _show_chips(_rider_groups(text))
@@ -335,7 +339,8 @@ def merge_chip_text(*texts: str) -> str:
     seen: set[str] = set()
     groups: list[list[str]] = []
     for text in texts:
-        for tokens in _raw_riders(text):
+        # A member without chips still takes a place, shown as "-".
+        for tokens in _raw_riders(text) or [[]]:
             group = []
             for token in tokens:
                 key = token if any(map(_foreign, token)) else _normalise_chip(token)

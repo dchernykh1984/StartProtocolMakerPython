@@ -232,16 +232,19 @@ def test_a_team_members_chips_become_the_next_rider():
 
     assert merge_chip_text("a1, B2", "b2,c3") == "a1, B2; c3"
     # Kept as typed, so the save still asks before it joins the pieces.
-    assert merge_chip_text("", "E280 1170") == "; E280 1170"
-    assert merge_chip_text("A1", "") == "A1; "
-    assert merge_chip_text("A1; ", "C1") == "A1; ; C1"
+    assert merge_chip_text("", "E280 1170") == "-; E280 1170"
+    assert merge_chip_text("A1", "") == "A1; -"
+    assert merge_chip_text("A1; -", "C1") == "A1; -; C1"
+    # A semicolon typed ahead of the next member is no rider of its own.
+    assert merge_chip_text("A1;", "B1") == "A1; B1"
     foreign = f"{chr(0x415)}1"
     assert merge_chip_text(foreign, "A1") == f"{foreign}; A1"
 
 
 def test_riders_of_a_team_are_separated_by_semicolons():
-    assert format_chips("a1, a2; b1;; c1;") == "A1,A2;B1;;C1"
-    assert format_chips("a1; a1") == "A1"
+    assert format_chips("a1, a2; b1;; c1;") == "A1,A2;B1;-;C1"
+    assert format_chips("A1; -") == "A1;-"
+    assert format_chips("a1; a1") == "A1;-"
 
 
 def _team(stages: str, chips: str, number: str = "15") -> str:
@@ -269,7 +272,7 @@ def test_a_relay_binds_each_riders_chips_to_their_stage_bib():
         ("B1", "16"),
         ("C1", "17"),
     ]
-    assert chip_bibs(_team("3", "A1;;C1")) == [("A1", "15"), ("C1", "17")]
+    assert chip_bibs(_team("3", "A1;-;C1")) == [("A1", "15"), ("C1", "17")]
     # A rider past the last stage has no bib to bind to.
     assert chip_bibs(_team("2", "A1;B1;C1")) == [("A1", "15"), ("B1", "16")]
     # One stage: the whole team is one bib.
