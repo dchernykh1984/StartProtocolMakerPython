@@ -173,15 +173,30 @@ def _normalise_chip(token: str) -> str:
     return _NOT_CHIP_CHARS.sub("", token).upper()
 
 
-def _plain_chip_text(text: str) -> str:
-    """Typed text with look-alikes of ASCII made ASCII and invisible characters gone.
+# Full-width forms of the printable ASCII characters, as a PDF or an East Asian input
+# method types them: U+FF01..U+FF5E is "!".."~" shifted by 0xFEE0.
+_FULL_WIDTH = range(0xFF01, 0xFF5F)
+_FULL_WIDTH_SHIFT = 0xFEE0
 
-    NFKC turns a non-breaking space or a full-width comma copied from a PDF into the
-    plain one; zero-width spaces and byte-order marks (format characters) are
-    dropped. A Cyrillic letter stays what it is, and is reported.
+
+def _plain_char(c: str) -> str:
+    if c.isspace():
+        return " "
+    if ord(c) in _FULL_WIDTH:
+        return chr(ord(c) - _FULL_WIDTH_SHIFT)
+    return "" if unicodedata.category(c) == "Cf" else c
+
+
+def _plain_chip_text(text: str) -> str:
+    """Typed text with what copying adds made plain, and nothing else changed.
+
+    Any space (a non-breaking one from a PDF) becomes a space, a full-width letter,
+    digit or comma its ASCII self, an invisible format character (zero-width space,
+    byte-order mark) goes. Not NFKC: it would also turn a numero sign into "No" and a
+    Roman numeral into letters without a word. A Cyrillic letter stays, and is
+    reported.
     """
-    text = unicodedata.normalize("NFKC", text)
-    return "".join(c for c in text if unicodedata.category(c) != "Cf")
+    return "".join(map(_plain_char, text))
 
 
 def _foreign(c: str) -> bool:
@@ -276,7 +291,8 @@ def chip_field_not_ascii(field: str) -> bool:
 
     The form writes ASCII only, so such a field came verbatim from a file made
     elsewhere. Readers drop what is not ASCII: a full-width A loses the letter, a
-    full-width comma joins two ids into one. No NFKC here, unlike for typed text.
+    full-width comma joins two ids into one. Nothing is made plain here, unlike for
+    typed text.
     """
     return not field.isascii()
 
