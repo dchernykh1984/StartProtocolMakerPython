@@ -457,20 +457,24 @@ class MainWindow(QMainWindow):
         ref_row = duplicate_ref_row(items)
         if ref_row >= 0:
             found, idx = True, (idx if idx >= 0 else ref_row)
-        # A chip under two bibs makes every read of it ambiguous; the chronometers
-        # would leave both riders untimed rather than guess.
-        chip_row = duplicate_chip_row(items)
-        if chip_row >= 0:
-            found, idx = True, (idx if idx >= 0 else chip_row)
         self._lbl_error.setVisible(found)
         if found and idx >= 0:
             self._list_save_as.setCurrentRow(idx)
-        # Named, not selected: the problem lasts until fixed, and moving the selection
-        # on every save would make the next Delete remove another rider.
-        chip_row = chip_problem_row(items)
-        self._lbl_chip_error.setVisible(chip_row >= 0)
-        if chip_row >= 0:
-            self._lbl_chip_error.setText(f"CHIP IDS NEED A FIX! (line {chip_row + 1})")
+        # Chip problems are named, not selected: they last until fixed, and moving the
+        # selection on every save would make the next Delete remove another rider. A
+        # chip under two bibs is one of them: the chronometers would leave both riders
+        # untimed rather than guess.
+        problem_row = chip_problem_row(items)
+        twice_row = duplicate_chip_row(items)
+        if problem_row >= 0:
+            self._lbl_chip_error.setText(
+                f"CHIP IDS NEED A FIX! (line {problem_row + 1})"
+            )
+        elif twice_row >= 0:
+            self._lbl_chip_error.setText(
+                f"ONE CHIP ON TWO BIBS! (line {twice_row + 1})"
+            )
+        self._lbl_chip_error.setVisible(problem_row >= 0 or twice_row >= 0)
 
     def _save_all_data(self) -> None:
         self._refresh_duplicate_indicator()
