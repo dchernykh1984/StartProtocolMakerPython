@@ -19,9 +19,10 @@
   or as alphanumeric transponder codes (RaceResult); upper case is how they print them, and the
   chronometers compare ids after the same normalisation. Labels print a 96-bit EPC in groups of four
   (`E280 1170 0000 020A`), and dashes and dots appear when people copy ids; none of them carries
-  meaning. A space between two longer words is different: two whole ids pasted from a spreadsheet,
-  or RaceResult's seven-character codes typed with a space. So spaces join groups of up to four
-  characters and separate longer words (review of the pull request, cycle 1).
+  meaning. A space can also stand between two whole ids pasted without a comma, and no rule tells
+  that from a grouped id: groups of four, of eight, a 32-character EPC in eight groups all occur.
+  So a space never separates ids, and when cleaning drops anything inside an id the form shows the
+  result and asks for Save again (review of the pull request, cycles 1 and 2).
 - **Alternatives**: keeping ids exactly as typed (rejected: `e280...` and `E280...` would be two
   chips to a chronometer that compares strings).
 

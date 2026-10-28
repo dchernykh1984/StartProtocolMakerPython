@@ -91,10 +91,11 @@ later field stays in place. Readers that exist:
 
 ## Timing chips
 
-- The form's "Chips" field shows and edits field 11. Commas and semicolons separate ids; spaces
-  join groups of up to four characters (labels print an EPC in groups of four) and separate longer
-  words; other ASCII punctuation is dropped, and ids are kept upper case without repeats. Enter in
-  the field adds a separator, for desk readers that end each id with Enter.
+- The form's "Chips" field shows and edits field 11. Commas and semicolons separate ids; spaces and
+  punctuation inside an id are dropped, and ids are kept upper case without repeats. When cleaning
+  dropped something inside an id, the first Save shows the ids as they will be saved and the second
+  saves them. Enter in the field adds a separator at the cursor, for desk readers that end each id
+  with Enter.
 - An id with a character outside ASCII -- a Cyrillic look-alike typed with the Russian layout --
   stops the save: a message names it and every form field keeps what was typed.
 - Saving a rider clears the field for the next one; "Add into team" merges the member's chips.

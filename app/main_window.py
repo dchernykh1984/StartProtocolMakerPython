@@ -36,6 +36,7 @@ from app.models import (
     build_competitor_line,
     categories_to_group_rows,
     check_duplicate_fields,
+    cleaned_chip_text,
     current_local_seconds,
     describe_foreign_chip,
     duplicate_chip_row,
@@ -718,6 +719,17 @@ class MainWindow(QMainWindow):
                 "layout?):\n\n"
                 + "\n".join(map(describe_foreign_chip, foreign))
                 + "\n\nNothing was saved.",
+            )
+            return
+        cleaned = cleaned_chip_text(self._edit_chips.text())
+        if cleaned is not None:
+            self._edit_chips.setText(cleaned)
+            QMessageBox.information(
+                self,
+                "Chip ids",
+                "Spaces or punctuation were removed from the chip ids. Check that each "
+                "id below is one chip -- separate chips with commas -- and press Save "
+                "again:\n\n" + cleaned,
             )
             return
         line = build_competitor_line(

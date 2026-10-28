@@ -108,9 +108,9 @@ principle II).
 
 ### Edge Cases
 
-- Chip ids typed with spaces inside (`E280 1170 0000 020A`, as labels print them): one id. Spaces
-  join groups of up to four characters; between longer words they separate ids, so two whole ids
-  pasted with a space (`E28011700000020A E2801170000002AB`) stay two.
+- Chip ids typed with spaces inside (`E280 1170 0000 020A`, as labels print them): one id, shown
+  joined before it is saved. Two whole ids pasted with a space instead of a comma are shown joined
+  too, and the registrar adds the comma.
 - Lower case and stray punctuation (`e2801170-0000-020a`): ids are case-insensitive and kept upper
   case; any character other than an ASCII letter or digit inside an id is dropped.
 - A Cyrillic letter that looks Latin (the keyboard layout was Russian, or a desk reader typed into
@@ -132,9 +132,9 @@ principle II).
 
 - **FR-001**: Add one field after the registration references (index 11): empty, or
   comma-separated chip ids. An id is one or more ASCII letters and digits, stored upper case. Commas
-  and semicolons separate ids; spaces join groups of up to four characters, so an id printed in
-  groups (`E280 1170 0000 020A`) is one id, and separate longer words; any other ASCII character
-  inside an id is dropped; empty ids and repeats are dropped, the first occurrence keeps its place.
+  and semicolons separate ids; spaces and any other punctuation inside an id are dropped, so an id
+  printed in groups (`E280 1170 0000 020A`) is one id; empty ids and repeats are dropped, the first
+  occurrence keeps its place.
 - **FR-002**: A line built from the form always writes the chip field, even empty, so it has at
   least 12 `#` separators. A line with fewer separators has no chip field and reads as having no
   chips.
@@ -142,9 +142,11 @@ principle II).
   line from either list fills it; saving writes it into the new line; saving clears it, as it
   clears the reference field. A character outside ASCII in the chip field stops the save: the
   registrar is told which ids hold one and every form field keeps what was typed, so a wrong
-  keyboard layout is caught at the desk. Upper-casing and dropping ASCII punctuation happen without
-  a word. Enter in the chip field adds `, ` at its end, so a desk reader that ends each id with Enter
-  fills the field one id per scan.
+  keyboard layout is caught at the desk. Upper-casing happens without a word. When cleaning drops a
+  character inside an id -- a space, a dash -- the first Save stops and the field shows the ids as
+  they will be saved, because only the registrar can tell one id printed in groups from two ids
+  pasted without a comma; the second Save saves them. Enter in the chip field adds `, ` at the
+  cursor, so a desk reader that ends each id with Enter fills the field one id per scan.
 - **FR-004**: Every path that copies a line verbatim keeps the chip field and anything after it:
   open to protocol, the backup, the start protocol file, FTP push, the start list upload.
 - **FR-005**: A line loaded from the site has an empty chip field. A merge never changes the chips

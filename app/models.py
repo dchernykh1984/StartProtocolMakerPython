@@ -158,9 +158,6 @@ def set_refs(line: str, refs: str) -> str:
 CHIPS_FIELD = 11
 _CHIP_SEPARATORS = re.compile(r"[,;]")
 _NOT_CHIP_CHARS = re.compile(r"[^A-Za-z0-9]")
-# Labels print an EPC in groups of four characters ("E280 1170 0000 020A"): spaces
-# between such groups are inside one id, while a longer word is an id of its own.
-_CHIP_GROUP = 4
 
 
 def has_chips_field(line: str) -> bool:
@@ -182,28 +179,27 @@ def _plain_chip_text(text: str) -> str:
     return "".join(c for c in text if unicodedata.category(c) != "Cf")
 
 
-def _chip_words(part: str) -> list[str]:
-    """The ids in one comma-separated part: groups of up to four join, longer stand."""
-    ids: list[str] = []
-    run: list[str] = []
-    for word in part.split():
-        if len(word) <= _CHIP_GROUP:
-            run.append(word)
-            continue
-        if run:
-            ids.append("".join(run))
-            run = []
-        ids.append(word)
-    if run:
-        ids.append("".join(run))
-    return ids
-
-
 def split_chips(text: str) -> list[str]:
-    """Chip ids in order: upper case, ASCII letters and digits only, no repeats."""
+    """Chip ids in order: upper case, ASCII letters and digits only, no repeats.
+
+    A space inside an id is dropped like any punctuation, whatever the grouping a
+    label printed; only a comma or a semicolon starts the next id.
+    """
     parts = _CHIP_SEPARATORS.split(_plain_chip_text(text))
-    words = (w for part in parts for w in _chip_words(part))
-    return list(dict.fromkeys(t for t in map(_normalise_chip, words) if t))
+    return list(dict.fromkeys(t for t in map(_normalise_chip, parts) if t))
+
+
+def cleaned_chip_text(text: str) -> str | None:
+    """The ids as they will be saved, when cleaning dropped a character inside one.
+
+    Upper-casing is safe and returns None. A dropped space or dash may hide two ids
+    pasted without a comma or one id cut in two, which only the registrar can tell,
+    so the form shows the result and asks for Save again.
+    """
+    parts = (t.strip() for t in _CHIP_SEPARATORS.split(_plain_chip_text(text)))
+    if all(_normalise_chip(t) == t.upper() for t in parts):
+        return None
+    return ", ".join(split_chips(text))
 
 
 def join_chips(tokens: list[str]) -> str:

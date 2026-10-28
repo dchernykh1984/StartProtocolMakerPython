@@ -52,21 +52,24 @@ def test_chips_go_to_field_11_cleaned_and_in_order():
     assert parse_competitor_line(line)["chips"] == "E28011700000020A,E2801170000002AB"
 
 
-def test_ids_split_on_commas_and_semicolons_and_between_long_words():
+def test_ids_split_only_on_commas_and_semicolons():
     assert split_chips("E280 1170 0000 020A") == ["E28011700000020A"]
+    assert split_chips("E2801170 0000020A") == ["E28011700000020A"]
     assert split_chips("a1;b2 ,, c3") == ["A1", "B2", "C3"]
     assert split_chips("e280-1170.00:0a") == ["E2801170000A"]
     assert split_chips(" , ; ") == []
-    # Two whole ids pasted with a space are two ids, not one made-up one.
-    assert split_chips("E28011700000020A E2801170000002AB") == [
-        "E28011700000020A",
-        "E2801170000002AB",
-    ]
-    assert split_chips("E280 1170 0000 020A E2801170000002AB") == [
-        "E28011700000020A",
-        "E2801170000002AB",
-    ]
-    assert split_chips("ABC1234 9 BCD") == ["ABC1234", "9BCD"]
+
+
+def test_a_dropped_character_inside_an_id_asks_for_a_check():
+    from app.models import cleaned_chip_text
+
+    assert cleaned_chip_text("a1, b2 ;c3") is None  # case and separators only
+    assert cleaned_chip_text("") is None
+    assert cleaned_chip_text("e280 1170, B2") == "E2801170, B2"
+    # Two whole ids pasted without a comma: shown joined, so the desk sees it.
+    assert cleaned_chip_text("E28011700000020A E2801170000002AB") == (
+        "E28011700000020AE2801170000002AB"
+    )
 
 
 def test_repeats_are_dropped_and_the_first_keeps_its_place():
