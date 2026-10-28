@@ -193,7 +193,8 @@ class MainWindow(QMainWindow):
         # read into this bib's crossing.
         lbl, self._edit_chips = _lbl_edit("Chips:")
         self._edit_chips.setToolTip(
-            "Chip ids of this rider, separated by commas; a team lists every member's."
+            "Chip ids of this rider, separated by commas; a team lists each member's "
+            "after a semicolon, in stage order."
         )
         # A desk reader types each id followed by Enter: make that a separator, or two
         # scans would merge into one id.

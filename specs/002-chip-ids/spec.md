@@ -125,16 +125,20 @@ principle II).
   "to protocol" copies a line verbatim.
 - A desk reader that types each id followed by Enter: Enter in the chip field adds a separator, so
   one scan after another gives one id each instead of one long id.
+- A relay team with three stages and bib 15: its riders are 15, 16 and 17, so the chips of its
+  first, second and third member bind to those bibs. A team of one stage -- a tandem, a team timed
+  as one -- binds every member's chips to its one bib.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: Add one field after the registration references (index 11): empty, or
-  comma-separated chip ids. An id is one or more ASCII letters and digits, stored upper case. Commas
-  and semicolons separate ids; spaces and any other punctuation inside an id are dropped, so an id
-  printed in groups (`E280 1170 0000 020A`) is one id; empty ids and repeats are dropped, the first
-  occurrence keeps its place.
+- **FR-001**: Add one field after the registration references (index 11): empty, or chip ids.
+  Commas separate the ids of one rider; semicolons separate the riders of a team, in stage order.
+  An id is one or more ASCII letters and digits, stored upper case; spaces and any other
+  punctuation inside an id are dropped, so an id printed in groups (`E280 1170 0000 020A`) is one
+  id; empty ids and repeats are dropped, the first occurrence keeps its place; an empty rider before
+  others keeps its place.
 - **FR-002**: A line built from the form always writes the chip field, even empty, so it has at
   least 12 `#` separators. A line with fewer separators has no chip field and reads as having no
   chips.
@@ -151,14 +155,18 @@ principle II).
   open to protocol, the backup, the start protocol file, FTP push, the start list upload.
 - **FR-005**: A line loaded from the site has an empty chip field. A merge never changes the chips
   of an existing line, including when it links an old line to a registration.
-- **FR-006**: "Add into team" appends the added member's chips to the form's chips, in member
-  order, without repeats.
-- **FR-007**: The duplicate indicator also reports a chip used on the protocol lines of two
-  different bibs. The same chip on two lines of one bib, or on a line without a bib, is not
-  reported: neither is ambiguous to a chronometer.
+- **FR-006**: "Add into team" appends the added member's chips to the form's chips as the next
+  rider, after a semicolon, without repeats; a member without chips keeps an empty place.
+- **FR-007**: The duplicate indicator also reports a chip bound to two different bibs. A line binds
+  its chips the way the chronometers read it: with N > 1 stages and a numeric bib, the k-th rider's
+  chips (counting from 0) bind to bib + k -- FinishProtocolGenerator and the site number the stage
+  riders so -- and a rider past the last stage binds nothing; any other line binds every chip to
+  its bib; a line without a bib binds nothing. The same chip twice for one bib is not reported.
 - **FR-008**: Fields 0-10 keep their position and meaning.
 
 ### Key Entities
+
+- **Rider group**: the chip ids of one member of a team, between semicolons, in stage order.
 
 - **Chip id**: the code a chip reader reports for one chip, such as a 96-bit EPC in hexadecimal
   (`E28011700000020A...`) or a transponder code. Bound to exactly one bib through the line that

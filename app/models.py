@@ -112,7 +112,7 @@ def build_competitor_line(
         comment,
         time_shift,
         join_refs(split_refs(refs)),
-        join_chips(split_chips(chips)),
+        format_chips(chips),
     ]
     return "#".join(_protocol_text(value) for value in fields) + "#"
 
@@ -156,6 +156,9 @@ def set_refs(line: str, refs: str) -> str:
 # ---------------------------------------------------------------------------
 
 CHIPS_FIELD = 11
+# A semicolon separates the riders of a team, in stage order; a comma separates the
+# ids of one rider.
+_RIDER_SEPARATOR = ";"
 _CHIP_SEPARATORS = re.compile(r"[,;]")
 _NOT_CHIP_CHARS = re.compile(r"[^A-Za-z0-9]")
 
@@ -179,14 +182,58 @@ def _plain_chip_text(text: str) -> str:
     return "".join(c for c in text if unicodedata.category(c) != "Cf")
 
 
+def _foreign(c: str) -> bool:
+    """A letter or digit outside ASCII: a keyboard in the wrong layout, not a typo.
+
+    Punctuation outside ASCII (an en dash from a PDF) is dropped like a hyphen.
+    """
+    return not c.isascii() and unicodedata.category(c)[0] in "LN"
+
+
+def _rider_groups(
+    text: str, keep_foreign: bool = False, trim: bool = True
+) -> list[list[str]]:
+    """The ids of each rider, in order, without repeats across the whole text.
+
+    An empty group in the middle stays: it keeps the riders after it on their own
+    stage; ``trim`` drops empty groups at the end. With ``keep_foreign`` an id
+    holding a foreign letter is kept as typed, so the form can still stop on it.
+    """
+    seen: set[str] = set()
+    groups: list[list[str]] = []
+    for part in _plain_chip_text(text).split(_RIDER_SEPARATOR):
+        group = []
+        for token in (t.strip() for t in part.split(",")):
+            chip = (
+                token
+                if keep_foreign and any(map(_foreign, token))
+                else (_normalise_chip(token))
+            )
+            if chip and chip not in seen:
+                seen.add(chip)
+                group.append(chip)
+        groups.append(group)
+    while trim and groups and not groups[-1]:
+        groups.pop()
+    return groups
+
+
 def split_chips(text: str) -> list[str]:
-    """Chip ids in order: upper case, ASCII letters and digits only, no repeats.
+    """Every chip id of a field or of typed text, riders flattened, in order.
 
     A space inside an id is dropped like any punctuation, whatever the grouping a
     label printed; only a comma or a semicolon starts the next id.
     """
-    parts = _CHIP_SEPARATORS.split(_plain_chip_text(text))
-    return list(dict.fromkeys(t for t in map(_normalise_chip, parts) if t))
+    return [chip for group in _rider_groups(text) for chip in group]
+
+
+def format_chips(text: str) -> str:
+    """Field 11 as written: ids of a rider joined by commas, riders by semicolons."""
+    return _RIDER_SEPARATOR.join(",".join(g) for g in _rider_groups(text))
+
+
+def _show_chips(groups: list[list[str]]) -> str:
+    return "; ".join(", ".join(g) for g in groups)
 
 
 def cleaned_chip_text(text: str) -> str | None:
@@ -199,19 +246,7 @@ def cleaned_chip_text(text: str) -> str | None:
     parts = (t.strip() for t in _CHIP_SEPARATORS.split(_plain_chip_text(text)))
     if all(_normalise_chip(t) == t.upper() for t in parts):
         return None
-    return ", ".join(split_chips(text))
-
-
-def join_chips(tokens: list[str]) -> str:
-    return ",".join(tokens)
-
-
-def _foreign(c: str) -> bool:
-    """A letter or digit outside ASCII: a keyboard in the wrong layout, not a typo.
-
-    Punctuation outside ASCII (an en dash from a PDF) is dropped like a hyphen.
-    """
-    return not c.isascii() and unicodedata.category(c)[0] in "LN"
+    return _show_chips(_rider_groups(text))
 
 
 def foreign_chip_tokens(text: str) -> list[str]:
@@ -226,37 +261,57 @@ def describe_foreign_chip(token: str) -> str:
     return f"{token}  ({', '.join(dict.fromkeys(names))})"
 
 
+def chip_bibs(line: str) -> list[tuple[str, str]]:
+    """(chip, bib) for every chip a start protocol line binds, as the chronometers do.
+
+    A line with N > 1 stages and a numeric bib numbers its riders bib, bib + 1, ...,
+    the way FinishProtocolGenerator and the site do, so the k-th rider's chips bind
+    to bib + k and a rider past the last stage binds nothing. Any other line binds
+    every chip to its bib; a line without a bib binds nothing.
+    """
+    fields = line.split("#")
+    bib = fields[0].strip()
+    if not bib or bib == NOT_PAID or not has_chips_field(line):
+        return []
+    stage = fields[4].strip() if len(fields) > 4 else ""
+    stages = int(stage) if stage.isdecimal() else 1
+    staged = stages > 1 and bib.isdecimal()
+    pairs: list[tuple[str, str]] = []
+    for k, group in enumerate(_rider_groups(fields[CHIPS_FIELD])):
+        if staged and k >= stages:
+            break
+        rider_bib = str(int(bib) + k) if staged and k else bib
+        pairs.extend((chip, rider_bib) for chip in group)
+    return pairs
+
+
 def duplicate_chip_row(items: list[str]) -> int:
-    """The first protocol line whose chip a line above holds under another bib, or -1.
+    """The first protocol line whose chip a line above binds to another bib, or -1.
 
     The same chip on two lines of one bib is not ambiguous, and a line without a bib
     binds nothing for the chronometers, so neither is reported.
     """
     owner: dict[str, str] = {}
     for row, line in enumerate(items):
-        fields = parse_competitor_line(line)
-        bib = fields["number"].strip()
-        if not bib or bib == NOT_PAID:
-            continue
-        for chip in split_chips(fields["chips"]):
+        for chip, bib in chip_bibs(line):
             if owner.setdefault(chip, bib) != bib:
                 return row
     return -1
 
 
 def merge_chip_text(*texts: str) -> str:
-    """Typed chip ids of several riders, in order, without repeats, for the form.
+    """The chips of team members for the form: each member's ids as the next rider.
 
-    An id with a character outside ASCII is kept as typed, so the save still stops
-    on it instead of the merge quietly turning it into another chip's id.
+    An id with a foreign letter is kept as typed, so the save still stops on it. A
+    member without chips keeps an empty place, so later riders stay on their stage.
     """
-    parts = (
-        t.strip()
-        for text in texts
-        for t in _CHIP_SEPARATORS.split(_plain_chip_text(text))
-    )
-    ids = (i for t in parts for i in ([t] if any(map(_foreign, t)) else split_chips(t)))
-    return ", ".join(dict.fromkeys(ids))
+    seen: set[str] = set()
+    groups: list[list[str]] = []
+    for text in texts:
+        for group in _rider_groups(text, keep_foreign=True, trim=False):
+            groups.append([c for c in group if c not in seen])
+            seen.update(group)
+    return _show_chips(groups)
 
 
 # ---------------------------------------------------------------------------
