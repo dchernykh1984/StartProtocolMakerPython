@@ -141,8 +141,8 @@ principle II).
   An id is one or more ASCII letters and digits, stored upper case; spaces and any other
   punctuation inside an id are dropped, so an id printed in groups (`E280 1170 0000 020A`) is one
   id; empty ids and repeats are dropped, the first occurrence keeps its place. A rider without
-  chips is written `-` and keeps the riders after it in place; a semicolon with nothing after it at
-  the end starts no rider, so one typed ahead of the next member moves nobody.
+  chips is nothing between two semicolons and keeps the riders after it in place; riders without
+  chips at the end are not written, since a team counts its riders by its members.
 - **FR-002**: A line built from the form always writes the chip field, even empty, so it has at
   least 12 `#` separators. A line with fewer separators has no chip field and reads as having no
   chips.
@@ -161,7 +161,7 @@ principle II).
 - **FR-005**: A line loaded from the site has an empty chip field. A merge never changes the chips
   of an existing line, including when it links an old line to a registration.
 - **FR-006**: "Add into team" appends the added member's chips to the form's chips as the next
-  rider, after a semicolon; a member without chips takes a place shown as `-`. The member comes
+  rider, after a semicolon; a member without chips takes an empty place. The member comes
   after the members the team already has (its names, joined by " / "), not after the riders its
   chip field lists, which is empty for a team saved without chips; when the field already lists
   more riders, the member comes after them. Repeats stay until Save, which

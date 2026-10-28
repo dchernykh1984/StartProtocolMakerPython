@@ -747,13 +747,20 @@ class MainWindow(QMainWindow):
         cleaned = cleaned_chip_text(self._edit_chips.text())
         if cleaned is not None:
             self._edit_chips.setText(cleaned)
+            riders = cleaned.split("; ")
+            shown = (
+                cleaned
+                if len(riders) == 1
+                else "\n".join(
+                    f"Rider {i}: {r or '(no chips)'}" for i, r in enumerate(riders, 1)
+                )
+            )
             QMessageBox.information(
                 self,
                 "Chip ids",
                 "Spaces, punctuation or repeats were removed from the chip ids. Check "
-                "that each id below is one chip, and each rider (between semicolons) "
-                "has their own -- separate chips with commas -- and press Save "
-                "again:\n\n" + cleaned,
+                "that each id below is one chip, and each rider has their own -- "
+                "separate chips with commas -- and press Save again:\n\n" + shown,
             )
             return
         line = build_competitor_line(

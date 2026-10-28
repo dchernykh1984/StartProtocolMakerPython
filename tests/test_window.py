@@ -1171,11 +1171,29 @@ def test_a_protocol_line_with_a_foreign_chip_id_lights_the_chip_warning(win):
     assert win._list_save_as.currentRow() == 0
 
 
-def test_one_chip_typed_for_two_riders_is_shown_before_saving(win):
+def test_a_scan_after_a_member_without_chips_is_that_members(win, monkeypatch):
+    shown = []
+    monkeypatch.setattr(mw.QMessageBox, "information", lambda *a: shown.append(a[2]))
+    win._parse_and_fill_form(_chip_line("A1", number="21"))
+    win._list_open.addItem(_chip_line(number=""))  # a member without chips
+    win._list_open.setCurrentRow(0)
+    win._on_add_into_team()
+    assert win._edit_chips.text() == "A1; "
+    win._edit_chips.end(False)
+    win._edit_chips.insert("B1")  # the reader scans the member's chip
+    win._on_save_to_file()
+    assert shown == []
+    assert parse_competitor_line(win._save_as_items()[0])["chips"] == "A1;B1"
+
+
+def test_one_chip_typed_for_two_riders_is_shown_before_saving(win, monkeypatch):
+    shown = []
+    monkeypatch.setattr(mw.QMessageBox, "information", lambda *a: shown.append(a[2]))
     _fill(win, chips="A1; A1")
     win._on_save_to_file()
     assert win._save_as_items() == []
-    assert win._edit_chips.text() == "A1; -"
+    assert win._edit_chips.text() == "A1; "
+    assert "Rider 2: (no chips)" in shown[0]
 
 
 def test_a_scan_into_the_middle_of_the_chip_field_is_separated_there(win):
@@ -1240,7 +1258,7 @@ def test_a_member_added_to_a_team_saved_without_chips_takes_the_next_stage(win):
     win._list_open.addItem(_chip_line("C1", number=""))
     win._list_open.setCurrentRow(0)
     win._on_add_into_team()
-    assert win._edit_chips.text() == "-; -; C1"
+    assert win._edit_chips.text() == "; ; C1"
 
 
 def test_starting_a_team_takes_the_stage_of_its_first_line_not_the_last_saved(win):

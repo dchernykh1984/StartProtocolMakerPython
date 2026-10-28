@@ -159,9 +159,6 @@ CHIPS_FIELD = 11
 # A semicolon separates the riders of a team, in stage order; a comma separates the
 # ids of one rider.
 _RIDER_SEPARATOR = ";"
-# A team member without chips: keeps the riders after it on their stage, where an
-# empty place could not be told from a semicolon typed ahead of the next member.
-_EMPTY_RIDER = "-"
 _NOT_CHIP_CHARS = re.compile(r"[^A-Za-z0-9]")
 
 
@@ -250,7 +247,7 @@ def _unique_riders(riders: list[list[str]]) -> list[list[str]]:
 
 def _join_riders(groups: list[list[str]], ids: str = ",", riders: str = ";") -> str:
     """Field 11 by default; the form shows it with spaces after the separators."""
-    return riders.join(ids.join(g) or _EMPTY_RIDER for g in groups)
+    return riders.join(ids.join(g) for g in groups)
 
 
 def format_chips(text: str) -> str:
@@ -259,11 +256,15 @@ def format_chips(text: str) -> str:
     A space inside an id is dropped like any punctuation, whatever the grouping a
     label printed; only a comma or a semicolon starts the next id. A foreign id stays
     as typed: dropping its letter would write another chip's id without a word, for
-    any caller that skipped the form's check. No chips at all is the empty field,
-    however many riders a team listed.
+    any caller that skipped the form's check. A rider without chips is nothing
+    between two semicolons; no chips at all is the empty field.
     """
     groups = _unique_riders(_raw_riders(text))
-    return _join_riders(groups) if any(groups) else ""
+    # Riders without chips at the end need no place: a team counts its riders by
+    # its members, and readers bind nothing to them.
+    while groups and not groups[-1]:
+        groups.pop()
+    return _join_riders(groups)
 
 
 def cleaned_chip_text(text: str) -> str | None:
@@ -275,7 +276,7 @@ def cleaned_chip_text(text: str) -> str | None:
     result and asks for Save again.
     """
     riders = _raw_riders(text)
-    tokens = [t for rider in riders for t in rider if t != _EMPTY_RIDER]
+    tokens = [t for rider in riders for t in rider]
     groups = _unique_riders(riders)
     cleaned = any(_normalise_chip(t) != t.upper() for t in tokens)
     repeated = sum(map(len, groups)) < len(tokens)

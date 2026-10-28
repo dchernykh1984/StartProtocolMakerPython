@@ -66,7 +66,7 @@ def test_a_dropped_character_inside_an_id_asks_for_a_check():
     assert cleaned_chip_text("") is None
     assert cleaned_chip_text("e280 1170, B2") == "E2801170, B2"
     # A repeat is dropped, which may leave a relay rider without chips: shown too.
-    assert cleaned_chip_text("A1; A1") == "A1; -"
+    assert cleaned_chip_text("A1; A1") == "A1; "
     assert cleaned_chip_text("a1, a1") == "A1"
     # Two whole ids pasted without a comma: shown joined, so the desk sees it.
     assert cleaned_chip_text("E28011700000020A E2801170000002AB") == (
@@ -256,25 +256,25 @@ def test_a_team_members_chips_become_the_next_rider():
     # A repeat stays until Save, which shows it dropped.
     assert merge_chip_text("a1, B2", "b2,c3") == "a1, B2; b2, c3"
     # Kept as typed, so the save still asks before it joins the pieces.
-    assert merge_chip_text("", "E280 1170", team_size=1) == "-; E280 1170"
-    assert merge_chip_text("A1", "") == "A1; -"
-    assert merge_chip_text("A1; -", "C1") == "A1; -; C1"
+    assert merge_chip_text("", "E280 1170", team_size=1) == "; E280 1170"
+    assert merge_chip_text("A1", "") == "A1; "
+    assert merge_chip_text("A1; ", "C1", team_size=2) == "A1; ; C1"
     # A semicolon typed ahead of the next member is no rider of its own.
     assert merge_chip_text("A1;", "B1") == "A1; B1"
     # A team of two saved without chips: the third member is the third rider.
-    assert merge_chip_text("", "C1", team_size=2) == "-; -; C1"
-    assert merge_chip_text("A1", "C1", team_size=2) == "A1; -; C1"
+    assert merge_chip_text("", "C1", team_size=2) == "; ; C1"
+    assert merge_chip_text("A1", "C1", team_size=2) == "A1; ; C1"
     foreign = f"{chr(0x415)}1"
     assert merge_chip_text(foreign, "A1") == f"{foreign}; A1"
 
 
 def test_riders_of_a_team_are_separated_by_semicolons():
-    assert format_chips("a1, a2; b1;; c1;") == "A1,A2;B1;-;C1"
-    assert format_chips("A1; -") == "A1;-"
+    assert format_chips("a1, a2; b1;; c1;") == "A1,A2;B1;;C1"
+    assert format_chips("A1; ") == "A1"
     # A team without any chip writes the empty field the contract asks for.
-    assert format_chips("-; -") == ""
-    assert format_chips("-; A1") == "-;A1"
-    assert format_chips("a1; a1") == "A1;-"
+    assert format_chips("; ") == ""
+    assert format_chips("; A1") == ";A1"
+    assert format_chips("a1; a1") == "A1"
 
 
 def _team(stages: str, chips: str, number: str = "15") -> str:
@@ -302,7 +302,7 @@ def test_a_relay_binds_each_riders_chips_to_their_stage_bib():
         ("B1", "16"),
         ("C1", "17"),
     ]
-    assert chip_bibs(_team("3", "A1;-;C1")) == [("A1", "15"), ("C1", "17")]
+    assert chip_bibs(_team("3", "A1;;C1")) == [("A1", "15"), ("C1", "17")]
     # A rider past the last stage has no bib to bind to.
     assert chip_bibs(_team("2", "A1;B1;C1")) == [("A1", "15"), ("B1", "16")]
     # One stage: the whole team is one bib.
@@ -352,7 +352,7 @@ def test_a_line_whose_chips_no_reader_can_use_is_found():
     joined = _line(number="4")[:-1] + f"A1{chr(0xFF0C)}B2#"
     assert chip_rows([*good, joined])[0] == 2
     # A reserve past the last stage is fine while it carries no chips.
-    assert chip_rows([_team("2", "D1;E1;-", number="8")])[0] == -1
+    assert chip_rows([_team("2", "D1;E1", number="8")[:-1] + ";#"])[0] == -1
     # One stage: a team timed as one may list any number of riders.
     assert chip_rows([_team("1", "D1;E1;F1")])[0] == -1
 
