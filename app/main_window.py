@@ -184,6 +184,18 @@ class MainWindow(QMainWindow):
         centre.addWidget(lbl)
         centre.addWidget(self._edit_refs)
 
+        # The rider's timing chips (field 11), read by the chronometers to turn a chip
+        # read into this bib's crossing.
+        lbl, self._edit_chips = _lbl_edit("Chips:")
+        self._edit_chips.setToolTip(
+            "Chip ids of this rider, separated by commas; a team lists every member's."
+        )
+        # A desk reader types each id followed by Enter: make that a separator, or two
+        # scans would merge into one id.
+        self._edit_chips.returnPressed.connect(self._on_chips_return)
+        centre.addWidget(lbl)
+        centre.addWidget(self._edit_chips)
+
         lbl, self._edit_time_shift = _lbl_edit("Time shift:", "0 00:00:00.000")
         centre.addWidget(lbl)
         centre.addWidget(self._edit_time_shift)
@@ -494,6 +506,7 @@ class MainWindow(QMainWindow):
         self._edit_city.setText(d["city"])
         self._edit_comment.setText(d["comment"])
         self._edit_refs.setText(d["refs"])
+        self._edit_chips.setText(d["chips"])
         # Always restore the line's own shift first: AutoShift only overwrites it when
         # it can actually compute one, and without this the field would keep the
         # previously edited competitor's shift.
@@ -679,12 +692,19 @@ class MainWindow(QMainWindow):
             comment=self._edit_comment.text().strip(),
             time_shift=self._edit_time_shift.text().strip() or "0 00:00:00.000",
             refs=self._edit_refs.text(),
+            chips=self._edit_chips.text(),
         )
         self._list_save_as.addItem(line)
         self._edit_name.clear()
         self._edit_number.clear()
         self._edit_refs.clear()
+        self._edit_chips.clear()
         self._save_all_data()
+
+    def _on_chips_return(self) -> None:
+        text = self._edit_chips.text().rstrip()
+        if text and text[-1] not in ",;":
+            self._edit_chips.setText(text + ", ")
 
     def _on_get_number(self) -> None:
         idx = self._list_groups.findItems(
