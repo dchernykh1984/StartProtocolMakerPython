@@ -102,9 +102,9 @@ later field stays in place. Readers that exist:
   typed. Other characters are made plain (any space, a full-width letter or comma) or dropped like
   punctuation, and a drop is shown before saving.
 - Saving a rider clears the field for the next one; "Add into team" adds the member's chips as the
-  next rider, after a semicolon, and a member without chips as `-`. On a line with N > 1 stages and
-  a numeric bib, the k-th rider's chips belong to bib + k, as FinishProtocolGenerator and the site
-  number stage riders.
+  next rider, after a semicolon, and a member without chips as an empty place. On a line with
+  N > 1 stages and a numeric bib, the k-th rider's chips belong to bib + k, as
+  FinishProtocolGenerator and the site number stage riders.
 - "Open competitors list" loads lines as they are and names those whose chip field has any
   character outside ASCII, to be fixed through the form. In the protocol list such a line, or a
   relay rider with chips past the last stage, lights "CHIP IDS NEED A FIX! (line N)"; a chip bound
