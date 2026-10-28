@@ -180,19 +180,22 @@ _FULL_WIDTH_SHIFT = 0xFEE0
 
 
 def _plain_char(c: str) -> str:
-    if c.isspace():
+    # An invisible format character (zero-width space, BOM) becomes a space, not
+    # nothing: between two pasted ids it is a separator the eye cannot see, and as a
+    # space inside an id it makes the save show the joined result.
+    if c.isspace() or unicodedata.category(c) == "Cf":
         return " "
     if ord(c) in _FULL_WIDTH:
         return chr(ord(c) - _FULL_WIDTH_SHIFT)
-    return "" if unicodedata.category(c) == "Cf" else c
+    return c
 
 
 def _plain_chip_text(text: str) -> str:
     """Typed text with what copying adds made plain, and nothing else changed.
 
-    Any space (a non-breaking one from a PDF) becomes a space, a full-width letter,
-    digit or comma its ASCII self, an invisible format character (zero-width space,
-    byte-order mark) goes. Not NFKC: it would also turn a numero sign into "No" and a
+    Any space (a non-breaking one from a PDF) and any invisible format character
+    (zero-width space, byte-order mark) becomes a space, a full-width letter, digit
+    or comma its ASCII self. Not NFKC: it would also turn a numero sign into "No" and a
     Roman numeral into letters without a word. A Cyrillic letter stays, and is
     reported.
     """

@@ -110,6 +110,15 @@ def test_invisible_and_full_width_characters_are_plain_ones():
     assert format_chips(typed) == "E28011700000020A,B2"
 
 
+def test_a_zero_width_space_between_two_ids_is_shown_before_saving():
+    from app.models import cleaned_chip_text
+
+    zwsp = chr(0x200B)
+    assert cleaned_chip_text(f"E2801170{zwsp}E2801171") == "E2801170E2801171"
+    # At the edges it is only stripped, like any space.
+    assert cleaned_chip_text(f"{chr(0xFEFF)}E2801170") is None
+
+
 def test_symbols_that_only_look_like_letters_are_not_made_letters():
     from app.models import cleaned_chip_text
 
