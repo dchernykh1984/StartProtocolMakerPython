@@ -1443,3 +1443,27 @@ def test_a_scan_shown_cleaned_still_travels_to_the_rider_opened_next(win, monkey
     win._on_edit_open()
     assert win._edit_chips.text() == "E2801170, "
     assert "E2801170" in shown[-1]
+
+
+def test_a_scan_before_opening_a_relay_is_named_not_placed(win, monkeypatch):
+    shown = []
+    monkeypatch.setattr(mw.QMessageBox, "information", lambda *a: shown.append(a[2]))
+    _type_chips(win, "C1")
+    relay = build_competitor_line(
+        "",
+        "Kim A / Lee B / Park C",
+        "M40#3",
+        "3",
+        "1990",
+        "T",
+        "C",
+        "",
+        "0 00:00:00.000",
+        "",
+        "A1",
+    )
+    win._list_open.addItem(relay)
+    win._list_open.setCurrentRow(0)
+    win._on_edit_open()
+    assert win._edit_chips.text() == "A1, "
+    assert "relay of 3 stages" in shown[0] and "C1" in shown[0]
