@@ -987,8 +987,9 @@ class MainWindow(QMainWindow):
         saved_team = self._edit_team.text()
         saved_refs = split_refs(self._edit_refs.text())
         saved_chips = self._edit_chips.text()
-        # Members are joined below as "A / B"; a name left empty does not count.
-        team_size = sum(1 for n in saved_name.split(" / ") if n.strip())
+        # Members are joined below as "A / B", a relay from the site as "A<BR>B"; a
+        # name left empty does not count.
+        team_size = sum(1 for n in re.split(r" / |<BR>", saved_name) if n.strip())
         # The stage count belongs to the team, and a relay's chips bind by it; the
         # member's own line (from the site: "1") must not reset it. With no team in
         # the form yet, the stage left there is the last saved line's, not this one's.
