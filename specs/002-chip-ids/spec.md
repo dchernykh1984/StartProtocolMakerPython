@@ -35,12 +35,14 @@ program; the protocol line, the start protocol file and the uploaded start list 
 
 1. **Given** a line opened in the form, **When** the registrar enters two chip ids and saves, **Then**
    the protocol line carries both in field 11, upper case, comma-separated, in the order typed.
-2. **Given** a protocol line with chips, **When** the registrar changes its bib, name, group or
+2. **Given** a chip id with a Cyrillic letter in it, **When** the registrar saves, **Then** nothing
+   is saved, the message names that id, and the form still holds everything typed.
+3. **Given** a protocol line with chips, **When** the registrar changes its bib, name, group or
    delay in the form and saves, **Then** the chips are unchanged.
-3. **Given** a line copied verbatim to the protocol ("open to protocol"), **Then** its chips are
+4. **Given** a line copied verbatim to the protocol ("open to protocol"), **Then** its chips are
    copied with it.
-4. **Given** a backup with chips, **When** the program restarts, **Then** every line has them.
-5. **Given** a saved line, **Then** the form's chip field is empty for the next rider, as the
+5. **Given** a backup with chips, **When** the program restarts, **Then** every line has them.
+6. **Given** a saved line, **Then** the form's chip field is empty for the next rider, as the
    reference field is.
 
 ---
@@ -110,8 +112,9 @@ principle II).
   comma or a semicolon starts the next one.
 - Lower case and stray punctuation (`e2801170-0000-020a`): ids are case-insensitive and kept upper
   case; any character other than an ASCII letter or digit inside an id is dropped.
-- A Cyrillic letter that looks Latin (the keyboard layout was Russian): it is not an ASCII letter,
-  so it is dropped and the id would no longer match the chip; saving says which ids were changed.
+- A Cyrillic letter that looks Latin (the keyboard layout was Russian, or a desk reader typed into
+  it): it is not an ASCII letter, and dropping it would leave an id that matches no chip, so the save
+  stops, names the ids that hold such a character and keeps the form as typed.
 - `NOT_PAID` in field 0 of an open-list line: the chips are kept; the bib is given at the start.
 - A line without a bib in the protocol list: it cannot be saved (unchanged rule), so no chip is
   bound to nothing.
@@ -131,8 +134,10 @@ principle II).
   chips.
 - **FR-003**: The form has a visible, editable chip field next to the reference field. Opening a
   line from either list fills it; saving writes it into the new line; saving clears it, as it
-  clears the reference field. When cleaning changed what was typed (a dropped character), saving
-  tells the registrar which ids were changed, so a wrong keyboard layout is caught at the desk.
+  clears the reference field. A character outside ASCII in the chip field stops the save: the
+  registrar is told which ids hold one and every form field keeps what was typed, so a wrong
+  keyboard layout is caught at the desk. Upper-casing and dropping ASCII punctuation happen without
+  a word.
 - **FR-004**: Every path that copies a line verbatim keeps the chip field and anything after it:
   open to protocol, the backup, the start protocol file, FTP push, the start list upload.
 - **FR-005**: A line loaded from the site has an empty chip field. A merge never changes the chips

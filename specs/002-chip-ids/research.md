@@ -35,8 +35,8 @@
 - **Alternatives**: save and warn afterwards (rejected: the form is cleared by then and the wrong
   id is already in the protocol, possibly uploaded); transliterate look-alike letters (rejected:
   guessing; a wrong guess is worse than a refusal).
-- **Spec impact**: FR-003 and the edge case about a Cyrillic look-alike say "saving tells the
-  registrar"; the first review cycle aligns them with this decision.
+- **Spec impact**: FR-003, the edge case about a Cyrillic look-alike and User Story 1, scenario 2
+  state this decision.
 
 ## Decision 4: a duplicate chip lights the existing indicator
 
