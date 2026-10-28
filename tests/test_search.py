@@ -368,3 +368,11 @@ def test_a_short_query_looks_for_a_bib_not_a_chip_numbered_the_same():
     assert chip_query("15") == ""
     assert not index.matches(0, search_forms("15"), chip_query("15"))
     assert index.matches(1, search_forms("15"), chip_query("15"))
+
+
+def test_chip_ids_do_not_count_as_latin_in_the_scripts_line():
+    cyr = "".join(map(chr, (0x418, 0x432, 0x430, 0x43D)))  # a Cyrillic name
+    rider = f"15#{cyr}#{cyr}#5#1#1990####0 00:00:00.000##E28011700000020A#"
+    index = SearchIndex()
+    index.refresh([rider])
+    assert "Latin" not in index.scripts
