@@ -201,3 +201,17 @@ def test_enter_in_the_chip_field_adds_one_separator(win, typed, after):
     win._edit_chips.setText(typed)
     win._edit_chips.returnPressed.emit()
     assert win._edit_chips.text() == after
+
+
+def test_a_wrong_layout_stops_the_save_and_keeps_the_form(win, monkeypatch):
+    shown = []
+    monkeypatch.setattr(mw.QMessageBox, "warning", lambda *a: shown.append(a[2]))
+    cyr_e = chr(0x415)
+    _fill(win, chips=f"{cyr_e}2801170000002AB, A1")
+    win._edit_name.setText("Ivanov Ivan")
+    win._on_save_to_file()
+    assert win._save_as_items() == []
+    assert win._edit_chips.text() == f"{cyr_e}2801170000002AB, A1"
+    assert win._edit_number.text() == "120"
+    assert f"{cyr_e}2801170000002AB" in shown[0]
+    assert "A1" not in shown[0].split("\n\n")[1]

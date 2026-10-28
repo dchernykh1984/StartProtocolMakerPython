@@ -38,6 +38,7 @@ from app.models import (
     check_duplicate_fields,
     current_local_seconds,
     duplicate_ref_row,
+    foreign_chip_tokens,
     get_next_number,
     get_time_from_seconds,
     join_refs,
@@ -680,6 +681,17 @@ class MainWindow(QMainWindow):
         name = self._edit_name.text().strip()
         group_text = self._combo_group.currentText().strip()
         if not number or not name or not group_text:
+            return
+        # Dropping a Cyrillic look-alike would save an id that matches no chip: stop
+        # here, with everything still typed, so the desk fixes the keyboard layout.
+        foreign = foreign_chip_tokens(self._edit_chips.text())
+        if foreign:
+            QMessageBox.warning(
+                self,
+                "Chip ids",
+                "These chip ids hold a letter that is not Latin (another keyboard "
+                "layout?):\n\n" + "\n".join(foreign) + "\n\nNothing was saved.",
+            )
             return
         line = build_competitor_line(
             number=number,
