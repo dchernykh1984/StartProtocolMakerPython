@@ -3,9 +3,10 @@
 For ChronometerPython, ChronometerAndroid and any later reader of the start protocol.
 
 - Field 11 (zero-based, `#`-separated) holds the line's chip ids: riders separated by semicolons,
-  in stage order, and the ids of one rider by commas, each one or more of `A-Z0-9`. A rider may be
-  empty, keeping the riders after it in place. The field is empty when the line has no chips, and
-  absent from lines written before this feature (11 or fewer separators).
+  in stage order, and the ids of one rider by commas, each one or more of `A-Z0-9`. A rider without
+  chips is written `-`, keeping the riders after it in place (a reader that drops everything but
+  letters and digits sees an empty rider). The field is empty when the line has no chips, and absent
+  from lines written before this feature (11 or fewer separators).
 - The bib is field 0. `NOT_PAID` in field 0 (open list) or an empty field 0 is not a bib.
 - Binding: on a line whose field 4 (stages) is N > 1 and whose bib is a number, the k-th rider
   (from 0) binds to bib + k, the way FinishProtocolGenerator and the site number stage riders, and

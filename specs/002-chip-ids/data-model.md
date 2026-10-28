@@ -7,7 +7,7 @@
 | Index | Field | Rule |
 | --- | --- | --- |
 | 0-10 | unchanged | see `specs/app/start-protocol.md` |
-| 11 | chips | empty, or chip ids: `,` between the ids of a rider, `;` between the riders of a team |
+| 11 | chips | empty, or chip ids: `,` between the ids of a rider, `;` between the riders of a team, `-` for a rider without chips |
 
 - A line built by this program (form, site participant) has 12 separators, field 11 included.
 - A line with 11 or fewer separators has no chip field; it reads as having no chips.

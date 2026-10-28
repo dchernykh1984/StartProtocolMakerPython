@@ -139,8 +139,9 @@ principle II).
   Commas separate the ids of one rider; semicolons separate the riders of a team, in stage order.
   An id is one or more ASCII letters and digits, stored upper case; spaces and any other
   punctuation inside an id are dropped, so an id printed in groups (`E280 1170 0000 020A`) is one
-  id; empty ids and repeats are dropped, the first occurrence keeps its place; an empty rider before
-  others keeps its place.
+  id; empty ids and repeats are dropped, the first occurrence keeps its place. A rider without
+  chips is written `-` and keeps the riders after it in place; a semicolon with nothing after it at
+  the end starts no rider, so one typed ahead of the next member moves nobody.
 - **FR-002**: A line built from the form always writes the chip field, even empty, so it has at
   least 12 `#` separators. A line with fewer separators has no chip field and reads as having no
   chips.
@@ -158,7 +159,7 @@ principle II).
 - **FR-005**: A line loaded from the site has an empty chip field. A merge never changes the chips
   of an existing line, including when it links an old line to a registration.
 - **FR-006**: "Add into team" appends the added member's chips to the form's chips as the next
-  rider, after a semicolon, without repeats; a member without chips keeps an empty place.
+  rider, after a semicolon, without repeats; a member without chips takes a place shown as `-`.
 - **FR-007**: A second indicator next to the duplicate one reports a protocol line whose chips a
   reader cannot use as they are: an id with a letter or digit outside ASCII (a line copied verbatim
   from a file made elsewhere never met the form's check) or a relay with more riders than stages;
