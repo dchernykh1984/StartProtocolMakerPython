@@ -373,9 +373,11 @@ def duplicate_chip_row(items: list[str]) -> int:
 def merge_chip_text(team_chips: str, member_chips: str, team_size: int = 0) -> str:
     """The team's chips with the added member's ids as the next rider, for the form.
 
-    The member's place is ``team_size`` (the riders the team already has), not the
-    riders its chip field lists: a team saved without chips has an empty field, and
-    counting from it would put the member on another rider's stage. Nothing is
+    The member comes after ``team_size`` riders (the members the team already has),
+    not after the riders its chip field lists: a team saved without chips has an
+    empty field, and counting from it would put the member on another rider's stage.
+    When the field already lists more riders -- scanned ahead -- the member comes
+    after them, since nothing typed is thrown away here. Nothing is
     cleaned, repeats included: the ids stay as typed, so the save still stops on a
     foreign letter and shows what cleaning would drop.
     """
