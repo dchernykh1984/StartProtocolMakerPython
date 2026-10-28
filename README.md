@@ -191,6 +191,11 @@ from in the "Site entry" field (`r<id>`, after the start delay), so the site kno
 which registration got which bib -- for its photo albums. Clear the field when a line
 is reused for somebody else.
 
+The "Chips" field under it holds the rider's timing chip ids, comma-separated; the
+chronometers read them to turn a chip read into this bib's crossing. A team carries
+every member's chips. An id typed with a Cyrillic letter (the wrong keyboard layout)
+stops the save until it is fixed.
+
 ### Uploading the start list
 
 **Send start list to site** posts the current protocol to the site, keyed by the

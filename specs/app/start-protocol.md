@@ -32,15 +32,18 @@ A line reaches the protocol list in two ways:
 | 7 | city | |
 | 8 | comment | Free text; from the site it is `additional_info` with `#` and line breaks replaced by spaces. "Check mail" compares its first word |
 | 9 | time_shift | Start delay, `D HH:MM:SS.mmm`, `0 00:00:00.000` by default |
-| 10 | refs | Site registrations of the line, `r<id>` comma-separated (cycling-site #349); written always, even empty, so a line has 11 separators |
+| 10 | refs | Site registrations of the line, `r<id>` comma-separated (cycling-site #349); written always, even empty |
+| 11 | chips | The rider's timing chip ids, comma-separated, upper case, ASCII letters and digits only (ChronometerPython #49); written always, even empty, so a line has 12 separators |
 
 A line written before field 10 existed has 10 separators: its field is *absent*, which the site
-tells apart from an empty one (a referee's unlink). A group without a lap count still writes the
-empty laps field, so every later field stays in place. Readers that exist:
+tells apart from an empty one (a referee's unlink). A line written before field 11 existed has 11
+separators and no chips. A group without a lap count still writes the empty laps field, so every
+later field stays in place. Readers that exist:
 
 - FinishProtocolGeneratorPython (`StartProtocolElement.from_line`) reads fields 0-9 by index and
-  ignores anything after them, field 10 included.
-- WindowsChronometerPython reads field 0 only.
+  ignores anything after them, fields 10 and 11 included.
+- WindowsChronometerPython and ChronometerAndroid read field 0 and, for chip timing, field 11
+  (their `specs/001-event-sources/`).
 - The site stores uploaded lines as opaque strings (up to 2000 characters each) and returns them
   to FinishProtocolGenerator.
 
@@ -51,9 +54,10 @@ empty laps field, so every later field stays in place. Readers that exist:
   "Use all numbers" is ticked.
 - **AutoShift** sets the delay to `(number - first number) * delay per number`, never below zero.
   A group range may carry its own `range#first#delay` override.
-- **Duplicates**: every save checks the protocol list for a repeated bib (field 0); "Check names"
-  and "Check mail" check fields 1 and 8 on demand. A repeat is reported; the first repeat whose
-  stage fields are equal is selected in the list.
+- **Duplicates**: every save checks the protocol list for a repeated bib (field 0), a repeated site
+  registration (field 10) and a chip on two lines (field 11); "Check names" and "Check mail" check
+  fields 1 and 8 on demand. A repeat is reported; the first repeat whose stage fields are equal is
+  selected in the list.
 - **Merge from site** matches a line by its site reference; two registrations of one person stay
   two lines. The `(last name, first name, year)` key only links an old unreferenced line when it is
   the single match, otherwise the line is added and reported as ambiguous. A reference on two
@@ -85,6 +89,20 @@ empty laps field, so every later field stays in place. Readers that exist:
 - With **Auto** ticked, edits are sent 2 seconds after the last one; a failure is shown under the
   button and retried every 15 seconds. The backup is written before every send.
 
+## Timing chips
+
+- The form's "Chips" field shows and edits field 11. Commas and semicolons separate ids; spaces
+  and other ASCII punctuation inside an id are dropped (labels print an EPC in groups of four), and
+  ids are kept upper case without repeats. Enter in the field adds a separator, for desk readers
+  that end each id with Enter.
+- An id with a character outside ASCII -- a Cyrillic look-alike typed with the Russian layout --
+  stops the save: a message names it and every form field keeps what was typed.
+- Saving a rider clears the field for the next one; "Add into team" merges the member's chips.
+- Copies keep the field as they keep every field: open to protocol, the backup, the start protocol
+  file, FTP and the start list upload. A line from the site arrives with an empty field, and a merge
+  never changes the chips of a line it already has.
+
 ## Features
 
 - [001-registration-references](../001-registration-references/spec.md): field 10.
+- [002-chip-ids](../002-chip-ids/spec.md): field 11.
