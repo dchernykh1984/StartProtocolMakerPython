@@ -1131,6 +1131,26 @@ def test_enter_in_the_chip_field_adds_one_separator(win, typed, after):
     assert win._edit_chips.text() == after
 
 
+def test_an_open_list_with_a_foreign_chip_id_is_reported_on_loading(
+    win, monkeypatch, tmp_path
+):
+    shown = []
+    monkeypatch.setattr(mw.QMessageBox, "warning", lambda *a: shown.append(a[2]))
+    # Written by hand elsewhere: the form would never let this field through.
+    bad = _chip_line(number="")[:-1] + f"{chr(0x415)}280A#"
+    good = _chip_line("A1", number="")
+    path = tmp_path / "open.txt"
+    path.write_text(f"{good}\n{bad}\n", encoding="utf-8")
+    monkeypatch.setattr(
+        mw.QFileDialog, "getOpenFileName", lambda *a, **k: (str(path), "")
+    )
+    win._on_open_list()
+    assert win._list_open.count() == 2
+    assert len(shown) == 1
+    assert bad in shown[0]
+    assert good not in shown[0]
+
+
 def test_a_scan_into_the_middle_of_the_chip_field_is_separated_there(win):
     win._edit_chips.setText("A1, C3")
     win._edit_chips.setCursorPosition(len("A1, "))
