@@ -180,6 +180,17 @@ def foreign_chip_tokens(text: str) -> list[str]:
     return [t.strip() for t in _CHIP_SEPARATORS.split(text) if not t.isascii()]
 
 
+def duplicate_chip_row(items: list[str]) -> int:
+    """The first protocol line holding a chip that a line above already holds, or -1."""
+    seen: set[str] = set()
+    for row, line in enumerate(items):
+        chips = set(split_chips(parse_competitor_line(line)["chips"]))
+        if seen & chips:
+            return row
+        seen |= chips
+    return -1
+
+
 def merge_chip_text(*texts: str) -> str:
     """Typed chip ids of several riders, in order, without repeats, for the form.
 
