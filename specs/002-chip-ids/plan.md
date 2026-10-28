@@ -94,7 +94,8 @@ code paths one for one, so a reader finds chips next to refs everywhere.
   from the form.
 - `foreign_chip_tokens(text)`: the typed tokens that contain a letter or digit outside ASCII. The
   form refuses to save while it returns anything (research, decision 3).
-- `chip_bibs(line)`: the (chip, bib) pairs a line binds, a relay's k-th rider to bib + k (research,
+- `chip_bibs(line)`: the (chip, bib) pairs a line binds, a relay's k-th rider to bib + k and a
+  rider past the last stage to None, no repeats dropped across riders (research,
   decision 5); `chip_rows()` compares them across lines and finds, in the same pass, a
   line with a foreign id or more riders than stages.
 - `parse_competitor_line()` returns `"chips"` (empty when the field is absent);
