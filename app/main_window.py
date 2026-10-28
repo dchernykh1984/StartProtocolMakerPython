@@ -321,8 +321,8 @@ class MainWindow(QMainWindow):
         right.addWidget(self._lbl_error)
         self._lbl_chip_error = QLabel("CHIP IDS NEED A FIX!")
         self._lbl_chip_error.setToolTip(
-            "A protocol line has a chip id with a letter that is not Latin, or a relay "
-            "lists more riders than it has stages."
+            "A protocol line has a chip field with a character outside plain ASCII, "
+            "a relay rider with chips past the last stage, or a chip bound to two bibs."
         )
         self._lbl_chip_error.setStyleSheet("color: red; font-weight: bold;")
         self._lbl_chip_error.setVisible(False)
