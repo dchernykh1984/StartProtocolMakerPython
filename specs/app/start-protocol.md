@@ -98,6 +98,8 @@ later field stays in place. Readers that exist:
 - An id with a character outside ASCII -- a Cyrillic look-alike typed with the Russian layout --
   stops the save: a message names it and every form field keeps what was typed.
 - Saving a rider clears the field for the next one; "Add into team" merges the member's chips.
+- "Open competitors list" loads lines as they are and names those whose chip field has a character
+  outside ASCII, to be fixed through the form.
 - Copies keep the field as they keep every field: open to protocol, the backup, the start protocol
   file, FTP and the start list upload. A line from the site arrives with an empty field, and a merge
   never changes the chips of a line it already has.

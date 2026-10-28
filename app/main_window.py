@@ -595,6 +595,22 @@ class MainWindow(QMainWindow):
         self._list_open.addItems(lines)
         self._update_open_scripts()
         self._btn_search.setText(f"Find ({len(lines)})")
+        # A file prepared elsewhere bypasses the form's check; "to protocol" copies
+        # lines as they are, so say now which chips would never match a reader.
+        foreign = [
+            ln
+            for ln in lines
+            if foreign_chip_tokens(parse_competitor_line(ln)["chips"])
+        ]
+        if foreign:
+            QMessageBox.warning(
+                self,
+                "Chip ids",
+                f"{len(foreign)} line(s) have chip ids with a character that is not "
+                "Latin. Open each one and fix its chips before the start:\n\n"
+                + "\n".join(foreign[:10])
+                + ("\n..." if len(foreign) > 10 else ""),
+            )
 
     def _on_search_open(self) -> None:
         # The search itself refreshes the index; showing the scripts afterwards reads
