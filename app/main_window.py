@@ -31,6 +31,7 @@ from PySide6.QtWidgets import (
 
 from app.http_io import fetch_participants, upload_start_list
 from app.models import (
+    CHIPS_FIELD,
     DEFAULT_NUMBER_RANGE,
     auto_shift_time,
     build_competitor_line,
@@ -44,6 +45,7 @@ from app.models import (
     duplicate_chip_row,
     duplicate_ref_row,
     foreign_chip_tokens,
+    get_field,
     get_next_number,
     get_time_from_seconds,
     join_refs,
@@ -620,9 +622,7 @@ class MainWindow(QMainWindow):
         # A file prepared elsewhere bypasses the form's check; "to protocol" copies
         # lines as they are, so say now which chips would never match a reader.
         foreign = [
-            ln
-            for ln in lines
-            if chip_field_not_ascii(parse_competitor_line(ln)["chips"])
+            ln for ln in lines if chip_field_not_ascii(get_field(ln, CHIPS_FIELD))
         ]
         if foreign:
             QMessageBox.warning(
