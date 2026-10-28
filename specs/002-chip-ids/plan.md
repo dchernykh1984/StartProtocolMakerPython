@@ -83,9 +83,9 @@ code paths one for one, so a reader finds chips next to refs everywhere.
 ## Design
 
 - `CHIPS_FIELD = 11`, `has_chips_field(line)` (more than 11 separators), `split_chips(text)`
-  (separators: comma and semicolon; each token upper-cased with spaces and every other character
-  that is not an ASCII letter or digit dropped; empty tokens and repeats dropped, first occurrence
-  kept),
+  (separators: comma and semicolon; within a part, runs of words of up to four characters join and
+  longer words stand alone; each id upper-cased with every character that is not an ASCII letter
+  or digit dropped; empty ids and repeats dropped, first occurrence kept),
   `join_chips(tokens)` (comma). No `set_chips()`: nothing changes the chips of a line except
   rebuilding it from the form.
 - `foreign_chip_tokens(text)`: the typed tokens that contain a character outside ASCII. The form
