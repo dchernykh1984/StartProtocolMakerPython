@@ -32,7 +32,7 @@ import unicodedata
 from collections.abc import Sequence
 from typing import NamedTuple
 
-from app.models import CHIPS_FIELD, has_chips_field
+from app.models import CHIPS_FIELD, format_chips, has_chips_field
 
 # Cyrillic letter -> search key. Several letters share a key on purpose: that is what
 # lets one Latin spelling of a name find another.
@@ -281,12 +281,21 @@ def _without_chips(line: str) -> str:
     return "#".join(fields)
 
 
+def _chip_ids(line: str) -> frozenset[str]:
+    """The chip ids a line carries, as written to field 11."""
+    if not has_chips_field(line):
+        return frozenset()
+    field = format_chips(line.split("#")[CHIPS_FIELD])
+    return frozenset(c for rider in field.split(";") for c in rider.split(",") if c)
+
+
 class SearchIndex:
     """The reduced forms of one list, rebuilt only when that list changes."""
 
     def __init__(self) -> None:
         self._items: list[str] = []
         self._forms: list[Forms] = []
+        self._chips: list[frozenset[str]] = []
         self._scripts: list[str] = []
 
     @property
@@ -306,6 +315,7 @@ class SearchIndex:
             return False
         self._items = incoming
         self._forms = [search_forms(_without_chips(item)) for item in self._items]
+        self._chips = [_chip_ids(item) for item in self._items]
         scripts: set[str] = set()
         for item in self._items:
             scripts |= scripts_in(item)
@@ -316,4 +326,9 @@ class SearchIndex:
         """Whether the indexed line at row matches the reduced query."""
         if not 0 <= row < len(self._forms):
             return False
+        # A whole chip id (a tag scanned into Find) finds its rider; a fragment of
+        # one does not, or bib numbers would stop on every chip.
+        chip = format_chips(query.plain)
+        if chip and chip in self._chips[row]:
+            return True
         return forms_match(self._forms[row], query)

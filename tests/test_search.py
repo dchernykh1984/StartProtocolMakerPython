@@ -347,3 +347,11 @@ def test_find_does_not_stop_on_a_chip_id():
     assert not index.matches(0, query)
     assert index.matches(1, query)
     assert index.matches(0, search_forms("Kim"))
+
+
+def test_find_takes_a_whole_chip_id_to_its_rider():
+    rider = "15#Kim A#Elite#5#1#1990#T#C##0 00:00:00.000##A1;E28011700000020A#"
+    index = SearchIndex()
+    index.refresh([rider])
+    assert index.matches(0, search_forms("e2801170 0000 020a"))  # a tag, as scanned
+    assert not index.matches(0, search_forms("E2801170"))  # a fragment of one
