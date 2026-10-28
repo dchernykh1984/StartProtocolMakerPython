@@ -119,6 +119,8 @@ principle II).
 - A line without a bib in the protocol list: it cannot be saved (unchanged rule), so no chip is
   bound to nothing.
 - The same chip twice on one line: kept once.
+- A desk reader that types each id followed by Enter: Enter in the chip field adds a separator, so
+  one scan after another gives one id each instead of one long id.
 
 ## Requirements *(mandatory)*
 
@@ -137,7 +139,8 @@ principle II).
   clears the reference field. A character outside ASCII in the chip field stops the save: the
   registrar is told which ids hold one and every form field keeps what was typed, so a wrong
   keyboard layout is caught at the desk. Upper-casing and dropping ASCII punctuation happen without
-  a word.
+  a word. Enter in the chip field adds `, ` at its end, so a desk reader that ends each id with Enter
+  fills the field one id per scan.
 - **FR-004**: Every path that copies a line verbatim keeps the chip field and anything after it:
   open to protocol, the backup, the start protocol file, FTP push, the start list upload.
 - **FR-005**: A line loaded from the site has an empty chip field. A merge never changes the chips

@@ -17,7 +17,7 @@ Each task is one commit with the message shown; tests are part of the task they 
 ## Phase 2: the form (US1)
 
 - [ ] T003 [US1] "Chips:" field under "Site entry:"; opening a line fills it; Save writes and
-  clears it. Qt tests. -- `feat(form): edit a rider's chip ids next to the site entry`
+  clears it; Enter adds a separator. Qt tests. -- `feat(form): edit a rider's chip ids next to the site entry`
 - [ ] T004 [US1] Save refuses a chip token with a non-ASCII character and names it; the form keeps
   what was typed. Qt tests. -- `feat(form): stop a save on a chip id typed in another keyboard layout`
 
