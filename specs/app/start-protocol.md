@@ -101,6 +101,8 @@ later field stays in place. Readers that exist:
   layout, a Roman numeral -- stops the save: a message names it and every form field keeps what was
   typed. Other characters are made plain (any space, a full-width letter or comma) or dropped like
   punctuation, and a drop is shown before saving.
+- Opening an open-list line without chips keeps ids typed since the form was last filled or saved,
+  and says so; any other opening shows the line's own chips.
 - Saving a rider clears the field for the next one; "Add into team" adds the member's chips as the
   next rider, after a semicolon, and a member without chips as an empty place. On a line with
   N > 1 stages and a numeric bib, the k-th rider's chips belong to bib + k, as
