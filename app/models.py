@@ -307,29 +307,26 @@ def describe_foreign_chip(token: str) -> str:
     return f"{token}  ({', '.join(dict.fromkeys(names))})"
 
 
-def chip_bibs(line: str) -> list[tuple[str, str]]:
+def chip_bibs(line: str) -> list[tuple[str, str | None]]:
     """(chip, bib) for every chip a start protocol line binds, as the chronometers do.
 
     A line with N > 1 stages and a numeric bib numbers its riders bib, bib + 1, ...,
     the way FinishProtocolGenerator and the site do, so the k-th rider's chips bind
-    to bib + k and a rider past the last stage binds nothing. Any other line binds
-    every chip to its bib; a line without a bib binds nothing.
+    to bib + k; a rider past the last stage binds nothing, and its chips come with
+    None so the desk can be told. Any other line binds every chip to its bib; a line
+    without a bib binds nothing. No repeats are dropped across riders: a reader
+    binds a chip listed for two riders to two bibs. A foreign id stays as typed.
     """
-    return _binds(line.split("#"))
-
-
-def _binds(fields: list[str]) -> list[tuple[str, str]]:
+    fields = line.split("#")
     bib = fields[0].strip()
     if not bib or bib == NOT_PAID or len(fields) <= CHIPS_FIELD + 1:
         return []
     stages = _relay_stages(fields)
-    pairs: list[tuple[str, str]] = []
-    # No repeats dropped across riders: a reader binds a chip listed for two riders
-    # to two bibs, and that conflict must show here. A foreign id stays as typed.
+    pairs: list[tuple[str, str | None]] = []
     for k, tokens in enumerate(_raw_riders(fields[CHIPS_FIELD])):
-        if stages and k >= stages:
-            break
-        rider_bib = str(int(bib) + k) if stages and k else bib
+        rider_bib: str | None = bib
+        if stages:
+            rider_bib = None if k >= stages else str(int(bib) + k) if k else bib
         pairs.extend((c, rider_bib) for c in dict.fromkeys(map(_chip_key, tokens)) if c)
     return pairs
 
@@ -353,17 +350,18 @@ def chip_rows(items: list[str]) -> tuple[int, int]:
     problem = twice = -1
     owner: dict[str, str] = {}
     for row, line in enumerate(items):
-        fields = line.split("#")
-        if len(fields) <= CHIPS_FIELD + 1:
+        if not has_chips_field(line):
             continue
-        chips = fields[CHIPS_FIELD]
-        stages = _relay_stages(fields)
+        pairs = chip_bibs(line)
         if problem < 0 and (
-            chip_field_not_ascii(chips)
-            or (stages and any(_unique_riders(_raw_riders(chips))[stages:]))
+            not get_field(line, CHIPS_FIELD).isascii()
+            or any(bib is None for _, bib in pairs)
         ):
             problem = row
-        if twice < 0 and any(owner.setdefault(c, b) != b for c, b in _binds(fields)):
+        if twice < 0 and any(
+            bib is not None and owner.setdefault(chip, bib) != bib
+            for chip, bib in pairs
+        ):
             twice = row
     return problem, twice
 

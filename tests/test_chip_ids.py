@@ -306,8 +306,12 @@ def test_a_relay_binds_each_riders_chips_to_their_stage_bib():
         ("C1", "17"),
     ]
     assert chip_bibs(_team("3", "A1;;C1")) == [("A1", "15"), ("C1", "17")]
-    # A rider past the last stage has no bib to bind to.
-    assert chip_bibs(_team("2", "A1;B1;C1")) == [("A1", "15"), ("B1", "16")]
+    # A rider past the last stage has no bib to bind to; it comes with None.
+    assert chip_bibs(_team("2", "A1;B1;C1")) == [
+        ("A1", "15"),
+        ("B1", "16"),
+        ("C1", None),
+    ]
     # One stage: the whole team is one bib.
     assert chip_bibs(_team("1", "A1;B1")) == [("A1", "15"), ("B1", "15")]
     # Stages need a numeric bib, as on the site; otherwise one bib for all.
@@ -354,6 +358,9 @@ def test_a_line_whose_chips_no_reader_can_use_is_found():
     # A full-width comma: readers drop it and read one id "A1B2".
     joined = _line(number="4")[:-1] + f"A1{chr(0xFF0C)}B2#"
     assert chip_rows([*good, joined])[0] == 2
+    # A rider past the last stage whose chip repeats an earlier rider's is flagged too.
+    repeated = _team("3", "A1;B1;C1", number="9")[:-1] + ";A1#"
+    assert chip_rows([repeated])[0] == 0
     # A reserve past the last stage is fine while it carries no chips.
     assert chip_rows([_team("2", "D1;E1", number="8")[:-1] + ";#"])[0] == -1
     # One stage: a team timed as one may list any number of riders.
