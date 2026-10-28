@@ -97,8 +97,10 @@ later field stays in place. Readers that exist:
   dropped something inside an id, the first Save shows the ids as they will be saved and the second
   saves them. Enter in the field adds a separator at the cursor, for desk readers that end each id
   with Enter.
-- An id with a character outside ASCII -- a Cyrillic look-alike typed with the Russian layout --
-  stops the save: a message names it and every form field keeps what was typed.
+- An id with a letter or digit outside ASCII -- a Cyrillic look-alike typed with the Russian
+  layout, a Roman numeral -- stops the save: a message names it and every form field keeps what was
+  typed. Other characters are made plain (any space, a full-width letter or comma) or dropped like
+  punctuation, and a drop is shown before saving.
 - Saving a rider clears the field for the next one; "Add into team" adds the member's chips as the
   next rider, after a semicolon, and a member without chips as `-`. On a line with N > 1 stages and
   a numeric bib, the k-th rider's chips belong to bib + k, as FinishProtocolGenerator and the site
