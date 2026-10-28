@@ -247,6 +247,9 @@ def test_a_team_members_chips_become_the_next_rider():
 def test_riders_of_a_team_are_separated_by_semicolons():
     assert format_chips("a1, a2; b1;; c1;") == "A1,A2;B1;-;C1"
     assert format_chips("A1; -") == "A1;-"
+    # A team without any chip writes the empty field the contract asks for.
+    assert format_chips("-; -") == ""
+    assert format_chips("-; A1") == "-;A1"
     assert format_chips("a1; a1") == "A1;-"
 
 
@@ -324,6 +327,8 @@ def test_a_line_whose_chips_no_reader_can_use_is_found():
     # A full-width comma: readers drop it and read one id "A1B2".
     joined = _line(number="4")[:-1] + f"A1{chr(0xFF0C)}B2#"
     assert chip_problem_row([*good, joined]) == 2
+    # A reserve past the last stage is fine while it carries no chips.
+    assert chip_problem_row([_team("2", "D1;E1;-", number="8")]) == -1
     # One stage: a team timed as one may list any number of riders.
     assert chip_problem_row([_team("1", "D1;E1;F1")]) == -1
 

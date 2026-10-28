@@ -241,9 +241,11 @@ def format_chips(text: str) -> str:
     A space inside an id is dropped like any punctuation, whatever the grouping a
     label printed; only a comma or a semicolon starts the next id. A foreign id stays
     as typed: dropping its letter would write another chip's id without a word, for
-    any caller that skipped the form's check.
+    any caller that skipped the form's check. No chips at all is the empty field,
+    however many riders a team listed.
     """
-    return _join_riders(_unique_riders(_raw_riders(text)))
+    groups = _unique_riders(_raw_riders(text))
+    return _join_riders(groups) if any(groups) else ""
 
 
 def cleaned_chip_text(text: str) -> str | None:
@@ -321,8 +323,9 @@ def _relay_stages(fields: list[str]) -> int:
 def chip_problem_row(items: list[str]) -> int:
     """The first protocol line whose chips a reader cannot use as they are, or -1.
 
-    That is an id with a foreign letter -- a line copied verbatim from a file made
-    elsewhere never met the form's check -- or a relay with more riders than stages.
+    That is a character outside ASCII -- a line copied verbatim from a file made
+    elsewhere never met the form's check -- or a relay rider with chips past the last
+    stage; a reserve without chips there is fine.
     """
     for row, line in enumerate(items):
         if not has_chips_field(line):
@@ -330,7 +333,8 @@ def chip_problem_row(items: list[str]) -> int:
         fields = line.split("#")
         chips = fields[CHIPS_FIELD]
         stages = _relay_stages(fields)
-        if chip_field_not_ascii(chips) or (stages and len(_raw_riders(chips)) > stages):
+        riders = _unique_riders(_raw_riders(chips))
+        if chip_field_not_ascii(chips) or (stages and any(riders[stages:])):
             return row
     return -1
 
