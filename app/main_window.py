@@ -734,16 +734,26 @@ class MainWindow(QMainWindow):
     def _open_registration(self, line: str) -> None:
         """Open a rider being registered. A tag scanned before the rider was picked is
         kept with the line's chips, and said aloud, so chips meant for someone else
-        do not travel unnoticed."""
-        typed = self._parse_and_fill_form(line, keep_typed_chips=True)
-        if typed:
-            QMessageBox.information(
-                self,
-                "Chip ids",
-                "The chip ids typed before opening this rider were kept:\n\n"
-                + typed
-                + "\n\nClear them if they belong to someone else.",
+        do not travel unnoticed. A relay's line cannot tell which member a scan is,
+        so there the ids are only named, for the registrar to place."""
+        stage = parse_competitor_line(line)["stage"].strip()
+        relay = stage.isdecimal() and int(stage) > 1
+        typed = self._parse_and_fill_form(line, keep_typed_chips=not relay)
+        if not typed:
+            return
+        QMessageBox.information(
+            self,
+            "Chip ids",
+            (
+                f"This line is a relay of {stage} stages, so the chip ids typed before "
+                "opening it were not added. Put them at the right rider (riders are "
+                "separated by semicolons, in stage order):\n\n" + typed
             )
+            if relay
+            else "The chip ids typed before opening this rider were kept:\n\n"
+            + typed
+            + "\n\nClear them if they belong to someone else.",
+        )
 
     def _on_open_to_protocol(self) -> None:
         if self._list_open.currentItem():

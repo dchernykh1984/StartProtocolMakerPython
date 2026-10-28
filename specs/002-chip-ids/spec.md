@@ -131,8 +131,9 @@ principle II).
 - A rider's tag scanned before the registrar opens the rider: opening a registration -- from the
   open list or the pasted registration form -- adds the ids typed since the form last filled the
   field to the line's own and says so, so a scan is neither lost nor carried to someone else
-  unnoticed; only what was typed counts, not chips a previously opened line brought. A protocol
-  line opened for a correction shows its own chips and says the typed ones were not added.
+  unnoticed; only what was typed counts, not chips a previously opened line brought. A relay's
+  line cannot tell which member a scan is: the typed ids are named for the registrar to place. A
+  protocol line opened for a correction shows its own chips and says the typed ones were not added.
 - A relay team with three stages and bib 15: its riders are 15, 16 and 17, so the chips of its
   first, second and third member bind to those bibs. A team of one stage -- a tandem, a team timed
   as one -- binds every member's chips to its one bib.
