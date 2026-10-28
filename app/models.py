@@ -72,6 +72,9 @@ def parse_competitor_line(line: str) -> dict[str, str]:
         # has the field (11 separators); an older writer's line does not, and the site
         # tells "unlinked" (present, empty) from "unknown" (absent).
         "refs": f(REFS_FIELD) if has_refs_field(line) else "",
+        # The rider's timing chips (field 11), read by the chronometers; absent from
+        # lines written before the field existed.
+        "chips": f(CHIPS_FIELD) if has_chips_field(line) else "",
     }
 
 
@@ -86,11 +89,12 @@ def build_competitor_line(
     comment: str,
     time_shift: str,
     refs: str = "",
+    chips: str = "",
 ) -> str:
     """Build the #-delimited line stored in listBoxCompetitorsListSaveAs.
 
-    The site-registration field is always written, even empty, so the line says it was
-    written by a program that knows the field.
+    The site-registration and chip fields are always written, even empty, so the line
+    says it was written by a program that knows them.
     """
     # A group without a lap count is just its name (the combo box shows it so); the
     # laps field must still be there, empty, or every later field lands one place early.
@@ -107,6 +111,7 @@ def build_competitor_line(
         comment,
         time_shift,
         join_refs(split_refs(refs)),
+        join_chips(split_chips(chips)),
     ]
     return "#".join(_protocol_text(value) for value in fields) + "#"
 
@@ -143,6 +148,36 @@ def set_refs(line: str, refs: str) -> str:
     while len(parts) < REFS_FIELD + 1:
         parts.append("")
     return "#".join([*parts[:REFS_FIELD], value, ""])
+
+
+# ---------------------------------------------------------------------------
+# timing chips (field 11)
+# ---------------------------------------------------------------------------
+
+CHIPS_FIELD = 11
+# Only these separate ids: labels print an EPC in groups of four, so a space is
+# part of the id the registrar copies, not the start of the next one.
+_CHIP_SEPARATORS = re.compile(r"[,;]")
+_NOT_CHIP_CHARS = re.compile(r"[^A-Za-z0-9]")
+
+
+def has_chips_field(line: str) -> bool:
+    return get_n_fields(line) > CHIPS_FIELD
+
+
+def split_chips(text: str) -> list[str]:
+    """Chip ids in order: upper case, ASCII letters and digits only, no repeats."""
+    tokens = (_NOT_CHIP_CHARS.sub("", t).upper() for t in _CHIP_SEPARATORS.split(text))
+    return list(dict.fromkeys(t for t in tokens if t))
+
+
+def join_chips(tokens: list[str]) -> str:
+    return ",".join(tokens)
+
+
+def foreign_chip_tokens(text: str) -> list[str]:
+    """Typed ids holding a character outside ASCII: a keyboard in the wrong layout."""
+    return [t.strip() for t in _CHIP_SEPARATORS.split(text) if not t.isascii()]
 
 
 # ---------------------------------------------------------------------------
