@@ -1467,3 +1467,29 @@ def test_a_scan_before_opening_a_relay_is_named_not_placed(win, monkeypatch):
     win._on_edit_open()
     assert win._edit_chips.text() == "A1, "
     assert "relay of 3 stages" in shown[0] and "C1" in shown[0]
+
+
+def test_ids_typed_before_adding_after_a_rider_with_chips_are_pointed_out(
+    win, monkeypatch
+):
+    shown = []
+    monkeypatch.setattr(mw.QMessageBox, "information", lambda *a: shown.append(a[2]))
+    win._parse_and_fill_form(_chip_line("A1", number="21"))  # the leader, with a chip
+    _type_chips(win, "A1, B1")  # the leader's second chip, or the member's?
+    win._list_open.addItem(_chip_line(number=""))
+    win._list_open.setCurrentRow(0)
+    win._on_add_into_team()
+    assert win._edit_chips.text() == "A1, B1; "
+    assert "B1" in shown[0] and "last semicolon" in shown[0]
+
+
+def test_ids_scanned_for_a_leader_who_had_none_need_no_notice(win, monkeypatch):
+    shown = []
+    monkeypatch.setattr(mw.QMessageBox, "information", lambda *a: shown.append(a[2]))
+    win._parse_and_fill_form(_chip_line(number="21"))  # the leader, no chips yet
+    _type_chips(win, "A1")
+    win._list_open.addItem(_chip_line(number=""))
+    win._list_open.setCurrentRow(0)
+    win._on_add_into_team()
+    assert win._edit_chips.text() == "A1; "
+    assert shown == []
