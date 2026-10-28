@@ -971,6 +971,9 @@ class MainWindow(QMainWindow):
         saved_team = self._edit_team.text()
         saved_refs = split_refs(self._edit_refs.text())
         saved_chips = self._edit_chips.text()
+        # The stage count belongs to the team, and a relay's chips bind by it; the
+        # member's own line (from the site: "1") must not reset it.
+        saved_stage = self._edit_stage.text()
         # Adding a member must not issue a different bib to a team already numbered.
         self._parse_and_fill_form(
             self._list_open.currentItem().text(),
@@ -982,6 +985,7 @@ class MainWindow(QMainWindow):
             )
         )
         self._edit_chips.setText(merge_chip_text(saved_chips, self._edit_chips.text()))
+        self._edit_stage.setText(saved_stage)
         self._edit_name.setText(saved_name + " / " + self._edit_name.text())
         self._edit_yob.setText(saved_yob + " / " + self._edit_yob.text())
         if self._edit_team.text() != saved_team:

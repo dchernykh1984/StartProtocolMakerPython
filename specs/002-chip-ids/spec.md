@@ -160,7 +160,8 @@ principle II).
 - **FR-005**: A line loaded from the site has an empty chip field. A merge never changes the chips
   of an existing line, including when it links an old line to a registration.
 - **FR-006**: "Add into team" appends the added member's chips to the form's chips as the next
-  rider, after a semicolon, without repeats; a member without chips takes a place shown as `-`.
+  rider, after a semicolon, without repeats; a member without chips takes a place shown as `-`. It
+  keeps the team's stage count: the member's own line says "1", and a relay's chips bind by it.
 - **FR-007**: A second indicator next to the duplicate one reports a protocol line whose chips a
   reader cannot use as they are: an id with a letter or digit outside ASCII (a line copied verbatim
   from a file made elsewhere never met the form's check) or a relay with more riders than stages;

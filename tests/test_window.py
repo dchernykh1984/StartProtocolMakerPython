@@ -1222,6 +1222,16 @@ def test_a_team_merge_still_asks_before_saving_a_cleaned_id(win):
     assert win._edit_chips.text() == "E2801170, 0000020A; B1"
 
 
+def test_adding_a_member_keeps_the_teams_stage_count(win):
+    win._parse_and_fill_form(_chip_line("A1", number="21"))
+    win._edit_stage.setText("3")
+    win._list_open.addItem(_chip_line("B1", number=""))  # a site line: stage "1"
+    win._list_open.setCurrentRow(0)
+    win._on_add_into_team()
+    assert win._edit_stage.text() == "3"
+    assert win._edit_chips.text() == "A1; B1"
+
+
 def test_a_team_carries_every_members_chips(win):
     win._parse_and_fill_form(_chip_line("A1, B2", number="120"))
     win._list_open.addItem(_chip_line("B2,C3", number=""))
