@@ -215,3 +215,71 @@ def test_a_wrong_layout_stops_the_save_and_keeps_the_form(win, monkeypatch):
     assert win._edit_number.text() == "120"
     assert f"{cyr_e}2801170000002AB" in shown[0]
     assert "A1" not in shown[0].split("\n\n")[1]
+
+
+# -- copies and merges keep the field (FR-004, FR-005) -------------------------------
+
+# A line from a later version: something after the chips must survive copies too.
+LATER = _line("A1,B2", refs="r9") + "future#"
+
+
+def test_open_to_protocol_and_all_to_protocol_copy_the_chips(win, monkeypatch):
+    monkeypatch.setattr(
+        mw.QMessageBox, "question", lambda *a: mw.QMessageBox.StandardButton.Yes
+    )
+    win._list_open.addItem(LATER)
+    win._list_open.setCurrentRow(0)
+    win._on_open_to_protocol()
+    win._on_all_to_protocol()
+    assert win._save_as_items() == [LATER, LATER]
+
+
+def test_the_backup_and_the_start_protocol_file_keep_the_chips(tmp_path):
+    from app.models import load_backup, save_backup, write_start_protocol
+
+    backup = tmp_path / "spm_backup.txt"
+    save_backup(str(backup), [LATER], [LATER], [], [], "", "", "", "", False, False)
+    assert load_backup(str(backup))["save_items"] == [LATER]
+    start = tmp_path / "start.txt"
+    write_start_protocol(str(start), [LATER, OLD])
+    assert start.read_text(encoding="utf-8").splitlines() == [LATER, OLD]
+
+
+def test_the_start_list_upload_sends_the_lines_as_they_are(win, monkeypatch):
+    sent = []
+    monkeypatch.setattr(
+        mw, "upload_start_list", lambda url, tok, dev, items, rev: sent.append(items)
+    )
+    win._edit_http_site_url.setText("https://s")
+    win._edit_http_token.setText("tok")
+    win._list_save_as.addItem(LATER)
+    assert win._upload_to_site()[0]
+    assert sent == [[LATER]]
+
+
+def _site_line(name: str, ref: str) -> str:
+    return build_competitor_line(
+        "", name, "M40#3", "1", "1990", "T", "C", "", "0 00:00:00.000", ref
+    )
+
+
+def test_a_merge_from_the_site_keeps_the_chips_of_a_known_line():
+    from app.models import merge_open_lines
+
+    mine = build_competitor_line(
+        "", "Kim A", "M40#3", "1", "1990", "T", "C", "", "0 00:00:00.000", "r21", "A1"
+    )
+    merged, added, _ = merge_open_lines([mine], [_site_line("Kim A", "r21")])
+    assert (merged, added) == ([mine], 0)
+
+
+def test_linking_an_old_line_to_its_registration_keeps_its_chips():
+    from app.models import merge_open_lines
+
+    old = build_competitor_line(
+        "", "Lee B", "M40#3", "1", "1990", "T", "C", "", "0 00:00:00.000", "", "B1,B2"
+    )
+    merged, added, _ = merge_open_lines([old], [_site_line("Lee B", "r17")])
+    assert added == 0
+    assert parse_competitor_line(merged[0])["refs"] == "r17"
+    assert parse_competitor_line(merged[0])["chips"] == "B1,B2"
