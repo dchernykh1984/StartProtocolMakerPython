@@ -37,6 +37,7 @@ from app.models import (
     categories_to_group_rows,
     check_duplicate_fields,
     current_local_seconds,
+    describe_foreign_chip,
     duplicate_chip_row,
     duplicate_ref_row,
     foreign_chip_tokens,
@@ -696,8 +697,10 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(
                 self,
                 "Chip ids",
-                "These chip ids hold a letter that is not Latin (another keyboard "
-                "layout?):\n\n" + "\n".join(foreign) + "\n\nNothing was saved.",
+                "These chip ids hold a character that is not Latin (another keyboard "
+                "layout?):\n\n"
+                + "\n".join(map(describe_foreign_chip, foreign))
+                + "\n\nNothing was saved.",
             )
             return
         line = build_competitor_line(
