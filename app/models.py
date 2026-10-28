@@ -314,9 +314,12 @@ def chip_bibs(line: str) -> list[tuple[str, str]]:
     to bib + k and a rider past the last stage binds nothing. Any other line binds
     every chip to its bib; a line without a bib binds nothing.
     """
-    fields = line.split("#")
+    return _binds(line.split("#"))
+
+
+def _binds(fields: list[str]) -> list[tuple[str, str]]:
     bib = fields[0].strip()
-    if not bib or bib == NOT_PAID or not has_chips_field(line):
+    if not bib or bib == NOT_PAID or len(fields) <= CHIPS_FIELD + 1:
         return []
     stages = _relay_stages(fields)
     pairs: list[tuple[str, str]] = []
@@ -326,9 +329,7 @@ def chip_bibs(line: str) -> list[tuple[str, str]]:
         if stages and k >= stages:
             break
         rider_bib = str(int(bib) + k) if stages and k else bib
-        pairs.extend(
-            (chip, rider_bib) for chip in dict.fromkeys(map(_chip_key, tokens)) if chip
-        )
+        pairs.extend((c, rider_bib) for c in dict.fromkeys(map(_chip_key, tokens)) if c)
     return pairs
 
 
@@ -339,38 +340,31 @@ def _relay_stages(fields: list[str]) -> int:
     return int(stage) if stage.isdecimal() and int(stage) > 1 and bib.isdecimal() else 0
 
 
-def chip_problem_row(items: list[str]) -> int:
-    """The first protocol line whose chips a reader cannot use as they are, or -1.
+def chip_rows(items: list[str]) -> tuple[int, int]:
+    """In one pass over the protocol: the first line whose chips need a fix, and the
+    first whose chip a line above binds to another bib; -1 where there is none.
 
-    That is a character outside ASCII -- a line copied verbatim from a file made
-    elsewhere never met the form's check -- or a relay rider with chips past the last
-    stage; a reserve without chips there is fine.
+    A fix is needed for a character outside ASCII -- a line copied verbatim from a
+    file made elsewhere never met the form's check -- or a relay rider with chips
+    past the last stage (a reserve without chips there is fine). The same chip twice
+    for one bib is not ambiguous, and a line without a bib binds nothing.
     """
-    for row, line in enumerate(items):
-        if not has_chips_field(line):
-            continue
-        fields = line.split("#")
-        chips = fields[CHIPS_FIELD]
-        stages = _relay_stages(fields)
-        if chip_field_not_ascii(chips):
-            return row
-        if stages and any(_unique_riders(_raw_riders(chips))[stages:]):
-            return row
-    return -1
-
-
-def duplicate_chip_row(items: list[str]) -> int:
-    """The first protocol line whose chip a line above binds to another bib, or -1.
-
-    The same chip on two lines of one bib is not ambiguous, and a line without a bib
-    binds nothing for the chronometers, so neither is reported.
-    """
+    problem = twice = -1
     owner: dict[str, str] = {}
     for row, line in enumerate(items):
-        for chip, bib in chip_bibs(line):
-            if owner.setdefault(chip, bib) != bib:
-                return row
-    return -1
+        fields = line.split("#")
+        if len(fields) <= CHIPS_FIELD + 1:
+            continue
+        chips = fields[CHIPS_FIELD]
+        stages = _relay_stages(fields)
+        if problem < 0 and (
+            chip_field_not_ascii(chips)
+            or (stages and any(_unique_riders(_raw_riders(chips))[stages:]))
+        ):
+            problem = row
+        if twice < 0 and any(owner.setdefault(c, b) != b for c, b in _binds(fields)):
+            twice = row
+    return problem, twice
 
 
 def merge_chip_text(team_chips: str, member_chips: str, team_size: int = 0) -> str:
