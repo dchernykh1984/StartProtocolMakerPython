@@ -8,7 +8,8 @@ For ChronometerPython, ChronometerAndroid and any later reader of the start prot
 - The bib is field 0. `NOT_PAID` in field 0 (open list) or an empty field 0 is not a bib.
 - A reader normalises what it compares the same way: split field 11 on commas and semicolons, then
   upper case, ASCII letters and digits only.
-- A chip on two lines is an error of the start protocol; a reader reports it rather than choosing.
+- A chip on the lines of two different bibs is an error of the start protocol; a reader reports it
+  rather than choosing. On two lines of one bib it simply belongs to that bib.
 - Lines arrive through the start protocol file (UTF-8) or the site's
   `GET /api/v1/start-list/?competition_token=...` (`devices[].items`, verbatim strings).
 
