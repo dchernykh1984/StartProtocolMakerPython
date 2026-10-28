@@ -5,6 +5,15 @@ Pure helpers first; the form and the handlers are covered with the Qt window bel
 
 from __future__ import annotations
 
+import os
+
+import pytest
+
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
+from PySide6.QtWidgets import QApplication
+
+from app import main_window as mw
 from app.models import (
     CHIPS_FIELD,
     build_competitor_line,
@@ -15,6 +24,8 @@ from app.models import (
     participant_to_open_line,
     split_chips,
 )
+
+_app = QApplication.instance() or QApplication([])
 
 # A 0.5.x line: references (field 10) but no chips.
 OLD = "120#Ivanov Ivan#M40#3#1#1984#T#C##0 00:00:00.000#r41#"
@@ -136,3 +147,57 @@ def test_a_0_5_backup_line_loads_and_has_no_chips(tmp_path):
     assert loaded["open_items"] == [OLD]
     assert loaded["save_items"] == [OLD]
     assert parse_competitor_line(loaded["save_items"][0])["chips"] == ""
+
+
+# -- the form ------------------------------------------------------------------------
+
+
+@pytest.fixture
+def win(monkeypatch):
+    from tests.test_window import _empty_backup
+
+    monkeypatch.setattr(mw, "load_backup", lambda path: _empty_backup())
+    monkeypatch.setattr(mw.MainWindow, "_write_backup", lambda self, f, n: None)
+    monkeypatch.setattr(mw, "write_start_protocol", lambda *a, **k: None)
+    w = mw.MainWindow()
+    monkeypatch.setattr(mw.QMessageBox, "information", lambda *a, **k: None)
+    monkeypatch.setattr(mw.QMessageBox, "warning", lambda *a, **k: None)
+    yield w
+    w.deleteLater()
+
+
+def _fill(win, number="120", chips=""):
+    win._parse_and_fill_form(_line(number=number))
+    win._edit_chips.setText(chips)
+
+
+def test_saving_writes_the_chips_and_clears_the_field(win):
+    _fill(win, chips="e2801170 0000020a, E2801170000002AB")
+    win._on_save_to_file()
+    saved = win._save_as_items()[0]
+    assert saved.endswith("#E28011700000020A,E2801170000002AB#")
+    assert win._edit_chips.text() == ""
+
+
+def test_opening_a_line_fills_the_chip_field(win):
+    win._parse_and_fill_form(_line("A1,B2"))
+    assert win._edit_chips.text() == "A1,B2"
+
+
+def test_changing_the_bib_keeps_the_chips(win):
+    win._parse_and_fill_form(_line("A1,B2", number="120"))
+    win._edit_number.setText("121")
+    win._on_save_to_file()
+    line = win._save_as_items()[0]
+    assert parse_competitor_line(line)["number"] == "121"
+    assert parse_competitor_line(line)["chips"] == "A1,B2"
+
+
+@pytest.mark.parametrize(
+    ("typed", "after"),
+    [("A1", "A1, "), ("A1, ", "A1, "), ("A1;", "A1;"), ("", "")],
+)
+def test_enter_in_the_chip_field_adds_one_separator(win, typed, after):
+    win._edit_chips.setText(typed)
+    win._edit_chips.returnPressed.emit()
+    assert win._edit_chips.text() == after
