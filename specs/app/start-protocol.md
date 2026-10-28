@@ -104,8 +104,9 @@ later field stays in place. Readers that exist:
   a numeric bib, the k-th rider's chips belong to bib + k, as FinishProtocolGenerator and the site
   number stage riders.
 - "Open competitors list" loads lines as they are and names those whose chip field has any
-  character outside ASCII, to be fixed through the form. In the protocol list such a line, or a relay with
-  more riders than stages, lights "CHIP IDS NEED A FIX! (line N)"; the selection is left alone.
+  character outside ASCII, to be fixed through the form. In the protocol list such a line, or a
+  relay rider with chips past the last stage, lights "CHIP IDS NEED A FIX! (line N)"; a chip bound
+  to two bibs lights "ONE CHIP ON TWO BIBS! (line N)". The selection is left alone.
 - Copies keep the field as they keep every field: open to protocol, the backup, the start protocol
   file, FTP and the start list upload. A line from the site arrives with an empty field, and a merge
   never changes the chips of a line it already has.
