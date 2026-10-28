@@ -233,7 +233,8 @@ def test_linking_an_old_line_to_its_registration_keeps_its_chips():
 def test_a_team_members_chips_become_the_next_rider():
     from app.models import merge_chip_text
 
-    assert merge_chip_text("a1, B2", "b2,c3") == "a1, B2; c3"
+    # A repeat stays until Save, which shows it dropped.
+    assert merge_chip_text("a1, B2", "b2,c3") == "a1, B2; b2, c3"
     # Kept as typed, so the save still asks before it joins the pieces.
     assert merge_chip_text("", "E280 1170") == "-; E280 1170"
     assert merge_chip_text("A1", "") == "A1; -"
