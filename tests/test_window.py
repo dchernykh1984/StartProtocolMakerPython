@@ -1155,6 +1155,15 @@ def test_an_open_list_with_a_foreign_chip_id_is_reported_on_loading(
     assert good not in shown[0]
 
 
+def test_a_protocol_line_with_a_foreign_chip_id_lights_the_chip_warning(win):
+    foreign = _chip_line(number="7")[:-1] + f"{chr(0x415)}280A#"
+    win._list_save_as.addItems([_chip_line("A1", number="1"), foreign])
+    win._refresh_duplicate_indicator()
+    assert win._lbl_error.isHidden()
+    assert not win._lbl_chip_error.isHidden()
+    assert win._list_save_as.currentRow() == 1
+
+
 def test_a_scan_into_the_middle_of_the_chip_field_is_separated_there(win):
     win._edit_chips.setText("A1, C3")
     win._edit_chips.setCursorPosition(len("A1, "))

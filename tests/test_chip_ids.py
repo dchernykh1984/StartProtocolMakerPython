@@ -297,6 +297,27 @@ def test_a_chip_on_two_protocol_lines_is_found():
     assert duplicate_chip_row([OLD, OLD]) == -1
 
 
+def test_a_line_whose_chips_no_reader_can_use_is_found():
+    from app.models import chip_problem_row
+
+    good = [_line("A1", number="1"), _team("2", "B1;C1", number="5")]
+    assert chip_problem_row(good) == -1
+    foreign = _line(number="2")[:-1] + f"{chr(0x415)}1#"
+    assert chip_problem_row([*good, foreign]) == 2
+    assert chip_problem_row([*good, _team("2", "D1;E1;F1", number="8")]) == 2
+    # One stage: a team timed as one may list any number of riders.
+    assert chip_problem_row([_team("1", "D1;E1;F1")]) == -1
+
+
+def test_two_foreign_ids_are_not_taken_for_one_chip():
+    from app.models import duplicate_chip_row
+
+    cyr_a, cyr_v = chr(0x410), chr(0x412)
+    first = _line(number="1")[:-1] + f"{cyr_a}B1#"
+    second = _line(number="2")[:-1] + f"{cyr_v}B1#"
+    assert duplicate_chip_row([first, second]) == -1
+
+
 def test_a_relay_riders_chip_on_a_line_of_their_own_bib_is_no_duplicate():
     from app.models import duplicate_chip_row
 

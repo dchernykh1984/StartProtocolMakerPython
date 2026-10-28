@@ -36,6 +36,7 @@ from app.models import (
     build_competitor_line,
     categories_to_group_rows,
     check_duplicate_fields,
+    chip_problem_row,
     cleaned_chip_text,
     current_local_seconds,
     describe_foreign_chip,
@@ -317,6 +318,14 @@ class MainWindow(QMainWindow):
         self._lbl_error.setStyleSheet("color: red; font-weight: bold;")
         self._lbl_error.setVisible(False)
         right.addWidget(self._lbl_error)
+        self._lbl_chip_error = QLabel("CHIP IDS NEED A FIX!")
+        self._lbl_chip_error.setToolTip(
+            "A protocol line has a chip id with a letter that is not Latin, or a relay "
+            "lists more riders than it has stages."
+        )
+        self._lbl_chip_error.setStyleSheet("color: red; font-weight: bold;")
+        self._lbl_chip_error.setVisible(False)
+        right.addWidget(self._lbl_chip_error)
 
         row5 = QHBoxLayout()
         self._btn_edit_save_as = QPushButton("Edit")
@@ -455,6 +464,10 @@ class MainWindow(QMainWindow):
         self._lbl_error.setVisible(found)
         if found and idx >= 0:
             self._list_save_as.setCurrentRow(idx)
+        chip_row = chip_problem_row(items)
+        self._lbl_chip_error.setVisible(chip_row >= 0)
+        if chip_row >= 0 and not (found and idx >= 0):
+            self._list_save_as.setCurrentRow(chip_row)
 
     def _save_all_data(self) -> None:
         self._refresh_duplicate_indicator()

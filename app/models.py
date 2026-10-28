@@ -273,16 +273,41 @@ def chip_bibs(line: str) -> list[tuple[str, str]]:
     bib = fields[0].strip()
     if not bib or bib == NOT_PAID or not has_chips_field(line):
         return []
-    stage = fields[4].strip() if len(fields) > 4 else ""
-    stages = int(stage) if stage.isdecimal() else 1
-    staged = stages > 1 and bib.isdecimal()
+    stages = _relay_stages(fields)
     pairs: list[tuple[str, str]] = []
-    for k, group in enumerate(_rider_groups(fields[CHIPS_FIELD])):
-        if staged and k >= stages:
+    # A foreign id stays as typed: dropping its letter could make it another chip.
+    for k, group in enumerate(_rider_groups(fields[CHIPS_FIELD], keep_foreign=True)):
+        if stages and k >= stages:
             break
-        rider_bib = str(int(bib) + k) if staged and k else bib
+        rider_bib = str(int(bib) + k) if stages and k else bib
         pairs.extend((chip, rider_bib) for chip in group)
     return pairs
+
+
+def _relay_stages(fields: list[str]) -> int:
+    """N for a relay of N > 1 stages with a numeric bib (riders bib + k), else 0."""
+    stage = fields[4].strip() if len(fields) > 4 else ""
+    bib = fields[0].strip()
+    return int(stage) if stage.isdecimal() and int(stage) > 1 and bib.isdecimal() else 0
+
+
+def chip_problem_row(items: list[str]) -> int:
+    """The first protocol line whose chips a reader cannot use as they are, or -1.
+
+    That is an id with a foreign letter -- a line copied verbatim from a file made
+    elsewhere never met the form's check -- or a relay with more riders than stages.
+    """
+    for row, line in enumerate(items):
+        if not has_chips_field(line):
+            continue
+        fields = line.split("#")
+        chips = fields[CHIPS_FIELD]
+        stages = _relay_stages(fields)
+        if foreign_chip_tokens(chips) or (
+            stages and len(_rider_groups(chips)) > stages
+        ):
+            return row
+    return -1
 
 
 def duplicate_chip_row(items: list[str]) -> int:
