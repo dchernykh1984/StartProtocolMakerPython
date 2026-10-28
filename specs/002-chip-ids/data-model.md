@@ -7,7 +7,7 @@
 | Index | Field | Rule |
 | --- | --- | --- |
 | 0-10 | unchanged | see `specs/app/start-protocol.md` |
-| 11 | chips | empty, or chip ids joined by `,` |
+| 11 | chips | empty, or chip ids: `,` between the ids of a rider, `;` between the riders of a team |
 
 - A line built by this program (form, site participant) has 12 separators, field 11 included.
 - A line with 11 or fewer separators has no chip field; it reads as having no chips.
@@ -24,5 +24,6 @@
 
 ## Relations
 
-- A chip belongs to the bib of the line that carries it. A team line carries every member's chips.
-- A chip on two protocol lines is a duplicate the indicator reports.
+- A chip belongs to the bib of the line that carries it, except on a relay with N > 1 stages and a
+  numeric bib, where the k-th rider's chips belong to bib + k.
+- A chip bound to two different bibs is a duplicate the indicator reports.

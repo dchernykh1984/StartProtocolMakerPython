@@ -193,8 +193,9 @@ is reused for somebody else.
 
 The "Chips" field under it holds the rider's timing chip ids, comma-separated; the
 chronometers read them to turn a chip read into this bib's crossing. A team carries
-every member's chips. An id typed with a Cyrillic letter (the wrong keyboard layout)
-stops the save until it is fixed.
+each member's chips after a semicolon, in stage order, so a relay rider's chips count
+for their own stage bib. An id typed with a Cyrillic letter (the wrong keyboard
+layout) stops the save until it is fixed.
 
 ### Uploading the start list
 

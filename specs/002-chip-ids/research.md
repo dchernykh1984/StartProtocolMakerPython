@@ -46,3 +46,15 @@
   `duplicate_ref_row()`.
 - **Rationale**: one indicator, one place the registrar looks; a chip on two lines makes every
   read of it ambiguous and the chronometers will refuse to guess.
+
+## Decision 5: a relay's riders are separate groups
+
+- **Decision**: semicolons separate the riders of a team in field 11, commas the ids of one rider.
+  On a line with N > 1 stages and a numeric bib, the k-th rider binds to bib + k.
+- **Rationale**: FinishProtocolGenerator expects stage riders as bibs number .. number + N - 1, and
+  the site expands such a line the same way (`event_photos/bindings.py`), so a relay rider's chip
+  read must become that rider's bib, not the team's first. Field 10 already lists one reference per
+  member in member order; field 11 needs groups because a rider carries several chips.
+- **Alternatives**: one flat list bound to the team's bib (rejected: stage 2 and 3 crossings would
+  be credited to the stage 1 bib, found in review cycle 2); a field per stage (rejected: the number
+  of stages varies per line).

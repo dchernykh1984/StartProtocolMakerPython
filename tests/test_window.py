@@ -1205,7 +1205,7 @@ def test_a_team_carries_every_members_chips(win):
     win._list_open.addItem(_chip_line("B2,C3", number=""))
     win._list_open.setCurrentRow(0)
     win._on_add_into_team()
-    assert win._edit_chips.text() == "A1, B2, C3"
+    assert win._edit_chips.text() == "A1, B2; C3"
     assert win._edit_number.text() == "120"
 
 

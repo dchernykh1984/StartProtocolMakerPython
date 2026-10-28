@@ -9,8 +9,8 @@ from app.models import (
     CHIPS_FIELD,
     build_competitor_line,
     foreign_chip_tokens,
+    format_chips,
     has_chips_field,
-    join_chips,
     parse_competitor_line,
     participant_to_open_line,
     split_chips,
@@ -74,7 +74,7 @@ def test_a_dropped_character_inside_an_id_asks_for_a_check():
 
 def test_repeats_are_dropped_and_the_first_keeps_its_place():
     assert split_chips("B2, a1, b2, A1") == ["B2", "A1"]
-    assert join_chips(["B2", "A1"]) == "B2,A1"
+    assert format_chips("B2, a1, b2, A1") == "B2,A1"
 
 
 def test_a_cyrillic_look_alike_is_reported_not_dropped():
@@ -229,14 +229,60 @@ def test_linking_an_old_line_to_its_registration_keeps_its_chips():
 # -- teams (FR-006) --------------------------------------------------------------------
 
 
-def test_merging_chip_text_keeps_order_drops_repeats_and_keeps_foreign_ids():
+def test_a_team_members_chips_become_the_next_rider():
     from app.models import merge_chip_text
 
-    assert merge_chip_text("a1, B2", "b2;c3") == "A1, B2, C3"
-    assert merge_chip_text("", "E280 1170") == "E2801170"
-    assert merge_chip_text(", ;", "") == ""
+    assert merge_chip_text("a1, B2", "b2,c3") == "A1, B2; C3"
+    assert merge_chip_text("", "E280 1170") == "; E2801170"
+    assert merge_chip_text("A1", "") == "A1; "
+    assert merge_chip_text("A1; ", "C1") == "A1; ; C1"
     foreign = f"{chr(0x415)}1"
-    assert merge_chip_text(foreign, "A1") == f"{foreign}, A1"
+    assert merge_chip_text(foreign, "A1") == f"{foreign}; A1"
+
+
+def test_riders_of_a_team_are_separated_by_semicolons():
+    assert format_chips("a1, a2; b1;; c1;") == "A1,A2;B1;;C1"
+    assert format_chips("a1; a1") == "A1"
+    assert split_chips("A1,A2;B1;;C1") == ["A1", "A2", "B1", "C1"]
+
+
+def _team(stages: str, chips: str, number: str = "15") -> str:
+    return build_competitor_line(
+        number,
+        "Team",
+        "Relay#3",
+        stages,
+        "1990",
+        "T",
+        "C",
+        "",
+        "0 00:00:00.000",
+        "",
+        chips,
+    )
+
+
+def test_a_relay_binds_each_riders_chips_to_their_stage_bib():
+    from app.models import chip_bibs
+
+    assert chip_bibs(_team("3", "A1,A2;B1;C1")) == [
+        ("A1", "15"),
+        ("A2", "15"),
+        ("B1", "16"),
+        ("C1", "17"),
+    ]
+    assert chip_bibs(_team("3", "A1;;C1")) == [("A1", "15"), ("C1", "17")]
+    # A rider past the last stage has no bib to bind to.
+    assert chip_bibs(_team("2", "A1;B1;C1")) == [("A1", "15"), ("B1", "16")]
+    # One stage: the whole team is one bib.
+    assert chip_bibs(_team("1", "A1;B1")) == [("A1", "15"), ("B1", "15")]
+    # Stages need a numeric bib, as on the site; otherwise one bib for all.
+    assert chip_bibs(_team("3", "A1;B1", number="T15")) == [
+        ("A1", "T15"),
+        ("B1", "T15"),
+    ]
+    assert chip_bibs(_team("3", "A1", number="")) == []
+    assert chip_bibs(OLD) == []
 
 
 # -- duplicates (FR-007) ---------------------------------------------------------------
@@ -249,6 +295,14 @@ def test_a_chip_on_two_protocol_lines_is_found():
     assert duplicate_chip_row(lines) == -1
     assert duplicate_chip_row([*lines, _line("d1, b1", number="3")]) == 2
     assert duplicate_chip_row([OLD, OLD]) == -1
+
+
+def test_a_relay_riders_chip_on_a_line_of_their_own_bib_is_no_duplicate():
+    from app.models import duplicate_chip_row
+
+    lines = [_team("2", "A1;B1"), _line("B1", number="16")]
+    assert duplicate_chip_row(lines) == -1
+    assert duplicate_chip_row([*lines, _line("B1", number="17")]) == 2
 
 
 def test_a_chip_on_two_lines_of_one_bib_or_without_a_bib_is_no_duplicate():

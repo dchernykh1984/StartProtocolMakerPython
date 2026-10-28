@@ -33,7 +33,7 @@ A line reaches the protocol list in two ways:
 | 8 | comment | Free text; from the site it is `additional_info` with `#` and line breaks replaced by spaces. "Check mail" compares its first word |
 | 9 | time_shift | Start delay, `D HH:MM:SS.mmm`, `0 00:00:00.000` by default |
 | 10 | refs | Site registrations of the line, `r<id>` comma-separated (cycling-site #349); written always, even empty |
-| 11 | chips | The rider's timing chip ids, comma-separated, upper case, ASCII letters and digits only (ChronometerPython #49); written always, even empty, so a line has 12 separators |
+| 11 | chips | Timing chip ids, upper case, ASCII letters and digits: commas between the ids of a rider, semicolons between the riders of a team in stage order (ChronometerPython #49); written always, even empty, so a line has 12 separators |
 
 A line written before field 10 existed has 10 separators: its field is *absent*, which the site
 tells apart from an empty one (a referee's unlink). A line written before field 11 existed has 11
@@ -98,7 +98,9 @@ later field stays in place. Readers that exist:
   with Enter.
 - An id with a character outside ASCII -- a Cyrillic look-alike typed with the Russian layout --
   stops the save: a message names it and every form field keeps what was typed.
-- Saving a rider clears the field for the next one; "Add into team" merges the member's chips.
+- Saving a rider clears the field for the next one; "Add into team" adds the member's chips as the
+  next rider, after a semicolon. On a line with N > 1 stages and a numeric bib, the k-th rider's
+  chips belong to bib + k, as FinishProtocolGenerator and the site number stage riders.
 - "Open competitors list" loads lines as they are and names those whose chip field has a character
   outside ASCII, to be fixed through the form.
 - Copies keep the field as they keep every field: open to protocol, the backup, the start protocol
