@@ -1131,6 +1131,14 @@ def test_enter_in_the_chip_field_adds_one_separator(win, typed, after):
     assert win._edit_chips.text() == after
 
 
+def test_a_scan_into_the_middle_of_the_chip_field_is_separated_there(win):
+    win._edit_chips.setText("A1, C3")
+    win._edit_chips.setCursorPosition(len("A1, "))
+    win._edit_chips.insert("B2")  # what a desk reader types
+    win._edit_chips.returnPressed.emit()
+    assert win._edit_chips.text() == "A1, B2, C3"
+
+
 def test_a_wrong_layout_stops_the_save_and_keeps_the_form(win, monkeypatch):
     shown = []
     monkeypatch.setattr(mw.QMessageBox, "warning", lambda *a: shown.append(a[2]))

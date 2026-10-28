@@ -725,9 +725,11 @@ class MainWindow(QMainWindow):
         self._save_all_data()
 
     def _on_chips_return(self) -> None:
-        text = self._edit_chips.text().rstrip()
-        if text and text[-1] not in ",;":
-            self._edit_chips.setText(text + ", ")
+        # At the cursor: a reader that scans into the middle ends its id there.
+        edit = self._edit_chips
+        before = edit.text()[: edit.cursorPosition()].rstrip()
+        if before and before[-1] not in ",;":
+            edit.insert(", ")
 
     def _on_get_number(self) -> None:
         idx = self._list_groups.findItems(
