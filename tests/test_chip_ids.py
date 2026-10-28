@@ -320,76 +320,76 @@ def test_a_relay_binds_each_riders_chips_to_their_stage_bib():
 
 
 def test_a_chip_on_two_protocol_lines_is_found():
-    from app.models import duplicate_chip_row
+    from app.models import chip_rows
 
     lines = [_line("A1,B1", number="1"), _line("C1", number="2")]
-    assert duplicate_chip_row(lines) == -1
-    assert duplicate_chip_row([*lines, _line("d1, b1", number="3")]) == 2
-    assert duplicate_chip_row([OLD, OLD]) == -1
+    assert chip_rows(lines)[1] == -1
+    assert chip_rows([*lines, _line("d1, b1", number="3")])[1] == 2
+    assert chip_rows([OLD, OLD])[1] == -1
 
 
 def test_a_foreign_id_is_written_as_typed_never_turned_into_another_chip():
-    from app.models import chip_problem_row
+    from app.models import chip_rows
 
     cyr_a = chr(0x410)
     line = _line(f"{cyr_a}1, B2")
     assert parse_competitor_line(line)["chips"] == f"{cyr_a}1,B2"
-    assert chip_problem_row([line]) == 0
+    assert chip_rows([line])[0] == 0
 
 
 def test_a_line_whose_chips_no_reader_can_use_is_found():
-    from app.models import chip_problem_row
+    from app.models import chip_rows
 
     good = [_line("A1", number="1"), _team("2", "B1;C1", number="5")]
-    assert chip_problem_row(good) == -1
+    assert chip_rows(good)[0] == -1
     foreign = _line(number="2")[:-1] + f"{chr(0x415)}1#"
-    assert chip_problem_row([*good, foreign]) == 2
-    assert chip_problem_row([*good, _team("2", "D1;E1;F1", number="8")]) == 2
+    assert chip_rows([*good, foreign])[0] == 2
+    assert chip_rows([*good, _team("2", "D1;E1;F1", number="8")])[0] == 2
     # A full-width A copied verbatim: the form would make it plain, readers drop it.
     full_width = _line(number="3")[:-1] + f"{chr(0xFF21)}1#"
-    assert chip_problem_row([*good, full_width]) == 2
+    assert chip_rows([*good, full_width])[0] == 2
     # A full-width comma: readers drop it and read one id "A1B2".
     joined = _line(number="4")[:-1] + f"A1{chr(0xFF0C)}B2#"
-    assert chip_problem_row([*good, joined]) == 2
+    assert chip_rows([*good, joined])[0] == 2
     # A reserve past the last stage is fine while it carries no chips.
-    assert chip_problem_row([_team("2", "D1;E1;-", number="8")]) == -1
+    assert chip_rows([_team("2", "D1;E1;-", number="8")])[0] == -1
     # One stage: a team timed as one may list any number of riders.
-    assert chip_problem_row([_team("1", "D1;E1;F1")]) == -1
+    assert chip_rows([_team("1", "D1;E1;F1")])[0] == -1
 
 
 def test_two_foreign_ids_are_not_taken_for_one_chip():
-    from app.models import duplicate_chip_row
+    from app.models import chip_rows
 
     cyr_a, cyr_v = chr(0x410), chr(0x412)
     first = _line(number="1")[:-1] + f"{cyr_a}B1#"
     second = _line(number="2")[:-1] + f"{cyr_v}B1#"
-    assert duplicate_chip_row([first, second]) == -1
+    assert chip_rows([first, second])[1] == -1
 
 
 def test_one_chip_for_two_riders_of_a_relay_copied_verbatim_is_a_duplicate():
-    from app.models import chip_bibs, duplicate_chip_row
+    from app.models import chip_bibs, chip_rows
 
     line = "5#Team#Relay#3#2#1990#T#C##0 00:00:00.000##A1;A1#"
     assert chip_bibs(line) == [("A1", "5"), ("A1", "6")]
-    assert duplicate_chip_row([line]) == 0
+    assert chip_rows([line])[1] == 0
 
 
 def test_a_relay_riders_chip_on_a_line_of_their_own_bib_is_no_duplicate():
-    from app.models import duplicate_chip_row
+    from app.models import chip_rows
 
     lines = [_team("2", "A1;B1"), _line("B1", number="16")]
-    assert duplicate_chip_row(lines) == -1
-    assert duplicate_chip_row([*lines, _line("B1", number="17")]) == 2
+    assert chip_rows(lines)[1] == -1
+    assert chip_rows([*lines, _line("B1", number="17")])[1] == 2
 
 
 def test_a_chip_on_two_lines_of_one_bib_or_without_a_bib_is_no_duplicate():
-    from app.models import NOT_PAID, duplicate_chip_row
+    from app.models import NOT_PAID, chip_rows
 
     one_bib = [_line("A1", number="15"), _line("A1, B1", number="15")]
-    assert duplicate_chip_row(one_bib) == -1
+    assert chip_rows(one_bib)[1] == -1
     no_bib = [
         _line("A1", number=""),
         _line("A1", number=NOT_PAID),
         _line("A1", number="7"),
     ]
-    assert duplicate_chip_row(no_bib) == -1
+    assert chip_rows(no_bib)[1] == -1

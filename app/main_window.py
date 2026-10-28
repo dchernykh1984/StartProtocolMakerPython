@@ -38,11 +38,10 @@ from app.models import (
     categories_to_group_rows,
     check_duplicate_fields,
     chip_field_not_ascii,
-    chip_problem_row,
+    chip_rows,
     cleaned_chip_text,
     current_local_seconds,
     describe_foreign_chip,
-    duplicate_chip_row,
     duplicate_ref_row,
     foreign_chip_tokens,
     get_field,
@@ -467,8 +466,7 @@ class MainWindow(QMainWindow):
         # selection on every save would make the next Delete remove another rider. A
         # chip under two bibs is one of them: the chronometers would leave both riders
         # untimed rather than guess.
-        problem_row = chip_problem_row(items)
-        twice_row = duplicate_chip_row(items)
+        problem_row, twice_row = chip_rows(items)
         if problem_row >= 0:
             self._lbl_chip_error.setText(
                 f"CHIP IDS NEED A FIX! (line {problem_row + 1})"

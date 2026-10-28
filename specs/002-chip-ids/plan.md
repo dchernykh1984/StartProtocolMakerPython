@@ -70,7 +70,7 @@ specs/002-chip-ids/
 
 ```text
 app/
-  models.py          CHIPS_FIELD, chip helpers, build/parse/set, duplicate_chip_row
+  models.py          CHIPS_FIELD, chip helpers, build/parse, chip_bibs, chip_rows
   main_window.py     "Chips:" form field; fill, save, clear, team merge, indicator
 tests/
   test_chip_ids.py   unit and Qt-level tests of this feature
@@ -95,7 +95,7 @@ code paths one for one, so a reader finds chips next to refs everywhere.
 - `foreign_chip_tokens(text)`: the typed tokens that contain a letter or digit outside ASCII. The
   form refuses to save while it returns anything (research, decision 3).
 - `chip_bibs(line)`: the (chip, bib) pairs a line binds, a relay's k-th rider to bib + k (research,
-  decision 5); `duplicate_chip_row()` compares them across lines and `chip_problem_row()` finds a
+  decision 5); `chip_rows()` compares them across lines and finds, in the same pass, a
   line with a foreign id or more riders than stages.
 - `parse_competitor_line()` returns `"chips"` (empty when the field is absent);
   `build_competitor_line(..., chips="")` writes `format_chips(chips)` after the refs, so
@@ -105,7 +105,7 @@ code paths one for one, so a reader finds chips next to refs everywhere.
   field 11.
 - `_refresh_duplicate_indicator()` reads the protocol list once, checks bibs and references as
   before, then names the line in the chip indicator: "CHIP IDS NEED A FIX!" for
-  `chip_problem_row()`, else "ONE CHIP ON TWO BIBS!" for `duplicate_chip_row()`.
+  the first row of `chip_rows()`, else "ONE CHIP ON TWO BIBS!" for the second.
 - The form gets "Chips:" under "Site entry:"; its `returnPressed` inserts `, ` at the cursor unless
   the text before it is empty or ends with a separator. `_parse_and_fill_form()` fills it;
   `_on_save_to_file()` stops on `foreign_chip_tokens()`, then on `cleaned_chip_text()` (showing the

@@ -40,12 +40,16 @@
 - **Spec impact**: FR-003, the edge case about a Cyrillic look-alike and User Story 1, scenario 2
   state this decision.
 
-## Decision 4: a duplicate chip lights the existing indicator
+## Decision 4: chip problems have an indicator of their own that names the line
 
-- **Decision**: `duplicate_chip_row()` feeds `_refresh_duplicate_indicator()` like
-  `duplicate_ref_row()`.
-- **Rationale**: one indicator, one place the registrar looks; a chip on two lines makes every
-  read of it ambiguous and the chronometers will refuse to guess.
+- **Decision**: a chip bound to two different bibs, a character outside ASCII in a written chip
+  field and a relay rider with chips past the last stage light a second indicator next to the
+  duplicate one, naming the first such line; the selection is not moved. `chip_rows()` finds both
+  in one pass on every save.
+- **Rationale**: a chip under two bibs makes every read of it ambiguous and the chronometers will
+  refuse to guess, so the desk must see it. First planned as part of the duplicate indicator, which
+  selects the repeated line; review (cycles 3 and 4) showed that a problem lasting until fixed
+  would move the selection on every save and aim the next Delete at another rider.
 
 ## Decision 5: a relay's riders are separate groups
 
