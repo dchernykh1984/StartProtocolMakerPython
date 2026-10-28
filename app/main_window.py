@@ -744,8 +744,9 @@ class MainWindow(QMainWindow):
             QMessageBox.information(
                 self,
                 "Chip ids",
-                "Spaces or punctuation were removed from the chip ids. Check that each "
-                "id below is one chip -- separate chips with commas -- and press Save "
+                "Spaces, punctuation or repeats were removed from the chip ids. Check "
+                "that each id below is one chip, and each rider (between semicolons) "
+                "has their own -- separate chips with commas -- and press Save "
                 "again:\n\n" + cleaned,
             )
             return

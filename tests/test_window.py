@@ -1168,6 +1168,13 @@ def test_a_protocol_line_with_a_foreign_chip_id_lights_the_chip_warning(win):
     assert win._list_save_as.currentRow() == 0
 
 
+def test_one_chip_typed_for_two_riders_is_shown_before_saving(win):
+    _fill(win, chips="A1; A1")
+    win._on_save_to_file()
+    assert win._save_as_items() == []
+    assert win._edit_chips.text() == "A1; -"
+
+
 def test_a_scan_into_the_middle_of_the_chip_field_is_separated_there(win):
     win._edit_chips.setText("A1, C3")
     win._edit_chips.setCursorPosition(len("A1, "))

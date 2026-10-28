@@ -247,16 +247,21 @@ def format_chips(text: str) -> str:
 
 
 def cleaned_chip_text(text: str) -> str | None:
-    """The ids as they will be saved, when cleaning dropped a character inside one.
+    """The ids as they will be saved, when cleaning dropped something on the way.
 
     Upper-casing is safe and returns None. A dropped space or dash may hide two ids
-    pasted without a comma or one id cut in two, which only the registrar can tell,
-    so the form shows the result and asks for Save again.
+    pasted without a comma or one id cut in two, and a dropped repeat may leave a
+    relay rider without chips; only the registrar can tell, so the form shows the
+    result and asks for Save again.
     """
-    tokens = (t for rider in _raw_riders(text) for t in rider if t != _EMPTY_RIDER)
-    if all(_normalise_chip(t) == t.upper() for t in tokens):
+    riders = _raw_riders(text)
+    tokens = [t for rider in riders for t in rider if t != _EMPTY_RIDER]
+    groups = _unique_riders(riders)
+    cleaned = any(_normalise_chip(t) != t.upper() for t in tokens)
+    repeated = sum(map(len, groups)) < len(tokens)
+    if not (cleaned or repeated):
         return None
-    return _join_riders(_unique_riders(_raw_riders(text)), ", ", "; ")
+    return _join_riders(groups, ", ", "; ")
 
 
 def foreign_chip_tokens(text: str) -> list[str]:

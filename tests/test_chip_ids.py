@@ -65,6 +65,9 @@ def test_a_dropped_character_inside_an_id_asks_for_a_check():
     assert cleaned_chip_text("a1, b2 ;c3") is None  # case and separators only
     assert cleaned_chip_text("") is None
     assert cleaned_chip_text("e280 1170, B2") == "E2801170, B2"
+    # A repeat is dropped, which may leave a relay rider without chips: shown too.
+    assert cleaned_chip_text("A1; A1") == "A1; -"
+    assert cleaned_chip_text("a1, a1") == "A1"
     # Two whole ids pasted without a comma: shown joined, so the desk sees it.
     assert cleaned_chip_text("E28011700000020A E2801170000002AB") == (
         "E28011700000020AE2801170000002AB"
