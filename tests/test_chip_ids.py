@@ -321,6 +321,9 @@ def test_a_line_whose_chips_no_reader_can_use_is_found():
     # A full-width A copied verbatim: the form would make it plain, readers drop it.
     full_width = _line(number="3")[:-1] + f"{chr(0xFF21)}1#"
     assert chip_problem_row([*good, full_width]) == 2
+    # A full-width comma: readers drop it and read one id "A1B2".
+    joined = _line(number="4")[:-1] + f"A1{chr(0xFF0C)}B2#"
+    assert chip_problem_row([*good, joined]) == 2
     # One stage: a team timed as one may list any number of riders.
     assert chip_problem_row([_team("1", "D1;E1;F1")]) == -1
 

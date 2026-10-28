@@ -36,7 +36,7 @@ from app.models import (
     build_competitor_line,
     categories_to_group_rows,
     check_duplicate_fields,
-    chip_field_has_foreign,
+    chip_field_not_ascii,
     chip_problem_row,
     cleaned_chip_text,
     current_local_seconds,
@@ -618,14 +618,15 @@ class MainWindow(QMainWindow):
         foreign = [
             ln
             for ln in lines
-            if chip_field_has_foreign(parse_competitor_line(ln)["chips"])
+            if chip_field_not_ascii(parse_competitor_line(ln)["chips"])
         ]
         if foreign:
             QMessageBox.warning(
                 self,
                 "Chip ids",
                 f"{len(foreign)} line(s) have chip ids with a character that is not "
-                "Latin. Open each one and fix its chips before the start:\n\n"
+                "plain ASCII (a Cyrillic or full-width letter, a full-width comma). "
+                "Open each one and fix its chips before the start:\n\n"
                 + "\n".join(foreign[:10])
                 + ("\n..." if len(foreign) > 10 else ""),
             )

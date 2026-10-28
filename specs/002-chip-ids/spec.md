@@ -122,10 +122,10 @@ principle II).
 - A line without a bib in the protocol list: it cannot be saved (unchanged rule), so no chip is
   bound to nothing.
 - The same chip twice on one line: kept once.
-- An open list loaded from a file prepared elsewhere, with a letter or digit outside ASCII in a
-  chip field -- a Cyrillic look-alike, a full-width letter: the lines load as they are, and the
-  registrar is told which lines to open and fix, since "to protocol" copies a line verbatim and
-  readers drop what is not ASCII.
+- An open list loaded from a file prepared elsewhere, with any character outside ASCII in a chip
+  field -- a Cyrillic look-alike, a full-width letter, a full-width comma: the lines load as they
+  are, and the registrar is told which lines to open and fix, since "to protocol" copies a line
+  verbatim and readers drop what is not ASCII (a lost comma joins two ids).
 - A desk reader that types each id followed by Enter: Enter in the chip field adds a separator, so
   one scan after another gives one id each instead of one long id.
 - A relay team with three stages and bib 15: its riders are 15, 16 and 17, so the chips of its
@@ -164,7 +164,7 @@ principle II).
   rider, after a semicolon, without repeats; a member without chips takes a place shown as `-`. It
   keeps the team's stage count: the member's own line says "1", and a relay's chips bind by it.
 - **FR-007**: A second indicator next to the duplicate one reports a protocol line whose chips a
-  reader cannot use as they are: an id with a letter or digit outside ASCII (a line copied verbatim
+  reader cannot use as they are: any character outside ASCII in its field (a line copied verbatim
   from a file made elsewhere never met the form's check) or a relay with more riders than stages;
   it names the line and leaves the selection where the registrar put it, since the problem lasts
   until fixed and a jump on every save would aim the next Delete at another rider. The duplicate
