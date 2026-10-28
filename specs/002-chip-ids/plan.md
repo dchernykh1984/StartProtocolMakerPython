@@ -86,8 +86,8 @@ code paths one for one, so a reader finds chips next to refs everywhere.
   (separators: comma and semicolon; each token upper-cased with spaces and every other character
   that is not an ASCII letter or digit dropped; empty tokens and repeats dropped, first occurrence
   kept),
-  `join_chips(tokens)` (comma), `set_chips(line, chips)` (replaces field 11, keeps every other
-  field; pads a line that has no field 11 with empty fields up to it).
+  `join_chips(tokens)` (comma). No `set_chips()`: nothing changes the chips of a line except
+  rebuilding it from the form.
 - `foreign_chip_tokens(text)`: the typed tokens that contain a character outside ASCII. The form
   refuses to save while it returns anything (research, decision 3).
 - `parse_competitor_line()` returns `"chips"` (empty when the field is absent);
