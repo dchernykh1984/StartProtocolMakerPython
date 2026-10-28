@@ -60,7 +60,7 @@ from app.models import (
     write_start_protocol,
 )
 from app.paths import app_path
-from app.search import SearchIndex, search_forms
+from app.search import SearchIndex, chip_query, search_forms
 
 _BACKUP_FOLDER = "data"
 _BACKUP_FILENAME = "spm_backup.txt"
@@ -686,10 +686,11 @@ class MainWindow(QMainWindow):
         # itself changed, so repeated searches walk the forms built once.
         index.refresh([widget.item(row).text() for row in range(count)])
         forms = search_forms(query)
+        chip = chip_query(query)
         start = widget.currentRow() + 1
         for offset in range(count):
             idx = (start + offset) % count
-            if index.matches(idx, forms):
+            if index.matches(idx, forms, chip):
                 widget.setCurrentRow(idx)
                 return
         QMessageBox.information(self, "Search", "No matches found.")

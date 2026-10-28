@@ -13,6 +13,7 @@ import pytest
 from app.search import (
     Forms,
     SearchIndex,
+    chip_query,
     forms_match,
     scripts_in,
     search_forms,
@@ -353,5 +354,7 @@ def test_find_takes_a_whole_chip_id_to_its_rider():
     rider = "15#Kim A#Elite#5#1#1990#T#C##0 00:00:00.000##A1;E28011700000020A#"
     index = SearchIndex()
     index.refresh([rider])
-    assert index.matches(0, search_forms("e2801170 0000 020a"))  # a tag, as scanned
-    assert not index.matches(0, search_forms("E2801170"))  # a fragment of one
+    tag = "e2801170 0000 020a"  # as scanned
+    assert index.matches(0, search_forms(tag), chip_query(tag))
+    fragment = "E2801170"
+    assert not index.matches(0, search_forms(fragment), chip_query(fragment))
