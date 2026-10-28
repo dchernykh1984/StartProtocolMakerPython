@@ -1145,16 +1145,19 @@ def test_an_open_list_with_a_foreign_chip_id_is_reported_on_loading(
     full_width = _chip_line(number="")[:-1] + f"{chr(0xFF21)}1#"
     good = _chip_line("A1", number="")
     path = tmp_path / "open.txt"
-    path.write_text(f"{good}\n{bad}\n{full_width}\n", encoding="utf-8")
+    # 11 separators and text after them: no chip field, as everywhere else.
+    old_tail = "9#Old#M40#3#1#1984#T#C##0 00:00:00.000#r1#" + chr(0x415)
+    path.write_text(f"{good}\n{bad}\n{full_width}\n{old_tail}\n", encoding="utf-8")
     monkeypatch.setattr(
         mw.QFileDialog, "getOpenFileName", lambda *a, **k: (str(path), "")
     )
     win._on_open_list()
-    assert win._list_open.count() == 3
+    assert win._list_open.count() == 4
     assert len(shown) == 1
     assert bad in shown[0]
     assert full_width in shown[0]
     assert good not in shown[0]
+    assert old_tail not in shown[0]
 
 
 def test_a_protocol_line_with_a_foreign_chip_id_lights_the_chip_warning(win):

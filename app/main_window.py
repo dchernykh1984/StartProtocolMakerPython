@@ -48,6 +48,7 @@ from app.models import (
     get_field,
     get_next_number,
     get_time_from_seconds,
+    has_chips_field,
     join_refs,
     load_backup,
     merge_chip_text,
@@ -622,7 +623,9 @@ class MainWindow(QMainWindow):
         # A file prepared elsewhere bypasses the form's check; "to protocol" copies
         # lines as they are, so say now which chips would never match a reader.
         foreign = [
-            ln for ln in lines if chip_field_not_ascii(get_field(ln, CHIPS_FIELD))
+            ln
+            for ln in lines
+            if has_chips_field(ln) and chip_field_not_ascii(get_field(ln, CHIPS_FIELD))
         ]
         if foreign:
             QMessageBox.warning(
