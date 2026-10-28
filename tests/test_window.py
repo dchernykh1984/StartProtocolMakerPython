@@ -1171,6 +1171,17 @@ def test_a_protocol_line_with_a_foreign_chip_id_lights_the_chip_warning(win):
     assert win._list_save_as.currentRow() == 0
 
 
+def test_chips_scanned_before_the_first_member_are_that_members(win):
+    win._edit_chips.setText("A1")  # scanned into the empty form first
+    win._list_open.addItems([_chip_line(number=""), _chip_line(number="")])
+    win._list_open.setCurrentRow(0)
+    win._on_add_into_team()
+    assert win._edit_chips.text() == "A1"
+    win._list_open.setCurrentRow(1)
+    win._on_add_into_team()
+    assert win._edit_chips.text() == "A1; "
+
+
 def test_a_scan_after_a_member_without_chips_is_that_members(win, monkeypatch):
     shown = []
     monkeypatch.setattr(mw.QMessageBox, "information", lambda *a: shown.append(a[2]))

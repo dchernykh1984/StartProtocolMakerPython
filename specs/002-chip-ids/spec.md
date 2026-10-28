@@ -164,7 +164,8 @@ principle II).
   rider, after a semicolon; a member without chips takes an empty place. The member comes
   after the members the team already has (its names, joined by " / "), not after the riders its
   chip field lists, which is empty for a team saved without chips; when the field already lists
-  more riders, the member comes after them. Repeats stay until Save, which
+  more riders, the member comes after them; on a form with no team yet, the chips typed there are
+  the first member's. Repeats stay until Save, which
   shows them dropped. It keeps the team's stage count: the member's own line says "1", and a
   relay's chips bind by it.
 - **FR-007**: A chip indicator next to the duplicate one names the first protocol line whose chips
