@@ -349,8 +349,9 @@ def chip_problem_row(items: list[str]) -> int:
         fields = line.split("#")
         chips = fields[CHIPS_FIELD]
         stages = _relay_stages(fields)
-        riders = _unique_riders(_raw_riders(chips))
-        if chip_field_not_ascii(chips) or (stages and any(riders[stages:])):
+        if chip_field_not_ascii(chips):
+            return row
+        if stages and any(_unique_riders(_raw_riders(chips))[stages:]):
             return row
     return -1
 
