@@ -83,9 +83,10 @@ code paths one for one, so a reader finds chips next to refs everywhere.
 
 ## Design
 
-- `CHIPS_FIELD = 11`, `has_chips_field(line)` (more than 11 separators), `split_chips(text)`
-  (separators: comma and semicolon; each id upper-cased with every character that is not an ASCII
-  letter or digit dropped, spaces included; empty ids and repeats dropped, first occurrence kept),
+- `CHIPS_FIELD = 11`, `has_chips_field(line)` (more than 11 separators), `_raw_riders(text)` (the
+  one tokenizer: riders between semicolons, ids between commas; every helper below starts there),
+  ids upper-cased with every character that is not an ASCII letter or digit dropped, spaces
+  included; empty ids and repeats dropped, first occurrence kept;
   `cleaned_chip_text(text)` (the ids as they will be saved when cleaning dropped a character inside
   one, else None: the form then shows them and waits for a second Save),
   `format_chips(text)` (field 11: commas within a rider, semicolons between riders, an empty rider

@@ -13,7 +13,6 @@ from app.models import (
     has_chips_field,
     parse_competitor_line,
     participant_to_open_line,
-    split_chips,
 )
 
 # A 0.5.x line: references (field 10) but no chips.
@@ -53,11 +52,11 @@ def test_chips_go_to_field_11_cleaned_and_in_order():
 
 
 def test_ids_split_only_on_commas_and_semicolons():
-    assert split_chips("E280 1170 0000 020A") == ["E28011700000020A"]
-    assert split_chips("E2801170 0000020A") == ["E28011700000020A"]
-    assert split_chips("a1;b2 ,, c3") == ["A1", "B2", "C3"]
-    assert split_chips("e280-1170.00:0a") == ["E2801170000A"]
-    assert split_chips(" , ; ") == []
+    assert format_chips("E280 1170 0000 020A") == "E28011700000020A"
+    assert format_chips("E2801170 0000020A") == "E28011700000020A"
+    assert format_chips("a1, b2 ,, c3") == "A1,B2,C3"
+    assert format_chips("e280-1170.00:0a") == "E2801170000A"
+    assert format_chips(" , ; ") == ""
 
 
 def test_a_dropped_character_inside_an_id_asks_for_a_check():
@@ -73,7 +72,6 @@ def test_a_dropped_character_inside_an_id_asks_for_a_check():
 
 
 def test_repeats_are_dropped_and_the_first_keeps_its_place():
-    assert split_chips("B2, a1, b2, A1") == ["B2", "A1"]
     assert format_chips("B2, a1, b2, A1") == "B2,A1"
 
 
@@ -92,7 +90,7 @@ def test_typographic_punctuation_is_dropped_like_ascii_punctuation():
     en_dash, hyphen = chr(0x2013), chr(0x2010)
     typed = f"E280{en_dash}1170{hyphen}0000020A"
     assert foreign_chip_tokens(typed) == []
-    assert split_chips(typed) == ["E28011700000020A"]
+    assert format_chips(typed) == "E28011700000020A"
     assert cleaned_chip_text(typed) == "E28011700000020A"
 
 
@@ -106,7 +104,7 @@ def test_invisible_and_full_width_characters_are_plain_ones():
     )
     typed = f"{bom}E280{nbsp}1170{zwsp} 0000 020{fw_a}{fw_comma}b2"
     assert foreign_chip_tokens(typed) == []
-    assert split_chips(typed) == ["E28011700000020A", "B2"]
+    assert format_chips(typed) == "E28011700000020A,B2"
 
 
 def test_a_foreign_character_is_named_in_the_message():
@@ -243,7 +241,6 @@ def test_a_team_members_chips_become_the_next_rider():
 def test_riders_of_a_team_are_separated_by_semicolons():
     assert format_chips("a1, a2; b1;; c1;") == "A1,A2;B1;;C1"
     assert format_chips("a1; a1") == "A1"
-    assert split_chips("A1,A2;B1;;C1") == ["A1", "A2", "B1", "C1"]
 
 
 def _team(stages: str, chips: str, number: str = "15") -> str:

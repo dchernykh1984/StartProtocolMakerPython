@@ -159,7 +159,6 @@ CHIPS_FIELD = 11
 # A semicolon separates the riders of a team, in stage order; a comma separates the
 # ids of one rider.
 _RIDER_SEPARATOR = ";"
-_CHIP_SEPARATORS = re.compile(r"[,;]")
 _NOT_CHIP_CHARS = re.compile(r"[^A-Za-z0-9]")
 
 
@@ -190,6 +189,15 @@ def _foreign(c: str) -> bool:
     return not c.isascii() and unicodedata.category(c)[0] in "LN"
 
 
+def _raw_riders(text: str) -> list[list[str]]:
+    """The typed ids of each rider as typed: riders between semicolons, ids between
+    commas, stripped, empty ones dropped. Every other chip helper starts here."""
+    return [
+        [t.strip() for t in part.split(",") if t.strip()]
+        for part in _plain_chip_text(text).split(_RIDER_SEPARATOR)
+    ]
+
+
 def _rider_groups(
     text: str, keep_foreign: bool = False, trim: bool = True
 ) -> list[list[str]]:
@@ -201,9 +209,9 @@ def _rider_groups(
     """
     seen: set[str] = set()
     groups: list[list[str]] = []
-    for part in _plain_chip_text(text).split(_RIDER_SEPARATOR):
+    for tokens in _raw_riders(text):
         group = []
-        for token in (t.strip() for t in part.split(",")):
+        for token in tokens:
             chip = (
                 token
                 if keep_foreign and any(map(_foreign, token))
@@ -218,17 +226,12 @@ def _rider_groups(
     return groups
 
 
-def split_chips(text: str) -> list[str]:
-    """Every chip id of a field or of typed text, riders flattened, in order.
+def format_chips(text: str) -> str:
+    """Field 11 as written: ids of a rider joined by commas, riders by semicolons.
 
     A space inside an id is dropped like any punctuation, whatever the grouping a
     label printed; only a comma or a semicolon starts the next id.
     """
-    return [chip for group in _rider_groups(text) for chip in group]
-
-
-def format_chips(text: str) -> str:
-    """Field 11 as written: ids of a rider joined by commas, riders by semicolons."""
     return _RIDER_SEPARATOR.join(",".join(g) for g in _rider_groups(text))
 
 
@@ -243,16 +246,15 @@ def cleaned_chip_text(text: str) -> str | None:
     pasted without a comma or one id cut in two, which only the registrar can tell,
     so the form shows the result and asks for Save again.
     """
-    parts = (t.strip() for t in _CHIP_SEPARATORS.split(_plain_chip_text(text)))
-    if all(_normalise_chip(t) == t.upper() for t in parts):
+    tokens = (t for rider in _raw_riders(text) for t in rider)
+    if all(_normalise_chip(t) == t.upper() for t in tokens):
         return None
     return _show_chips(_rider_groups(text))
 
 
 def foreign_chip_tokens(text: str) -> list[str]:
     """Typed ids holding a letter or digit outside ASCII."""
-    parts = _CHIP_SEPARATORS.split(_plain_chip_text(text))
-    return [t.strip() for t in parts if any(map(_foreign, t))]
+    return [t for rider in _raw_riders(text) for t in rider if any(map(_foreign, t))]
 
 
 def describe_foreign_chip(token: str) -> str:
