@@ -206,15 +206,23 @@ def join_chips(tokens: list[str]) -> str:
     return ",".join(tokens)
 
 
+def _foreign(c: str) -> bool:
+    """A letter or digit outside ASCII: a keyboard in the wrong layout, not a typo.
+
+    Punctuation outside ASCII (an en dash from a PDF) is dropped like a hyphen.
+    """
+    return not c.isascii() and unicodedata.category(c)[0] in "LN"
+
+
 def foreign_chip_tokens(text: str) -> list[str]:
-    """Typed ids holding a character outside ASCII: a keyboard in the wrong layout."""
+    """Typed ids holding a letter or digit outside ASCII."""
     parts = _CHIP_SEPARATORS.split(_plain_chip_text(text))
-    return [t.strip() for t in parts if not t.isascii()]
+    return [t.strip() for t in parts if any(map(_foreign, t))]
 
 
 def describe_foreign_chip(token: str) -> str:
-    """The token and the names of its characters outside ASCII, for the message."""
-    names = (unicodedata.name(c, f"U+{ord(c):04X}") for c in token if not c.isascii())
+    """The token and the names of its foreign letters, for the message."""
+    names = (unicodedata.name(c, f"U+{ord(c):04X}") for c in token if _foreign(c))
     return f"{token}  ({', '.join(dict.fromkeys(names))})"
 
 
@@ -247,7 +255,7 @@ def merge_chip_text(*texts: str) -> str:
         for text in texts
         for t in _CHIP_SEPARATORS.split(_plain_chip_text(text))
     )
-    ids = (i for t in parts for i in (split_chips(t) if t.isascii() else [t]))
+    ids = (i for t in parts for i in ([t] if any(map(_foreign, t)) else split_chips(t)))
     return ", ".join(dict.fromkeys(ids))
 
 
