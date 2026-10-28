@@ -554,6 +554,8 @@ class MainWindow(QMainWindow):
         self._edit_comment.setText(d["comment"])
         self._edit_refs.setText(d["refs"])
         own = d["chips"]
+        # A tag of the rider's own, scanned before opening, is already on the line.
+        typed = chips_added(own, typed)
         self._set_chips(
             ", ".join(c for c in (own, typed) if c) if keep_typed_chips else own
         )
