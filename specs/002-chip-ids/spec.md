@@ -175,9 +175,10 @@ principle II).
   that place were scanned ahead for this member -- on a form with no team yet, whatever was typed
   there -- and the member's own join them; riders scanned ahead for later members stay after it.
   Repeats stay until Save, which shows them dropped. It keeps the team's stage count: the member's
-  own line says "1", and a relay's chips bind by it. Ids typed before the click after a rider who
-  already had chips may be that rider's or the incoming member's; they stay with the rider before,
-  and the registrar is told where to move them if they are the member's.
+  own line says "1", and a relay's chips bind by it. Ids typed before the click go to the member
+  added last -- the desk scans each member after adding them -- unless a semicolon the registrar
+  typed places them; when their owner is unclear (that member already had chips, or the team was
+  opened rather than built in the form), the registrar is told where they went.
 - **FR-007**: A chip indicator next to the duplicate one names the first protocol line whose chips
   need a fix -- any character outside ASCII in the field (a line copied verbatim from a file made
   elsewhere never met the form's check), or a relay rider with chips past the last stage (a reserve
