@@ -32,7 +32,7 @@ import unicodedata
 from collections.abc import Sequence
 from typing import NamedTuple
 
-from app.models import CHIPS_FIELD
+from app.models import CHIPS_FIELD, has_chips_field
 
 # Cyrillic letter -> search key. Several letters share a key on purpose: that is what
 # lets one Latin spelling of a name find another.
@@ -274,9 +274,10 @@ def _without_chips(line: str) -> str:
     Hex EPCs that share a prefix (E2801170...) would match bib numbers and short
     name fragments on every rider who carries a chip.
     """
+    if not has_chips_field(line):
+        return line
     fields = line.split("#")
-    if len(fields) > CHIPS_FIELD + 1:
-        del fields[CHIPS_FIELD]
+    del fields[CHIPS_FIELD]
     return "#".join(fields)
 
 
