@@ -992,7 +992,11 @@ class MainWindow(QMainWindow):
                 list(dict.fromkeys(saved_refs + split_refs(self._edit_refs.text())))
             )
         )
-        self._edit_chips.setText(merge_chip_text(saved_chips, self._edit_chips.text()))
+        # Members are joined below as "A / B": the team's size places the new rider.
+        team_size = len(saved_name.split(" / ")) if saved_name.strip() else 0
+        self._edit_chips.setText(
+            merge_chip_text(saved_chips, self._edit_chips.text(), team_size)
+        )
         self._edit_stage.setText(saved_stage)
         self._edit_name.setText(saved_name + " / " + self._edit_name.text())
         self._edit_yob.setText(saved_yob + " / " + self._edit_yob.text())

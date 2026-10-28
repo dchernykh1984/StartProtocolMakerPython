@@ -1231,6 +1231,15 @@ def test_a_team_merge_still_asks_before_saving_a_cleaned_id(win):
     assert win._edit_chips.text() == "E2801170, 0000020A; B1"
 
 
+def test_a_member_added_to_a_team_saved_without_chips_takes_the_next_stage(win):
+    win._parse_and_fill_form(_chip_line(number="21"))
+    win._edit_name.setText("Kim A / Lee B")
+    win._list_open.addItem(_chip_line("C1", number=""))
+    win._list_open.setCurrentRow(0)
+    win._on_add_into_team()
+    assert win._edit_chips.text() == "-; -; C1"
+
+
 def test_adding_a_member_keeps_the_teams_stage_count(win):
     win._parse_and_fill_form(_chip_line("A1", number="21"))
     win._edit_stage.setText("3")
