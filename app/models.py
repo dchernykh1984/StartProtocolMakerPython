@@ -211,8 +211,8 @@ def _chip_key(token: str) -> str:
     return token if any(map(_foreign, token)) else _normalise_chip(token)
 
 
-def _unique_riders(riders: list[list[str]], as_typed: bool = False) -> list[list[str]]:
-    """The ids of each rider without repeats across riders: keys, or ``as_typed``.
+def _unique_riders(riders: list[list[str]]) -> list[list[str]]:
+    """The ids of each rider, as compared, without repeats across riders.
 
     A rider without chips (``-``, or nothing between two semicolons) is an empty
     group that keeps the riders after it on their own stage.
@@ -225,7 +225,7 @@ def _unique_riders(riders: list[list[str]], as_typed: bool = False) -> list[list
             key = _chip_key(token)
             if key and key not in seen:
                 seen.add(key)
-                group.append(token if as_typed else key)
+                group.append(key)
         groups.append(group)
     return groups
 
@@ -356,13 +356,12 @@ def duplicate_chip_row(items: list[str]) -> int:
 def merge_chip_text(*texts: str) -> str:
     """The chips of team members for the form: each member's ids as the next rider.
 
-    An id with a foreign letter is kept as typed, so the save still stops on it. A
-    member without chips keeps an empty place, so later riders stay on their stage.
+    Nothing is cleaned here, repeats included: the ids stay as typed, so the save
+    still stops on a foreign letter and shows what cleaning would drop. A member
+    without chips keeps an empty place, so later riders stay on their stage.
     """
-    # A member without chips still takes a place, shown as "-"; ids stay as typed,
-    # so the save still shows what cleaning would drop.
     riders = [r for text in texts for r in (_raw_riders(text) or [[]])]
-    return _join_riders(_unique_riders(riders, as_typed=True), ", ", "; ")
+    return _join_riders(riders, ", ", "; ")
 
 
 # ---------------------------------------------------------------------------
