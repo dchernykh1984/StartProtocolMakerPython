@@ -368,24 +368,26 @@ def chips_added(before: str, after: str) -> str:
 
 
 def merge_chip_text(team_chips: str, member_chips: str, team_size: int = 0) -> str:
-    """The team's chips with the added member's ids as the next rider, for the form.
+    """The team's chips with the added member's ids at the member's place, for the form.
 
-    The member comes after ``team_size`` riders (the members the team already has),
-    not after the riders its chip field lists: a team saved without chips has an
-    empty field, and counting from it would put the member on another rider's stage.
-    When the field already lists more riders -- scanned ahead -- the member comes
-    after them, since nothing typed is thrown away here. Nothing is
-    cleaned, repeats included: the ids stay as typed, so the save still stops on a
-    foreign letter and shows what cleaning would drop.
+    The member's place comes after ``team_size`` riders (the members the team already
+    has), not after the riders its chip field lists: a team saved without chips has
+    an empty field, and counting from it would put the member on another rider's
+    stage. Chips already in that place were scanned ahead for this member -- on a
+    form with no team yet, whatever was typed there -- and the member's own join
+    them; riders scanned ahead for later members stay after it. Nothing is cleaned,
+    repeats included: the ids stay as typed, so the save still stops on a foreign
+    letter and shows what cleaning would drop.
     """
-    member = _raw_riders(member_chips) or [[]]
-    if not team_size:
-        # No team in the form yet: what was typed there is this first member's.
-        member[0] = [t for rider in _raw_riders(team_chips) for t in rider] + member[0]
-        return _join_riders(member, ", ", "; ")
     riders = _raw_riders(team_chips)
     riders += [[] for _ in range(team_size - len(riders))]
-    return _join_riders(riders + member, ", ", "; ")
+    member = _raw_riders(member_chips) or [[]]
+    if len(riders) > team_size:
+        riders[team_size] = riders[team_size] + member[0]
+        riders[team_size + 1 : team_size + 1] = member[1:]
+    else:
+        riders += member
+    return _join_riders(riders, ", ", "; ")
 
 
 # ---------------------------------------------------------------------------

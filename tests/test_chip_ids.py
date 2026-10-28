@@ -273,6 +273,9 @@ def test_a_team_members_chips_become_the_next_rider():
     # Typed into a form with no team yet: the chips are the first member's.
     assert merge_chip_text("A1", "", team_size=0) == "A1"
     assert merge_chip_text("A1", "B1", team_size=0) == "A1, B1"
+    # Scanned ahead for two riders: each member joins the chips in their place.
+    assert merge_chip_text("X1; Y1", "", team_size=0) == "X1; Y1"
+    assert merge_chip_text("X1; Y1", "B2", team_size=1) == "X1; Y1, B2"
     # A team of two saved without chips: the third member is the third rider.
     assert merge_chip_text("", "C1", team_size=2) == "; ; C1"
     assert merge_chip_text("A1", "C1", team_size=2) == "A1; ; C1"
