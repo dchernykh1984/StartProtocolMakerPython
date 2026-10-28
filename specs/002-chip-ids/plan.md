@@ -10,8 +10,9 @@ Add field 11, the rider's chip ids, to the start protocol line the way field 10 
 registration references) was added: pure helpers in `app/models.py`, one more form field in
 `app/main_window.py`, and the paths that build a line (the form, a site participant) writing the
 field always. Verbatim copies already keep every field, so they need tests, not code. The
-duplicate indicator learns to report a chip on two protocol lines. A chip id typed in the wrong
-keyboard layout stops the save, so the registrar fixes it at the desk.
+duplicate indicator learns to report a chip bound to two different bibs -- a relay's k-th rider
+binds to bib + k -- and a second indicator flags chip ids no reader can use. A chip id typed in the
+wrong keyboard layout stops the save, so the registrar fixes it at the desk.
 
 ## Technical Context
 
@@ -87,23 +88,28 @@ code paths one for one, so a reader finds chips next to refs everywhere.
   letter or digit dropped, spaces included; empty ids and repeats dropped, first occurrence kept),
   `cleaned_chip_text(text)` (the ids as they will be saved when cleaning dropped a character inside
   one, else None: the form then shows them and waits for a second Save),
-  `join_chips(tokens)` (comma). No `set_chips()`: nothing changes the chips of a line except
-  rebuilding it from the form.
-- `foreign_chip_tokens(text)`: the typed tokens that contain a character outside ASCII. The form
-  refuses to save while it returns anything (research, decision 3).
+  `format_chips(text)` (field 11: commas within a rider, semicolons between riders, an empty rider
+  kept before others). No `set_chips()`: nothing changes the chips of a line except rebuilding it
+  from the form.
+- `foreign_chip_tokens(text)`: the typed tokens that contain a letter or digit outside ASCII. The
+  form refuses to save while it returns anything (research, decision 3).
+- `chip_bibs(line)`: the (chip, bib) pairs a line binds, a relay's k-th rider to bib + k (research,
+  decision 5); `duplicate_chip_row()` compares them across lines and `chip_problem_row()` finds a
+  line with a foreign id or more riders than stages.
 - `parse_competitor_line()` returns `"chips"` (empty when the field is absent);
-  `build_competitor_line(..., chips="")` writes `join_chips(split_chips(chips))` after the refs, so
+  `build_competitor_line(..., chips="")` writes `format_chips(chips)` after the refs, so
   every built line has 12 separators. `participant_to_open_line()` passes nothing and so writes an
   empty field.
 - `merge_open_lines()` is unchanged: it never rebuilds an existing line, and `set_refs()` keeps
   field 11.
-- `duplicate_chip_row(items)`: the first protocol line holding a chip that a line above already
-  holds, or -1; `_refresh_duplicate_indicator()` checks it after bibs and references.
-- The form gets "Chips:" under "Site entry:"; its `returnPressed` appends `, ` unless the text is
-  empty or already ends with a separator. `_parse_and_fill_form()` fills it;
-  `_on_save_to_file()` checks `foreign_chip_tokens()`, passes the field to
-  `build_competitor_line()` and clears it after saving; `_on_add_into_team()` merges the saved
-  chips with the added member's, as it merges refs.
+- `_refresh_duplicate_indicator()` reads the protocol list once, checks bibs, references and
+  `duplicate_chip_row()`, then lights "CHIP IDS NEED A FIX!" for `chip_problem_row()`.
+- The form gets "Chips:" under "Site entry:"; its `returnPressed` inserts `, ` at the cursor unless
+  the text before it is empty or ends with a separator. `_parse_and_fill_form()` fills it;
+  `_on_save_to_file()` stops on `foreign_chip_tokens()`, then on `cleaned_chip_text()` (showing the
+  ids for a second Save), passes the field to `build_competitor_line()` and clears it after
+  saving; `_on_add_into_team()` adds the member's chips as the next rider (`merge_chip_text()`).
+- "Open competitors list" names the loaded lines with a foreign chip id.
 
 ## Complexity Tracking
 

@@ -78,14 +78,16 @@ that bib. A chip handed out twice is a mistake the registrar must see before the
 guess, so the rider would go untimed. The registration desk is the place to catch it.
 
 **Independent Test**: Join two members with chips into a team and save; the line carries the chips
-of both. Put one chip on two protocol lines; the duplicate indicator reports it.
+of both, one rider after the other. Put one chip under two different bibs; the duplicate indicator
+reports it.
 
 **Acceptance Scenarios**:
 
-1. **Given** two members with chips joined by "Add into team", **Then** the team's line carries the
-   chips of both in member order, without repeats.
-2. **Given** one chip on two protocol lines, **Then** the duplicate indicator reports it the way it
-   reports a repeated bib or reference, and selects the second line.
+1. **Given** two members with chips joined by "Add into team", **Then** the team's line carries
+   each member's chips as a rider of its own, after a semicolon, in member order, without repeats.
+2. **Given** one chip bound to two different bibs, **Then** the duplicate indicator reports it the
+   way it reports a repeated bib or reference, and selects the second line.
+3. **Given** a relay of three stages with bib 21, **Then** its second rider's chips bind to bib 22.
 
 ---
 
