@@ -1209,6 +1209,17 @@ def test_the_start_list_upload_sends_the_lines_as_they_are(win, monkeypatch):
     assert sent == [[_LATER]]
 
 
+def test_a_team_merge_still_asks_before_saving_a_cleaned_id(win):
+    win._parse_and_fill_form(_chip_line(number="120"))
+    win._edit_chips.setText("e280 1170, 0000 020a")
+    win._list_open.addItem(_chip_line("B1", number=""))
+    win._list_open.setCurrentRow(0)
+    win._on_add_into_team()
+    win._on_save_to_file()
+    assert win._save_as_items() == []
+    assert win._edit_chips.text() == "E2801170, 0000020A; B1"
+
+
 def test_a_team_carries_every_members_chips(win):
     win._parse_and_fill_form(_chip_line("A1, B2", number="120"))
     win._list_open.addItem(_chip_line("B2,C3", number=""))
