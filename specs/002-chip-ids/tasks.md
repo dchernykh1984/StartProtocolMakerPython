@@ -5,12 +5,12 @@ Each task is one commit with the message shown; tests are part of the task they 
 
 ## Phase 1: the field (US1, US4)
 
-- [ ] T001 [US1] Add `CHIPS_FIELD`, `has_chips_field`, `split_chips`, `join_chips`, `set_chips`,
+- [x] T001 [US1] Add `CHIPS_FIELD`, `has_chips_field`, `split_chips`, `join_chips`,
   `foreign_chip_tokens` to `app/models.py`; `parse_competitor_line` returns `chips`;
   `build_competitor_line` takes `chips=""` and always writes field 11. Unit tests in
-  `tests/test_chip_ids.py`: normalisation, old lines, set keeps other fields, built lines have 12
-  separators. -- `feat(protocol): keep each rider's chip ids in field 11`
-- [ ] T002 [US4] Tests that a line with chips reads the same fields 0-9 by FinishProtocolGenerator's
+  `tests/test_chip_ids.py`: normalisation, old lines, built lines have 12 separators.
+  -- `feat(protocol): keep each rider's chip ids in field 11`
+- [x] T002 [US4] Tests that a line with chips reads the same fields 0-9 by FinishProtocolGenerator's
   rule and field 10 by the site's rule as the same line without chips, and that 0.5.x backup
   fixtures still load. -- `test(protocol): prove the readers of fields 0-10 ignore the chips`
 
