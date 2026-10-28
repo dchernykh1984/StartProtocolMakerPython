@@ -306,6 +306,9 @@ def test_a_line_whose_chips_no_reader_can_use_is_found():
     foreign = _line(number="2")[:-1] + f"{chr(0x415)}1#"
     assert chip_problem_row([*good, foreign]) == 2
     assert chip_problem_row([*good, _team("2", "D1;E1;F1", number="8")]) == 2
+    # A full-width A copied verbatim: the form would make it plain, readers drop it.
+    full_width = _line(number="3")[:-1] + f"{chr(0xFF21)}1#"
+    assert chip_problem_row([*good, full_width]) == 2
     # One stage: a team timed as one may list any number of riders.
     assert chip_problem_row([_team("1", "D1;E1;F1")]) == -1
 

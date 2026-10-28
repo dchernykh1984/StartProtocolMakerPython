@@ -1142,16 +1142,18 @@ def test_an_open_list_with_a_foreign_chip_id_is_reported_on_loading(
     monkeypatch.setattr(mw.QMessageBox, "warning", lambda *a: shown.append(a[2]))
     # Written by hand elsewhere: the form would never let this field through.
     bad = _chip_line(number="")[:-1] + f"{chr(0x415)}280A#"
+    full_width = _chip_line(number="")[:-1] + f"{chr(0xFF21)}1#"
     good = _chip_line("A1", number="")
     path = tmp_path / "open.txt"
-    path.write_text(f"{good}\n{bad}\n", encoding="utf-8")
+    path.write_text(f"{good}\n{bad}\n{full_width}\n", encoding="utf-8")
     monkeypatch.setattr(
         mw.QFileDialog, "getOpenFileName", lambda *a, **k: (str(path), "")
     )
     win._on_open_list()
-    assert win._list_open.count() == 2
+    assert win._list_open.count() == 3
     assert len(shown) == 1
     assert bad in shown[0]
+    assert full_width in shown[0]
     assert good not in shown[0]
 
 

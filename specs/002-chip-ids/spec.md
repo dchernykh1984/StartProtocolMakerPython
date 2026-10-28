@@ -122,9 +122,10 @@ principle II).
 - A line without a bib in the protocol list: it cannot be saved (unchanged rule), so no chip is
   bound to nothing.
 - The same chip twice on one line: kept once.
-- An open list loaded from a file prepared elsewhere, with a character outside ASCII in a chip
-  field: the lines load as they are, and the registrar is told which lines to open and fix, since
-  "to protocol" copies a line verbatim.
+- An open list loaded from a file prepared elsewhere, with a letter or digit outside ASCII in a
+  chip field -- a Cyrillic look-alike, a full-width letter: the lines load as they are, and the
+  registrar is told which lines to open and fix, since "to protocol" copies a line verbatim and
+  readers drop what is not ASCII.
 - A desk reader that types each id followed by Enter: Enter in the chip field adds a separator, so
   one scan after another gives one id each instead of one long id.
 - A relay team with three stages and bib 15: its riders are 15, 16 and 17, so the chips of its
