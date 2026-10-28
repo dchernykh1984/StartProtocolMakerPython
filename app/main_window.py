@@ -651,9 +651,10 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(
                 self,
                 "Chip ids",
-                f"{len(foreign)} line(s) have chip ids with a character that is not "
-                "plain ASCII (a Cyrillic or full-width letter, a full-width comma). "
-                "Open each one and fix its chips before the start:\n\n"
+                f"{len(foreign)} line(s) have chip ids with a character outside plain "
+                "ASCII -- a Cyrillic or full-width letter, a full-width comma, a "
+                "non-breaking space -- which readers drop. Open each one and fix its "
+                "chips before the start:\n\n"
                 + "\n".join(foreign[:10])
                 + ("\n..." if len(foreign) > 10 else ""),
             )
