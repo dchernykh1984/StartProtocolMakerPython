@@ -308,7 +308,7 @@ def chip_bibs(line: str) -> list[tuple[str, str | None]]:
     """
     fields = line.split("#")
     bib = fields[0].strip()
-    if not bib or bib == NOT_PAID or len(fields) <= CHIPS_FIELD + 1:
+    if not bib or bib == NOT_PAID or not has_chips_field(line):
         return []
     stages = _relay_stages(fields)
     pairs: list[tuple[str, str | None]] = []
@@ -325,6 +325,14 @@ def _relay_stages(fields: list[str]) -> int:
     stage = fields[4].strip() if len(fields) > 4 else ""
     bib = fields[0].strip()
     return int(stage) if stage.isdecimal() and int(stage) > 1 and bib.isdecimal() else 0
+
+
+def chip_ids(line: str) -> frozenset[str]:
+    """The chip ids a line carries, compared the way every other check compares them."""
+    if not has_chips_field(line):
+        return frozenset()
+    riders = _raw_riders(line.split("#")[CHIPS_FIELD])
+    return frozenset(filter(None, (_chip_key(t) for rider in riders for t in rider)))
 
 
 def chip_rows(items: list[str]) -> tuple[int, int]:
