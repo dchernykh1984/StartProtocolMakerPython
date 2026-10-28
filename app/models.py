@@ -229,7 +229,7 @@ def _chip_key(token: str) -> str:
 def _unique_riders(riders: list[list[str]]) -> list[list[str]]:
     """The ids of each rider, as compared, without repeats across riders.
 
-    A rider without chips (``-``, or nothing between two semicolons) is an empty
+    A rider without chips (nothing between two semicolons) is an empty
     group that keeps the riders after it on their own stage.
     """
     seen: set[str] = set()
