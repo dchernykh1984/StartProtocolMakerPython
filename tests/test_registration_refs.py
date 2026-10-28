@@ -40,7 +40,7 @@ def test_an_old_line_has_no_field_and_a_new_one_always_has_it():
     assert not has_refs_field(OLD)
     assert parse_competitor_line(OLD)["refs"] == ""
     unlinked = _line("Ann")
-    assert unlinked.endswith("0 00:00:00.000##")
+    assert unlinked.endswith("0 00:00:00.000###")
     assert has_refs_field(unlinked)
     assert parse_competitor_line(_line("Ann", refs="r7"))["refs"] == "r7"
 
@@ -216,7 +216,7 @@ def test_site_text_cannot_shift_the_registration_reference(field):
         participant["participant_names"] = "First / Second"
     participant[field] = "One#Two\u2028Three"
     line = participant_to_open_line(participant, [])
-    assert line.count("#") == 11
+    assert line.count("#") == 12
     assert len(line.splitlines()) == 1
     assert parse_competitor_line(line)["refs"] == "r7"
 

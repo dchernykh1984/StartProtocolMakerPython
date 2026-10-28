@@ -324,8 +324,8 @@ class TestParticipantToOpenLine:
         participant = self._make_participant(additional_info=f"Road{separator}bike")
         line = participant_to_open_line(participant, [])
         assert len(line.splitlines()) == 1
-        # Ten fields, the site-registration field, and the terminating separator.
-        assert len(line.split("#")) == 12
+        # Ten fields, the site-registration and chip fields, the closing separator.
+        assert len(line.split("#")) == 13
         parsed = parse_competitor_line(line)
         assert parsed["comment"] == "Road bike"
         assert parsed["time_shift"] == "0 00:00:00.000"

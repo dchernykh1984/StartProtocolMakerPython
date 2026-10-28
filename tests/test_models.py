@@ -115,8 +115,8 @@ class TestCompetitorLine:
             comment="comment",
             time_shift="0 00:00:30.000",
         )
-        # An empty site-registration field follows, so the site reads "unlinked".
-        assert line == self._LINE + "#"
+        # Empty site-registration and chip fields follow, so the site reads "unlinked".
+        assert line == self._LINE + "##"
 
     def test_a_group_without_laps_keeps_every_field_in_place(self) -> None:
         line = build_competitor_line(
