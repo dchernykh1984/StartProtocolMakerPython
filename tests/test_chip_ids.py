@@ -86,6 +86,16 @@ def test_a_cyrillic_look_alike_is_reported_not_dropped():
     assert foreign_chip_tokens("E280 1170, b2") == []
 
 
+def test_typographic_punctuation_is_dropped_like_ascii_punctuation():
+    from app.models import cleaned_chip_text
+
+    en_dash, hyphen = chr(0x2013), chr(0x2010)
+    typed = f"E280{en_dash}1170{hyphen}0000020A"
+    assert foreign_chip_tokens(typed) == []
+    assert split_chips(typed) == ["E28011700000020A"]
+    assert cleaned_chip_text(typed) == "E28011700000020A"
+
+
 def test_invisible_and_full_width_characters_are_plain_ones():
     nbsp, zwsp, bom, fw_comma, fw_a = (
         chr(0xA0),
