@@ -1240,6 +1240,26 @@ def test_a_member_added_to_a_team_saved_without_chips_takes_the_next_stage(win):
     assert win._edit_chips.text() == "-; -; C1"
 
 
+def test_starting_a_team_takes_the_stage_of_its_first_line_not_the_last_saved(win):
+    win._parse_and_fill_form(_chip_line("A1", number="21"))
+    win._edit_stage.setText("3")
+    win._on_save_to_file()  # clears the rider, leaves the stage field as it was
+    assert win._edit_name.text() == ""
+    win._list_open.addItem(_chip_line("X1", number=""))  # a solo line: stage "1"
+    win._list_open.setCurrentRow(0)
+    win._on_add_into_team()
+    assert win._edit_stage.text() == "1"
+
+
+def test_the_first_member_added_to_an_empty_form_is_the_first_rider(win):
+    win._list_open.addItems([_chip_line("C1", number=""), _chip_line("D1", number="")])
+    win._list_open.setCurrentRow(0)
+    win._on_add_into_team()  # the name becomes " / Ivanov Ivan"
+    win._list_open.setCurrentRow(1)
+    win._on_add_into_team()
+    assert win._edit_chips.text() == "C1; D1"
+
+
 def test_adding_a_member_keeps_the_teams_stage_count(win):
     win._parse_and_fill_form(_chip_line("A1", number="21"))
     win._edit_stage.setText("3")

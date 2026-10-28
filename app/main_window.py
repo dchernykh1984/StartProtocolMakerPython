@@ -979,9 +979,12 @@ class MainWindow(QMainWindow):
         saved_team = self._edit_team.text()
         saved_refs = split_refs(self._edit_refs.text())
         saved_chips = self._edit_chips.text()
+        # Members are joined below as "A / B"; a name left empty does not count.
+        team_size = sum(1 for n in saved_name.split(" / ") if n.strip())
         # The stage count belongs to the team, and a relay's chips bind by it; the
-        # member's own line (from the site: "1") must not reset it.
-        saved_stage = self._edit_stage.text()
+        # member's own line (from the site: "1") must not reset it. With no team in
+        # the form yet, the stage left there is the last saved line's, not this one's.
+        saved_stage = self._edit_stage.text() if team_size else None
         # Adding a member must not issue a different bib to a team already numbered.
         self._parse_and_fill_form(
             self._list_open.currentItem().text(),
@@ -992,12 +995,11 @@ class MainWindow(QMainWindow):
                 list(dict.fromkeys(saved_refs + split_refs(self._edit_refs.text())))
             )
         )
-        # Members are joined below as "A / B": the team's size places the new rider.
-        team_size = len(saved_name.split(" / ")) if saved_name.strip() else 0
         self._edit_chips.setText(
             merge_chip_text(saved_chips, self._edit_chips.text(), team_size)
         )
-        self._edit_stage.setText(saved_stage)
+        if saved_stage is not None:
+            self._edit_stage.setText(saved_stage)
         self._edit_name.setText(saved_name + " / " + self._edit_name.text())
         self._edit_yob.setText(saved_yob + " / " + self._edit_yob.text())
         if self._edit_team.text() != saved_team:
