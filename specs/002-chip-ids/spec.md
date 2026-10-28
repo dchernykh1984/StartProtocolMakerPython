@@ -148,7 +148,9 @@ principle II).
   of an existing line, including when it links an old line to a registration.
 - **FR-006**: "Add into team" appends the added member's chips to the form's chips, in member
   order, without repeats.
-- **FR-007**: The duplicate indicator also reports a chip used on two protocol lines.
+- **FR-007**: The duplicate indicator also reports a chip used on the protocol lines of two
+  different bibs. The same chip on two lines of one bib, or on a line without a bib, is not
+  reported: neither is ambiguous to a chronometer.
 - **FR-008**: Fields 0-10 keep their position and meaning.
 
 ### Key Entities

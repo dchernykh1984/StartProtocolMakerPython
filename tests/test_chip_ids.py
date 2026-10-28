@@ -236,3 +236,16 @@ def test_a_chip_on_two_protocol_lines_is_found():
     assert duplicate_chip_row(lines) == -1
     assert duplicate_chip_row([*lines, _line("d1, b1", number="3")]) == 2
     assert duplicate_chip_row([OLD, OLD]) == -1
+
+
+def test_a_chip_on_two_lines_of_one_bib_or_without_a_bib_is_no_duplicate():
+    from app.models import NOT_PAID, duplicate_chip_row
+
+    one_bib = [_line("A1", number="15"), _line("A1, B1", number="15")]
+    assert duplicate_chip_row(one_bib) == -1
+    no_bib = [
+        _line("A1", number=""),
+        _line("A1", number=NOT_PAID),
+        _line("A1", number="7"),
+    ]
+    assert duplicate_chip_row(no_bib) == -1

@@ -223,13 +223,20 @@ def describe_foreign_chip(token: str) -> str:
 
 
 def duplicate_chip_row(items: list[str]) -> int:
-    """The first protocol line holding a chip that a line above already holds, or -1."""
-    seen: set[str] = set()
+    """The first protocol line whose chip a line above holds under another bib, or -1.
+
+    The same chip on two lines of one bib is not ambiguous, and a line without a bib
+    binds nothing for the chronometers, so neither is reported.
+    """
+    owner: dict[str, str] = {}
     for row, line in enumerate(items):
-        chips = set(split_chips(parse_competitor_line(line)["chips"]))
-        if seen & chips:
-            return row
-        seen |= chips
+        fields = parse_competitor_line(line)
+        bib = fields["number"].strip()
+        if not bib or bib == NOT_PAID:
+            continue
+        for chip in split_chips(fields["chips"]):
+            if owner.setdefault(chip, bib) != bib:
+                return row
     return -1
 
 
