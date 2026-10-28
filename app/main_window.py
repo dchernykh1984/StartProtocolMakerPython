@@ -465,10 +465,12 @@ class MainWindow(QMainWindow):
         self._lbl_error.setVisible(found)
         if found and idx >= 0:
             self._list_save_as.setCurrentRow(idx)
+        # Named, not selected: the problem lasts until fixed, and moving the selection
+        # on every save would make the next Delete remove another rider.
         chip_row = chip_problem_row(items)
         self._lbl_chip_error.setVisible(chip_row >= 0)
-        if chip_row >= 0 and not (found and idx >= 0):
-            self._list_save_as.setCurrentRow(chip_row)
+        if chip_row >= 0:
+            self._lbl_chip_error.setText(f"CHIP IDS NEED A FIX! (line {chip_row + 1})")
 
     def _save_all_data(self) -> None:
         self._refresh_duplicate_indicator()

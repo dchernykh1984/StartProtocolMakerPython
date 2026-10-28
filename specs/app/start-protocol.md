@@ -104,7 +104,7 @@ later field stays in place. Readers that exist:
   number stage riders.
 - "Open competitors list" loads lines as they are and names those whose chip field has a character
   outside ASCII, to be fixed through the form. In the protocol list such a line, or a relay with
-  more riders than stages, lights "CHIP IDS NEED A FIX!" and is selected.
+  more riders than stages, lights "CHIP IDS NEED A FIX! (line N)"; the selection is left alone.
 - Copies keep the field as they keep every field: open to protocol, the backup, the start protocol
   file, FTP and the start list upload. A line from the site arrives with an empty field, and a merge
   never changes the chips of a line it already has.
