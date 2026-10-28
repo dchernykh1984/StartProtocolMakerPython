@@ -1171,6 +1171,15 @@ def test_a_protocol_line_with_a_foreign_chip_id_lights_the_chip_warning(win):
     assert win._list_save_as.currentRow() == 0
 
 
+def test_a_site_relays_members_count_when_a_member_is_added(win):
+    win._parse_and_fill_form(_chip_line(number="21"))
+    win._edit_name.setText("Kim A<BR>Lee B")  # a relay as the site sends it
+    win._list_open.addItem(_chip_line("C1", number=""))
+    win._list_open.setCurrentRow(0)
+    win._on_add_into_team()
+    assert win._edit_chips.text() == "; ; C1"
+
+
 def test_chips_scanned_before_the_first_member_are_that_members(win):
     win._edit_chips.setText("A1")  # scanned into the empty form first
     win._list_open.addItems([_chip_line(number=""), _chip_line(number="")])

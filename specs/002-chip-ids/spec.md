@@ -162,7 +162,8 @@ principle II).
   of an existing line, including when it links an old line to a registration.
 - **FR-006**: "Add into team" appends the added member's chips to the form's chips as the next
   rider, after a semicolon; a member without chips takes an empty place. The member comes
-  after the members the team already has (its names, joined by " / "), not after the riders its
+  after the members the team already has (its names, joined by " / ", or by `<BR>` in a relay from
+  the site), not after the riders its
   chip field lists, which is empty for a team saved without chips; when the field already lists
   more riders, the member comes after them; on a form with no team yet, the chips typed there are
   the first member's. Repeats stay until Save, which
