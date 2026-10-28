@@ -335,9 +335,15 @@ def merge_chip_text(*texts: str) -> str:
     seen: set[str] = set()
     groups: list[list[str]] = []
     for text in texts:
-        for group in _rider_groups(text, keep_foreign=True, trim=False):
-            groups.append([c for c in group if c not in seen])
-            seen.update(group)
+        for tokens in _raw_riders(text):
+            group = []
+            for token in tokens:
+                key = token if any(map(_foreign, token)) else _normalise_chip(token)
+                if key and key not in seen:
+                    seen.add(key)
+                    # As typed: the save still shows what cleaning would drop.
+                    group.append(token)
+            groups.append(group)
     return _show_chips(groups)
 
 
