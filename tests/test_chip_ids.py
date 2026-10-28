@@ -298,6 +298,15 @@ def test_a_chip_on_two_protocol_lines_is_found():
     assert duplicate_chip_row([OLD, OLD]) == -1
 
 
+def test_a_foreign_id_is_written_as_typed_never_turned_into_another_chip():
+    from app.models import chip_problem_row
+
+    cyr_a = chr(0x410)
+    line = _line(f"{cyr_a}1, B2")
+    assert parse_competitor_line(line)["chips"] == f"{cyr_a}1,B2"
+    assert chip_problem_row([line]) == 0
+
+
 def test_a_line_whose_chips_no_reader_can_use_is_found():
     from app.models import chip_problem_row
 

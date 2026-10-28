@@ -235,7 +235,9 @@ def format_chips(text: str) -> str:
     A space inside an id is dropped like any punctuation, whatever the grouping a
     label printed; only a comma or a semicolon starts the next id.
     """
-    groups = _rider_groups(text)
+    # A foreign id stays as typed: dropping its letter would write another chip's id
+    # without a word, for any caller that skipped the form's check.
+    groups = _rider_groups(text, keep_foreign=True)
     return _RIDER_SEPARATOR.join(",".join(g) or _EMPTY_RIDER for g in groups)
 
 
