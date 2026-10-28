@@ -305,3 +305,24 @@ def test_a_team_carries_every_members_chips(win):
     win._on_add_into_team()
     assert win._edit_chips.text() == "A1, B2, C3"
     assert win._edit_number.text() == "120"
+
+
+# -- duplicates (FR-007) ---------------------------------------------------------------
+
+
+def test_a_chip_on_two_protocol_lines_is_found():
+    from app.models import duplicate_chip_row
+
+    lines = [_line("A1,B1", number="1"), _line("C1", number="2")]
+    assert duplicate_chip_row(lines) == -1
+    assert duplicate_chip_row([*lines, _line("d1, b1", number="3")]) == 2
+    assert duplicate_chip_row([OLD, OLD]) == -1
+
+
+def test_a_chip_used_twice_lights_the_duplicate_warning_on_the_second_line(win):
+    win._list_save_as.addItems(
+        [_line("A1", number="1"), _line("B1", number="2"), _line("A1", number="3")]
+    )
+    win._refresh_duplicate_indicator()
+    assert not win._lbl_error.isHidden()
+    assert win._list_save_as.currentRow() == 2

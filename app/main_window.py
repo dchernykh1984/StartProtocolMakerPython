@@ -37,6 +37,7 @@ from app.models import (
     categories_to_group_rows,
     check_duplicate_fields,
     current_local_seconds,
+    duplicate_chip_row,
     duplicate_ref_row,
     foreign_chip_tokens,
     get_next_number,
@@ -442,6 +443,11 @@ class MainWindow(QMainWindow):
         ref_row = duplicate_ref_row(self._save_as_items())
         if ref_row >= 0:
             found, idx = True, (idx if idx >= 0 else ref_row)
+        # A chip on two lines makes every read of it ambiguous; the chronometers
+        # would leave both riders untimed rather than guess.
+        chip_row = duplicate_chip_row(self._save_as_items())
+        if chip_row >= 0:
+            found, idx = True, (idx if idx >= 0 else chip_row)
         self._lbl_error.setVisible(found)
         if found and idx >= 0:
             self._list_save_as.setCurrentRow(idx)
