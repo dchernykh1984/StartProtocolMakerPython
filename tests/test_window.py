@@ -1173,7 +1173,7 @@ def test_a_protocol_line_with_a_foreign_chip_id_lights_the_chip_warning(win):
 
 def test_a_site_relays_members_count_when_a_member_is_added(win):
     win._parse_and_fill_form(_chip_line(number="21"))
-    win._edit_name.setText("Kim A<BR>Lee B")  # a relay as the site sends it
+    win._edit_name.setText("Kim A<br>Lee B")  # a relay as the site may send it
     win._list_open.addItem(_chip_line("C1", number=""))
     win._list_open.setCurrentRow(0)
     win._on_add_into_team()
