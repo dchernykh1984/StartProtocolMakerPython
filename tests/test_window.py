@@ -1355,8 +1355,7 @@ def test_chips_scanned_before_opening_a_registration_are_kept_and_said(
 ):
     shown = []
     monkeypatch.setattr(mw.QMessageBox, "information", lambda *a: shown.append(a[2]))
-    win._edit_chips.setText("A1")
-    win._edit_chips.textEdited.emit("A1")  # what typing or a desk reader does
+    _type(win._edit_chips, "A1")  # what typing or a desk reader does
     win._list_open.addItem(_chip_line(number=""))
     win._list_open.setCurrentRow(0)
     win._on_edit_open()
@@ -1367,8 +1366,7 @@ def test_chips_scanned_before_opening_a_registration_are_kept_and_said(
 def test_a_protocol_line_opened_for_correction_shows_its_own_chips(win, monkeypatch):
     shown = []
     monkeypatch.setattr(mw.QMessageBox, "information", lambda *a: shown.append(a[2]))
-    win._edit_chips.setText("A1")
-    win._edit_chips.textEdited.emit("A1")
+    _type(win._edit_chips, "A1")
     win._list_save_as.addItem(_chip_line("B1", number="5"))
     win._list_save_as.setCurrentRow(0)
     win._on_edit_save_as()
@@ -1377,9 +1375,8 @@ def test_a_protocol_line_opened_for_correction_shows_its_own_chips(win, monkeypa
 
 
 def _type_chips(win, text):
-    """What typing or a desk reader does: the text changes, and textEdited fires."""
-    win._edit_chips.setText(text)
-    win._edit_chips.textEdited.emit(text)
+    """What typing or a desk reader does to the chip field."""
+    _type(win._edit_chips, text)
 
 
 def test_only_the_ids_typed_after_a_line_was_opened_go_to_the_next_one(win):

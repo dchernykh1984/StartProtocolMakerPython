@@ -202,11 +202,9 @@ class MainWindow(QMainWindow):
         # A desk reader types each id followed by Enter: make that a separator, or two
         # scans would merge into one id.
         self._edit_chips.returnPressed.connect(self._on_chips_return)
-        # Typed (or scanned) since the form was last filled or saved: such chips belong
-        # to the rider about to be opened, not to the line they replace.
-        self._chips_typed = False
+        # What the program last put in the field. QLineEdit's own "modified" flag tells
+        # whether anything was typed (or scanned) since: setText() clears it.
         self._chips_filled = ""
-        self._edit_chips.textEdited.connect(self._on_chips_typed)
         centre.addWidget(lbl)
         centre.addWidget(self._edit_chips)
 
@@ -705,12 +703,9 @@ class MainWindow(QMainWindow):
         names = ", ".join(self._open_search.scripts)
         self._lbl_open_scripts.setText(f"Scripts in list: {names or '-'}")
 
-    def _on_chips_typed(self, _text: str) -> None:
-        self._chips_typed = True
-
     def _typed_chips(self) -> str:
         """What was typed or scanned into the chip field since the program filled it."""
-        if not self._chips_typed:
+        if not self._edit_chips.isModified():
             return ""
         text, filled = self._edit_chips.text(), self._chips_filled
         part = text[len(filled) :] if text.startswith(filled) else text
@@ -727,7 +722,6 @@ class MainWindow(QMainWindow):
             text = text.rstrip() + ", "
         self._edit_chips.setText(text)
         self._chips_filled = text
-        self._chips_typed = False
 
     def _on_edit_open(self) -> None:
         if not self._list_open.currentItem():
