@@ -36,6 +36,7 @@ from app.models import (
     build_competitor_line,
     categories_to_group_rows,
     check_duplicate_fields,
+    chip_field_has_foreign,
     chip_problem_row,
     cleaned_chip_text,
     current_local_seconds,
@@ -615,7 +616,7 @@ class MainWindow(QMainWindow):
         foreign = [
             ln
             for ln in lines
-            if foreign_chip_tokens(parse_competitor_line(ln)["chips"])
+            if chip_field_has_foreign(parse_competitor_line(ln)["chips"])
         ]
         if foreign:
             QMessageBox.warning(

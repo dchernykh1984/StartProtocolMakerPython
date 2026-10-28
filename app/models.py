@@ -261,6 +261,15 @@ def foreign_chip_tokens(text: str) -> list[str]:
     return [t for rider in _raw_riders(text) for t in rider if any(map(_foreign, t))]
 
 
+def chip_field_has_foreign(field: str) -> bool:
+    """A written field 11 holding a letter or digit outside ASCII, full-width ones too.
+
+    No NFKC here: readers drop what is not ASCII, so a full-width A that the form
+    would have made plain is lost to them in a line copied verbatim.
+    """
+    return any(map(_foreign, field))
+
+
 def describe_foreign_chip(token: str) -> str:
     """The token and the names of its foreign letters, for the message."""
     names = (unicodedata.name(c, f"U+{ord(c):04X}") for c in token if _foreign(c))
@@ -309,7 +318,7 @@ def chip_problem_row(items: list[str]) -> int:
         fields = line.split("#")
         chips = fields[CHIPS_FIELD]
         stages = _relay_stages(fields)
-        if foreign_chip_tokens(chips) or (
+        if chip_field_has_foreign(chips) or (
             stages and len(_rider_groups(chips)) > stages
         ):
             return row
