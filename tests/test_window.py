@@ -1429,3 +1429,17 @@ def test_a_line_s_own_chip_left_after_an_edit_does_not_travel(win):
     win._list_open.setCurrentRow(0)
     win._on_edit_open()
     assert win._edit_chips.text() == ""
+
+
+def test_a_scan_shown_cleaned_still_travels_to_the_rider_opened_next(win, monkeypatch):
+    shown = []
+    monkeypatch.setattr(mw.QMessageBox, "information", lambda *a: shown.append(a[2]))
+    _fill(win)
+    _type_chips(win, "e280 1170")
+    win._on_save_to_file()  # stops: the cleaned id is shown
+    assert win._edit_chips.text() == "E2801170, "
+    win._list_open.addItem(_chip_line(number=""))  # the right rider, opened now
+    win._list_open.setCurrentRow(0)
+    win._on_edit_open()
+    assert win._edit_chips.text() == "E2801170, "
+    assert "E2801170" in shown[-1]
