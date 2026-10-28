@@ -379,10 +379,14 @@ def merge_chip_text(team_chips: str, member_chips: str, team_size: int = 0) -> s
     cleaned, repeats included: the ids stay as typed, so the save still stops on a
     foreign letter and shows what cleaning would drop.
     """
+    member = _raw_riders(member_chips) or [[]]
+    if not team_size:
+        # No team in the form yet: what was typed there is this first member's.
+        member[0] = [t for rider in _raw_riders(team_chips) for t in rider] + member[0]
+        return _join_riders(member, ", ", "; ")
     riders = _raw_riders(team_chips)
     riders += [[] for _ in range(team_size - len(riders))]
-    riders += _raw_riders(member_chips) or [[]]
-    return _join_riders(riders, ", ", "; ")
+    return _join_riders(riders + member, ", ", "; ")
 
 
 # ---------------------------------------------------------------------------

@@ -254,18 +254,21 @@ def test_a_team_members_chips_become_the_next_rider():
     from app.models import merge_chip_text
 
     # A repeat stays until Save, which shows it dropped.
-    assert merge_chip_text("a1, B2", "b2,c3") == "a1, B2; b2, c3"
+    assert merge_chip_text("a1, B2", "b2,c3", team_size=1) == "a1, B2; b2, c3"
     # Kept as typed, so the save still asks before it joins the pieces.
     assert merge_chip_text("", "E280 1170", team_size=1) == "; E280 1170"
-    assert merge_chip_text("A1", "") == "A1; "
+    assert merge_chip_text("A1", "", team_size=1) == "A1; "
     assert merge_chip_text("A1; ", "C1", team_size=2) == "A1; ; C1"
     # A semicolon typed ahead of the next member is no rider of its own.
-    assert merge_chip_text("A1;", "B1") == "A1; B1"
+    assert merge_chip_text("A1;", "B1", team_size=1) == "A1; B1"
+    # Typed into a form with no team yet: the chips are the first member's.
+    assert merge_chip_text("A1", "", team_size=0) == "A1"
+    assert merge_chip_text("A1", "B1", team_size=0) == "A1, B1"
     # A team of two saved without chips: the third member is the third rider.
     assert merge_chip_text("", "C1", team_size=2) == "; ; C1"
     assert merge_chip_text("A1", "C1", team_size=2) == "A1; ; C1"
     foreign = f"{chr(0x415)}1"
-    assert merge_chip_text(foreign, "A1") == f"{foreign}; A1"
+    assert merge_chip_text(foreign, "A1", team_size=1) == f"{foreign}; A1"
 
 
 def test_riders_of_a_team_are_separated_by_semicolons():
