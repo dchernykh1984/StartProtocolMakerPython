@@ -98,7 +98,8 @@ code paths one for one, so a reader finds chips next to refs everywhere.
   field 11.
 - `duplicate_chip_row(items)`: the first protocol line holding a chip that a line above already
   holds, or -1; `_refresh_duplicate_indicator()` checks it after bibs and references.
-- The form gets "Chips:" under "Site entry:". `_parse_and_fill_form()` fills it;
+- The form gets "Chips:" under "Site entry:"; its `returnPressed` appends `, ` unless the text is
+  empty or already ends with a separator. `_parse_and_fill_form()` fills it;
   `_on_save_to_file()` checks `foreign_chip_tokens()`, passes the field to
   `build_competitor_line()` and clears it after saving; `_on_add_into_team()` merges the saved
   chips with the added member's, as it merges refs.
