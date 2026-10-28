@@ -54,10 +54,11 @@ later field stays in place. Readers that exist:
   "Use all numbers" is ticked.
 - **AutoShift** sets the delay to `(number - first number) * delay per number`, never below zero.
   A group range may carry its own `range#first#delay` override.
-- **Duplicates**: every save checks the protocol list for a repeated bib (field 0), a repeated site
-  registration (field 10) and a chip on the lines of two different bibs (field 11); "Check names"
-  and "Check mail" check fields 1 and 8 on demand. A repeat is reported; the first repeat whose
-  stage fields are equal is selected in the list.
+- **Duplicates**: every save checks the protocol list for a repeated bib (field 0) and a repeated
+  site registration (field 10); "Check names" and "Check mail" check fields 1 and 8 on demand. A
+  repeat is reported; the first repeat whose stage fields are equal is selected in the list. Chip
+  problems, a chip bound to two different bibs among them, are named in a second indicator without
+  moving the selection (see Timing chips).
 - **Merge from site** matches a line by its site reference; two registrations of one person stay
   two lines. The `(last name, first name, year)` key only links an old unreferenced line when it is
   the single match, otherwise the line is added and reported as ambiguous. A reference on two

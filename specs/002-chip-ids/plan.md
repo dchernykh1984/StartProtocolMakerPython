@@ -10,9 +10,9 @@ Add field 11, the rider's chip ids, to the start protocol line the way field 10 
 registration references) was added: pure helpers in `app/models.py`, one more form field in
 `app/main_window.py`, and the paths that build a line (the form, a site participant) writing the
 field always. Verbatim copies already keep every field, so they need tests, not code. The
-duplicate indicator learns to report a chip bound to two different bibs -- a relay's k-th rider
-binds to bib + k -- and a second indicator flags chip ids no reader can use. A chip id typed in the
-wrong keyboard layout stops the save, so the registrar fixes it at the desk.
+second, chip indicator names a line with chip ids no reader can use or a chip bound to two
+different bibs -- a relay's k-th rider binds to bib + k -- without moving the selection. A chip id
+typed in the wrong keyboard layout stops the save, so the registrar fixes it at the desk.
 
 ## Technical Context
 
@@ -103,8 +103,9 @@ code paths one for one, so a reader finds chips next to refs everywhere.
   empty field.
 - `merge_open_lines()` is unchanged: it never rebuilds an existing line, and `set_refs()` keeps
   field 11.
-- `_refresh_duplicate_indicator()` reads the protocol list once, checks bibs, references and
-  `duplicate_chip_row()`, then lights "CHIP IDS NEED A FIX!" for `chip_problem_row()`.
+- `_refresh_duplicate_indicator()` reads the protocol list once, checks bibs and references as
+  before, then names the line in the chip indicator: "CHIP IDS NEED A FIX!" for
+  `chip_problem_row()`, else "ONE CHIP ON TWO BIBS!" for `duplicate_chip_row()`.
 - The form gets "Chips:" under "Site entry:"; its `returnPressed` inserts `, ` at the cursor unless
   the text before it is empty or ends with a separator. `_parse_and_fill_form()` fills it;
   `_on_save_to_file()` stops on `foreign_chip_tokens()`, then on `cleaned_chip_text()` (showing the

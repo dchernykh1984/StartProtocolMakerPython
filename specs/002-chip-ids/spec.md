@@ -78,15 +78,15 @@ that bib. A chip handed out twice is a mistake the registrar must see before the
 guess, so the rider would go untimed. The registration desk is the place to catch it.
 
 **Independent Test**: Join two members with chips into a team and save; the line carries the chips
-of both, one rider after the other. Put one chip under two different bibs; the duplicate indicator
-reports it.
+of both, one rider after the other. Put one chip under two different bibs; the chip indicator
+names the line.
 
 **Acceptance Scenarios**:
 
 1. **Given** two members with chips joined by "Add into team", **Then** the team's line carries
    each member's chips as a rider of its own, after a semicolon, in member order, without repeats.
-2. **Given** one chip bound to two different bibs, **Then** the duplicate indicator reports it the
-   way it reports a repeated bib or reference, and selects the second line.
+2. **Given** one chip bound to two different bibs, **Then** the chip indicator names the second
+   line, and the selection stays where the registrar put it.
 3. **Given** a relay of three stages with bib 21, **Then** its second rider's chips bind to bib 22.
 
 ---
@@ -163,18 +163,18 @@ principle II).
 - **FR-006**: "Add into team" appends the added member's chips to the form's chips as the next
   rider, after a semicolon, without repeats; a member without chips takes a place shown as `-`. It
   keeps the team's stage count: the member's own line says "1", and a relay's chips bind by it.
-- **FR-007**: A second indicator next to the duplicate one reports a protocol line whose chips a
-  reader cannot use as they are: any character outside ASCII in its field (a line copied verbatim
-  from a file made elsewhere never met the form's check) or a relay rider with chips past the last
-  stage (a reserve without chips is fine);
-  it names the line and leaves the selection where the registrar put it, since the problem lasts
-  until fixed and a jump on every save would aim the next Delete at another rider. The duplicate
-  indicator also reports a chip bound to two different bibs.
-  An id with a foreign letter is compared as typed, so two of them never look alike. A line binds
-  its chips the way the chronometers read it: with N > 1 stages and a numeric bib, the k-th rider's
-  chips (counting from 0) bind to bib + k -- FinishProtocolGenerator and the site number the stage
-  riders so -- and a rider past the last stage binds nothing; any other line binds every chip to
-  its bib; a line without a bib binds nothing. The same chip twice for one bib is not reported.
+- **FR-007**: A chip indicator next to the duplicate one names the first protocol line whose chips
+  need a fix -- any character outside ASCII in the field (a line copied verbatim from a file made
+  elsewhere never met the form's check), or a relay rider with chips past the last stage (a reserve
+  without chips is fine) -- or, failing that, the first line whose chip another line binds to a
+  different bib. It leaves the selection where the registrar put it: such a problem lasts until
+  fixed, and a jump on every save would aim the next Delete at another rider. An id with a foreign
+  letter is compared as typed, so two of them never look alike. A line binds its chips the way the
+  chronometers read it: with N > 1 stages and a numeric bib, the k-th rider's chips (counting from
+  0) bind to bib + k -- FinishProtocolGenerator and the site number the stage riders so -- and a
+  rider past the last stage binds nothing; any other line binds every chip to its bib; a line
+  without a bib binds nothing. The same chip twice for one bib is not reported; one chip listed for
+  two riders of a relay is.
 - **FR-008**: Fields 0-10 keep their position and meaning.
 
 ### Key Entities

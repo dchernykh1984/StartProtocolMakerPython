@@ -1250,7 +1250,7 @@ def test_a_team_carries_every_members_chips(win):
     assert win._edit_number.text() == "120"
 
 
-def test_a_chip_used_twice_lights_the_duplicate_warning_on_the_second_line(win):
+def test_a_chip_on_two_bibs_is_named_without_moving_the_selection(win):
     win._list_save_as.addItems(
         [
             _chip_line("A1", number="1"),
@@ -1258,6 +1258,9 @@ def test_a_chip_used_twice_lights_the_duplicate_warning_on_the_second_line(win):
             _chip_line("A1", number="3"),
         ]
     )
+    win._list_save_as.setCurrentRow(1)
     win._refresh_duplicate_indicator()
-    assert not win._lbl_error.isHidden()
-    assert win._list_save_as.currentRow() == 2
+    assert win._lbl_error.isHidden()
+    assert not win._lbl_chip_error.isHidden()
+    assert win._lbl_chip_error.text() == "ONE CHIP ON TWO BIBS! (line 3)"
+    assert win._list_save_as.currentRow() == 1
