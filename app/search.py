@@ -281,14 +281,20 @@ def _without_chips(line: str) -> str:
     return "#".join(fields)
 
 
+_SHORTEST_CHIP_QUERY = 8
+
+
 def chip_query(text: str) -> str:
     """The chip id a Find query names, or "" when it is not one whole id.
 
     A whole id (a tag scanned into Find) finds its rider; a fragment of one does not,
-    or bib numbers would stop on every chip. Made once per search, not per line.
+    or bib numbers would stop on every chip. A query shorter than eight characters
+    is a bib or a name, never a chip: chips numbered 1, 2, 3... would otherwise turn
+    a search for bib 15 into one for chip 15. Made once per search, not per line.
     """
     chip = format_chips(text)
-    return "" if "," in chip or ";" in chip else chip
+    whole = chip and "," not in chip and ";" not in chip
+    return chip if whole and len(chip) >= _SHORTEST_CHIP_QUERY else ""
 
 
 def _chip_ids(line: str) -> frozenset[str]:

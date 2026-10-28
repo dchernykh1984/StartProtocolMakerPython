@@ -114,7 +114,8 @@ later field stays in place. Readers that exist:
   relay rider with chips past the last stage, lights "CHIP IDS NEED A FIX! (line N)"; a chip bound
   to two bibs lights "ONE CHIP ON TWO BIBS! (line N)". The selection is left alone.
 - Find searches a line without its chip field, so a fragment of a hex EPC never matches a bib or a
-  name; a whole chip id, scanned or typed into Find, finds the rider who carries it.
+  name; a whole chip id of eight characters or more, scanned or typed into Find, finds the rider
+  who carries it (a shorter query is a bib or a name).
 - Copies keep the field as they keep every field: open to protocol, the backup, the start protocol
   file, FTP and the start list upload. A line from the site arrives with an empty field, and a merge
   never changes the chips of a line it already has.

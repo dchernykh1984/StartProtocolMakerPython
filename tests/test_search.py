@@ -358,3 +358,13 @@ def test_find_takes_a_whole_chip_id_to_its_rider():
     assert index.matches(0, search_forms(tag), chip_query(tag))
     fragment = "E2801170"
     assert not index.matches(0, search_forms(fragment), chip_query(fragment))
+
+
+def test_a_short_query_looks_for_a_bib_not_a_chip_numbered_the_same():
+    with_chip_15 = "300#Kim A#Elite#5#1#1990#T#C##0 00:00:00.000##15#"
+    bib_15 = "15#Lee B#Elite#5#1#1991#T#C##0 00:00:00.000##B1#"
+    index = SearchIndex()
+    index.refresh([with_chip_15, bib_15])
+    assert chip_query("15") == ""
+    assert not index.matches(0, search_forms("15"), chip_query("15"))
+    assert index.matches(1, search_forms("15"), chip_query("15"))
