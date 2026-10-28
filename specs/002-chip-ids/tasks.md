@@ -16,28 +16,28 @@ Each task is one commit with the message shown; tests are part of the task they 
 
 ## Phase 2: the form (US1)
 
-- [ ] T003 [US1] "Chips:" field under "Site entry:"; opening a line fills it; Save writes and
+- [x] T003 [US1] "Chips:" field under "Site entry:"; opening a line fills it; Save writes and
   clears it; Enter adds a separator. Qt tests. -- `feat(form): edit a rider's chip ids next to the site entry`
-- [ ] T004 [US1] Save refuses a chip token with a non-ASCII character and names it; the form keeps
+- [x] T004 [US1] Save refuses a chip token with a non-ASCII character and names it; the form keeps
   what was typed. Qt tests. -- `feat(form): stop a save on a chip id typed in another keyboard layout`
 
 ## Phase 3: copies and merges (US1, US2)
 
-- [ ] T005 [US1, US2] Tests: open to protocol, all to protocol, backup round trip, start protocol
+- [x] T005 [US1, US2] Tests: open to protocol, all to protocol, backup round trip, start protocol
   file, start list upload payload and FTP payload keep field 11 and later fields; a site line has
   an empty field 11; a merge keeps an existing line's chips, also when it links an old line.
   -- `test(protocol): keep the chip field through every copy and merge`
 
 ## Phase 4: teams and duplicates (US3)
 
-- [ ] T006 [US3] "Add into team" merges the member's chips in member order without repeats. Qt
+- [x] T006 [US3] "Add into team" merges the member's chips in member order without repeats. Qt
   test. -- `feat(team): carry every member's chip ids into the team line`
-- [ ] T007 [US3] `duplicate_chip_row` and the indicator. Unit and Qt tests.
+- [x] T007 [US3] `duplicate_chip_row` and the indicator. Unit and Qt tests.
   -- `feat(protocol): report a chip id used on two protocol lines`
 
 ## Phase 5: documentation
 
-- [ ] T008 Describe field 11 in `specs/app/start-protocol.md` (table, readers, the form field, the
+- [x] T008 Describe field 11 in `specs/app/start-protocol.md` (table, readers, the form field, the
   wrong-layout refusal) and list the feature. -- `docs: describe the chip field of the start line`
 
 ## Dependencies
