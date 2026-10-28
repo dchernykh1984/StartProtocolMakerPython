@@ -165,9 +165,13 @@ def has_chips_field(line: str) -> bool:
     return get_n_fields(line) > CHIPS_FIELD
 
 
+def _normalise_chip(token: str) -> str:
+    return _NOT_CHIP_CHARS.sub("", token).upper()
+
+
 def split_chips(text: str) -> list[str]:
     """Chip ids in order: upper case, ASCII letters and digits only, no repeats."""
-    tokens = (_NOT_CHIP_CHARS.sub("", t).upper() for t in _CHIP_SEPARATORS.split(text))
+    tokens = map(_normalise_chip, _CHIP_SEPARATORS.split(text))
     return list(dict.fromkeys(t for t in tokens if t))
 
 
@@ -197,12 +201,9 @@ def merge_chip_text(*texts: str) -> str:
     An id with a character outside ASCII is kept as typed, so the save still stops
     on it instead of the merge quietly turning it into another chip's id.
     """
-    seen: dict[str, str] = {}
-    for text in texts:
-        for token in (t.strip() for t in _CHIP_SEPARATORS.split(text)):
-            key = _NOT_CHIP_CHARS.sub("", token).upper() if token.isascii() else token
-            seen.setdefault(key, key)
-    return ", ".join(v for k, v in seen.items() if k)
+    tokens = (t.strip() for text in texts for t in _CHIP_SEPARATORS.split(text))
+    ids = (_normalise_chip(t) if t.isascii() else t for t in tokens)
+    return ", ".join(dict.fromkeys(i for i in ids if i))
 
 
 # ---------------------------------------------------------------------------
