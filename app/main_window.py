@@ -43,6 +43,7 @@ from app.models import (
     get_time_from_seconds,
     join_refs,
     load_backup,
+    merge_chip_text,
     merge_number_range,
     merge_open_lines,
     parse_competitor_line,
@@ -914,6 +915,7 @@ class MainWindow(QMainWindow):
         saved_city = self._edit_city.text()
         saved_team = self._edit_team.text()
         saved_refs = split_refs(self._edit_refs.text())
+        saved_chips = self._edit_chips.text()
         # Adding a member must not issue a different bib to a team already numbered.
         self._parse_and_fill_form(
             self._list_open.currentItem().text(),
@@ -924,6 +926,7 @@ class MainWindow(QMainWindow):
                 list(dict.fromkeys(saved_refs + split_refs(self._edit_refs.text())))
             )
         )
+        self._edit_chips.setText(merge_chip_text(saved_chips, self._edit_chips.text()))
         self._edit_name.setText(saved_name + " / " + self._edit_name.text())
         self._edit_yob.setText(saved_yob + " / " + self._edit_yob.text())
         if self._edit_team.text() != saved_team:

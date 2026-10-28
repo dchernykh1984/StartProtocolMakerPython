@@ -180,6 +180,20 @@ def foreign_chip_tokens(text: str) -> list[str]:
     return [t.strip() for t in _CHIP_SEPARATORS.split(text) if not t.isascii()]
 
 
+def merge_chip_text(*texts: str) -> str:
+    """Typed chip ids of several riders, in order, without repeats, for the form.
+
+    An id with a character outside ASCII is kept as typed, so the save still stops
+    on it instead of the merge quietly turning it into another chip's id.
+    """
+    seen: dict[str, str] = {}
+    for text in texts:
+        for token in (t.strip() for t in _CHIP_SEPARATORS.split(text)):
+            key = _NOT_CHIP_CHARS.sub("", token).upper() if token.isascii() else token
+            seen.setdefault(key, key)
+    return ", ".join(v for k, v in seen.items() if k)
+
+
 # ---------------------------------------------------------------------------
 # number management
 # ---------------------------------------------------------------------------

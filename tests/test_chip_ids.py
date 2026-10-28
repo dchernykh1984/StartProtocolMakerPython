@@ -283,3 +283,25 @@ def test_linking_an_old_line_to_its_registration_keeps_its_chips():
     assert added == 0
     assert parse_competitor_line(merged[0])["refs"] == "r17"
     assert parse_competitor_line(merged[0])["chips"] == "B1,B2"
+
+
+# -- teams (FR-006) --------------------------------------------------------------------
+
+
+def test_merging_chip_text_keeps_order_drops_repeats_and_keeps_foreign_ids():
+    from app.models import merge_chip_text
+
+    assert merge_chip_text("a1, B2", "b2;c3") == "A1, B2, C3"
+    assert merge_chip_text("", "E280 1170") == "E2801170"
+    assert merge_chip_text(", ;", "") == ""
+    foreign = f"{chr(0x415)}1"
+    assert merge_chip_text(foreign, "A1") == f"{foreign}, A1"
+
+
+def test_a_team_carries_every_members_chips(win):
+    win._parse_and_fill_form(_line("A1, B2", number="120"))
+    win._list_open.addItem(_line("B2,C3", number=""))
+    win._list_open.setCurrentRow(0)
+    win._on_add_into_team()
+    assert win._edit_chips.text() == "A1, B2, C3"
+    assert win._edit_number.text() == "120"
