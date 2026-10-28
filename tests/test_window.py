@@ -21,7 +21,11 @@ from PySide6.QtWidgets import QApplication
 from app import main_window as mw
 from app import paths
 from app import search as app_search
-from app.models import write_start_protocol
+from app.models import (
+    build_competitor_line,
+    parse_competitor_line,
+    write_start_protocol,
+)
 
 _app = QApplication.instance() or QApplication([])
 
@@ -1065,3 +1069,122 @@ def test_upload_reads_relative_protocol_from_app_folder(win, monkeypatch, tmp_pa
     assert sent == [("STOR start.txt", b"12#Rider#GroupA#\n")]
     assert (race / "start.txt").exists()
     assert win._start_protocol_file == "start.txt"
+
+
+# -- timing chips (field 11), ChronometerPython issue #49 -----------------------------
+
+
+def _chip_line(chips: str = "", number: str = "120", refs: str = "") -> str:
+    return build_competitor_line(
+        number,
+        "Ivanov Ivan",
+        "M40#3",
+        "1",
+        "1984",
+        "T",
+        "C",
+        "",
+        "0 00:00:00.000",
+        refs,
+        chips,
+    )
+
+
+# A line from a later version: something after the chips must survive copies too.
+_LATER = _chip_line("A1,B2", refs="r9") + "future#"
+
+
+def _fill(win, number="120", chips=""):
+    win._parse_and_fill_form(_chip_line(number=number))
+    win._edit_chips.setText(chips)
+
+
+def test_saving_writes_the_chips_and_clears_the_field(win):
+    _fill(win, chips="e2801170 0000020a, E2801170000002AB")
+    win._on_save_to_file()
+    saved = win._save_as_items()[0]
+    assert saved.endswith("#E28011700000020A,E2801170000002AB#")
+    assert win._edit_chips.text() == ""
+
+
+def test_opening_a_line_fills_the_chip_field(win):
+    win._parse_and_fill_form(_chip_line("A1,B2"))
+    assert win._edit_chips.text() == "A1,B2"
+
+
+def test_changing_the_bib_keeps_the_chips(win):
+    win._parse_and_fill_form(_chip_line("A1,B2", number="120"))
+    win._edit_number.setText("121")
+    win._on_save_to_file()
+    line = win._save_as_items()[0]
+    assert parse_competitor_line(line)["number"] == "121"
+    assert parse_competitor_line(line)["chips"] == "A1,B2"
+
+
+@pytest.mark.parametrize(
+    ("typed", "after"),
+    [("A1", "A1, "), ("A1, ", "A1, "), ("A1;", "A1;"), ("", "")],
+)
+def test_enter_in_the_chip_field_adds_one_separator(win, typed, after):
+    win._edit_chips.setText(typed)
+    win._edit_chips.returnPressed.emit()
+    assert win._edit_chips.text() == after
+
+
+def test_a_wrong_layout_stops_the_save_and_keeps_the_form(win, monkeypatch):
+    shown = []
+    monkeypatch.setattr(mw.QMessageBox, "warning", lambda *a: shown.append(a[2]))
+    cyr_e = chr(0x415)
+    _fill(win, chips=f"{cyr_e}2801170000002AB, A1")
+    win._edit_name.setText("Ivanov Ivan")
+    win._on_save_to_file()
+    assert win._save_as_items() == []
+    assert win._edit_chips.text() == f"{cyr_e}2801170000002AB, A1"
+    assert win._edit_number.text() == "120"
+    assert f"{cyr_e}2801170000002AB" in shown[0]
+    assert "A1" not in shown[0].split("\n\n")[1]
+
+
+def test_open_to_protocol_and_all_to_protocol_copy_the_chips(win, monkeypatch):
+    monkeypatch.setattr(
+        mw.QMessageBox, "question", lambda *a: mw.QMessageBox.StandardButton.Yes
+    )
+    win._list_open.addItem(_LATER)
+    win._list_open.setCurrentRow(0)
+    win._on_open_to_protocol()
+    win._on_all_to_protocol()
+    assert win._save_as_items() == [_LATER, _LATER]
+
+
+def test_the_start_list_upload_sends_the_lines_as_they_are(win, monkeypatch):
+    sent = []
+    monkeypatch.setattr(
+        mw, "upload_start_list", lambda url, tok, dev, items, rev: sent.append(items)
+    )
+    win._edit_http_site_url.setText("https://s")
+    win._edit_http_token.setText("tok")
+    win._list_save_as.addItem(_LATER)
+    assert win._upload_to_site()[0]
+    assert sent == [[_LATER]]
+
+
+def test_a_team_carries_every_members_chips(win):
+    win._parse_and_fill_form(_chip_line("A1, B2", number="120"))
+    win._list_open.addItem(_chip_line("B2,C3", number=""))
+    win._list_open.setCurrentRow(0)
+    win._on_add_into_team()
+    assert win._edit_chips.text() == "A1, B2, C3"
+    assert win._edit_number.text() == "120"
+
+
+def test_a_chip_used_twice_lights_the_duplicate_warning_on_the_second_line(win):
+    win._list_save_as.addItems(
+        [
+            _chip_line("A1", number="1"),
+            _chip_line("B1", number="2"),
+            _chip_line("A1", number="3"),
+        ]
+    )
+    win._refresh_duplicate_indicator()
+    assert not win._lbl_error.isHidden()
+    assert win._list_save_as.currentRow() == 2

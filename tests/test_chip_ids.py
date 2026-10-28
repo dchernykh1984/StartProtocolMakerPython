@@ -1,19 +1,10 @@
-"""The rider's timing chips (field 11), ChronometerPython issue #49.
+"""The rider's timing chips (field 11), ChronometerPython issue #49: the pure helpers.
 
-Pure helpers first; the form and the handlers are covered with the Qt window below.
+The form and the handlers are covered in tests/test_window.py, with the other handlers.
 """
 
 from __future__ import annotations
 
-import os
-
-import pytest
-
-os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-
-from PySide6.QtWidgets import QApplication
-
-from app import main_window as mw
 from app.models import (
     CHIPS_FIELD,
     build_competitor_line,
@@ -24,8 +15,6 @@ from app.models import (
     participant_to_open_line,
     split_chips,
 )
-
-_app = QApplication.instance() or QApplication([])
 
 # A 0.5.x line: references (field 10) but no chips.
 OLD = "120#Ivanov Ivan#M40#3#1#1984#T#C##0 00:00:00.000#r41#"
@@ -149,89 +138,10 @@ def test_a_0_5_backup_line_loads_and_has_no_chips(tmp_path):
     assert parse_competitor_line(loaded["save_items"][0])["chips"] == ""
 
 
-# -- the form ------------------------------------------------------------------------
-
-
-@pytest.fixture
-def win(monkeypatch):
-    from tests.test_window import _empty_backup
-
-    monkeypatch.setattr(mw, "load_backup", lambda path: _empty_backup())
-    monkeypatch.setattr(mw.MainWindow, "_write_backup", lambda self, f, n: None)
-    monkeypatch.setattr(mw, "write_start_protocol", lambda *a, **k: None)
-    w = mw.MainWindow()
-    monkeypatch.setattr(mw.QMessageBox, "information", lambda *a, **k: None)
-    monkeypatch.setattr(mw.QMessageBox, "warning", lambda *a, **k: None)
-    yield w
-    w.deleteLater()
-
-
-def _fill(win, number="120", chips=""):
-    win._parse_and_fill_form(_line(number=number))
-    win._edit_chips.setText(chips)
-
-
-def test_saving_writes_the_chips_and_clears_the_field(win):
-    _fill(win, chips="e2801170 0000020a, E2801170000002AB")
-    win._on_save_to_file()
-    saved = win._save_as_items()[0]
-    assert saved.endswith("#E28011700000020A,E2801170000002AB#")
-    assert win._edit_chips.text() == ""
-
-
-def test_opening_a_line_fills_the_chip_field(win):
-    win._parse_and_fill_form(_line("A1,B2"))
-    assert win._edit_chips.text() == "A1,B2"
-
-
-def test_changing_the_bib_keeps_the_chips(win):
-    win._parse_and_fill_form(_line("A1,B2", number="120"))
-    win._edit_number.setText("121")
-    win._on_save_to_file()
-    line = win._save_as_items()[0]
-    assert parse_competitor_line(line)["number"] == "121"
-    assert parse_competitor_line(line)["chips"] == "A1,B2"
-
-
-@pytest.mark.parametrize(
-    ("typed", "after"),
-    [("A1", "A1, "), ("A1, ", "A1, "), ("A1;", "A1;"), ("", "")],
-)
-def test_enter_in_the_chip_field_adds_one_separator(win, typed, after):
-    win._edit_chips.setText(typed)
-    win._edit_chips.returnPressed.emit()
-    assert win._edit_chips.text() == after
-
-
-def test_a_wrong_layout_stops_the_save_and_keeps_the_form(win, monkeypatch):
-    shown = []
-    monkeypatch.setattr(mw.QMessageBox, "warning", lambda *a: shown.append(a[2]))
-    cyr_e = chr(0x415)
-    _fill(win, chips=f"{cyr_e}2801170000002AB, A1")
-    win._edit_name.setText("Ivanov Ivan")
-    win._on_save_to_file()
-    assert win._save_as_items() == []
-    assert win._edit_chips.text() == f"{cyr_e}2801170000002AB, A1"
-    assert win._edit_number.text() == "120"
-    assert f"{cyr_e}2801170000002AB" in shown[0]
-    assert "A1" not in shown[0].split("\n\n")[1]
-
-
 # -- copies and merges keep the field (FR-004, FR-005) -------------------------------
 
 # A line from a later version: something after the chips must survive copies too.
 LATER = _line("A1,B2", refs="r9") + "future#"
-
-
-def test_open_to_protocol_and_all_to_protocol_copy_the_chips(win, monkeypatch):
-    monkeypatch.setattr(
-        mw.QMessageBox, "question", lambda *a: mw.QMessageBox.StandardButton.Yes
-    )
-    win._list_open.addItem(LATER)
-    win._list_open.setCurrentRow(0)
-    win._on_open_to_protocol()
-    win._on_all_to_protocol()
-    assert win._save_as_items() == [LATER, LATER]
 
 
 def test_the_backup_and_the_start_protocol_file_keep_the_chips(tmp_path):
@@ -243,18 +153,6 @@ def test_the_backup_and_the_start_protocol_file_keep_the_chips(tmp_path):
     start = tmp_path / "start.txt"
     write_start_protocol(str(start), [LATER, OLD])
     assert start.read_text(encoding="utf-8").splitlines() == [LATER, OLD]
-
-
-def test_the_start_list_upload_sends_the_lines_as_they_are(win, monkeypatch):
-    sent = []
-    monkeypatch.setattr(
-        mw, "upload_start_list", lambda url, tok, dev, items, rev: sent.append(items)
-    )
-    win._edit_http_site_url.setText("https://s")
-    win._edit_http_token.setText("tok")
-    win._list_save_as.addItem(LATER)
-    assert win._upload_to_site()[0]
-    assert sent == [[LATER]]
 
 
 def _site_line(name: str, ref: str) -> str:
@@ -298,15 +196,6 @@ def test_merging_chip_text_keeps_order_drops_repeats_and_keeps_foreign_ids():
     assert merge_chip_text(foreign, "A1") == f"{foreign}, A1"
 
 
-def test_a_team_carries_every_members_chips(win):
-    win._parse_and_fill_form(_line("A1, B2", number="120"))
-    win._list_open.addItem(_line("B2,C3", number=""))
-    win._list_open.setCurrentRow(0)
-    win._on_add_into_team()
-    assert win._edit_chips.text() == "A1, B2, C3"
-    assert win._edit_number.text() == "120"
-
-
 # -- duplicates (FR-007) ---------------------------------------------------------------
 
 
@@ -317,12 +206,3 @@ def test_a_chip_on_two_protocol_lines_is_found():
     assert duplicate_chip_row(lines) == -1
     assert duplicate_chip_row([*lines, _line("d1, b1", number="3")]) == 2
     assert duplicate_chip_row([OLD, OLD]) == -1
-
-
-def test_a_chip_used_twice_lights_the_duplicate_warning_on_the_second_line(win):
-    win._list_save_as.addItems(
-        [_line("A1", number="1"), _line("B1", number="2"), _line("A1", number="3")]
-    )
-    win._refresh_duplicate_indicator()
-    assert not win._lbl_error.isHidden()
-    assert win._list_save_as.currentRow() == 2
