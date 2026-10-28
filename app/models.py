@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import time
+import unicodedata
 
 from app.paths import app_path
 
@@ -170,6 +171,17 @@ def _normalise_chip(token: str) -> str:
     return _NOT_CHIP_CHARS.sub("", token).upper()
 
 
+def _plain_chip_text(text: str) -> str:
+    """Typed text with look-alikes of ASCII made ASCII and invisible characters gone.
+
+    NFKC turns a non-breaking space or a full-width comma copied from a PDF into the
+    plain one; zero-width spaces and byte-order marks (format characters) are
+    dropped. A Cyrillic letter stays what it is, and is reported.
+    """
+    text = unicodedata.normalize("NFKC", text)
+    return "".join(c for c in text if unicodedata.category(c) != "Cf")
+
+
 def _chip_words(part: str) -> list[str]:
     """The ids in one comma-separated part: groups of up to four join, longer stand."""
     ids: list[str] = []
@@ -189,7 +201,8 @@ def _chip_words(part: str) -> list[str]:
 
 def split_chips(text: str) -> list[str]:
     """Chip ids in order: upper case, ASCII letters and digits only, no repeats."""
-    words = (w for part in _CHIP_SEPARATORS.split(text) for w in _chip_words(part))
+    parts = _CHIP_SEPARATORS.split(_plain_chip_text(text))
+    words = (w for part in parts for w in _chip_words(part))
     return list(dict.fromkeys(t for t in map(_normalise_chip, words) if t))
 
 
@@ -199,7 +212,14 @@ def join_chips(tokens: list[str]) -> str:
 
 def foreign_chip_tokens(text: str) -> list[str]:
     """Typed ids holding a character outside ASCII: a keyboard in the wrong layout."""
-    return [t.strip() for t in _CHIP_SEPARATORS.split(text) if not t.isascii()]
+    parts = _CHIP_SEPARATORS.split(_plain_chip_text(text))
+    return [t.strip() for t in parts if not t.isascii()]
+
+
+def describe_foreign_chip(token: str) -> str:
+    """The token and the names of its characters outside ASCII, for the message."""
+    names = (unicodedata.name(c, f"U+{ord(c):04X}") for c in token if not c.isascii())
+    return f"{token}  ({', '.join(dict.fromkeys(names))})"
 
 
 def duplicate_chip_row(items: list[str]) -> int:
@@ -219,7 +239,11 @@ def merge_chip_text(*texts: str) -> str:
     An id with a character outside ASCII is kept as typed, so the save still stops
     on it instead of the merge quietly turning it into another chip's id.
     """
-    parts = (t.strip() for text in texts for t in _CHIP_SEPARATORS.split(text))
+    parts = (
+        t.strip()
+        for text in texts
+        for t in _CHIP_SEPARATORS.split(_plain_chip_text(text))
+    )
     ids = (i for t in parts for i in (split_chips(t) if t.isascii() else [t]))
     return ", ".join(dict.fromkeys(ids))
 

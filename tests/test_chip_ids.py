@@ -83,6 +83,26 @@ def test_a_cyrillic_look_alike_is_reported_not_dropped():
     assert foreign_chip_tokens("E280 1170, b2") == []
 
 
+def test_invisible_and_full_width_characters_are_plain_ones():
+    nbsp, zwsp, bom, fw_comma, fw_a = (
+        chr(0xA0),
+        chr(0x200B),
+        chr(0xFEFF),
+        chr(0xFF0C),
+        chr(0xFF21),
+    )
+    typed = f"{bom}E280{nbsp}1170{zwsp} 0000 020{fw_a}{fw_comma}b2"
+    assert foreign_chip_tokens(typed) == []
+    assert split_chips(typed) == ["E28011700000020A", "B2"]
+
+
+def test_a_foreign_character_is_named_in_the_message():
+    from app.models import describe_foreign_chip
+
+    token = f"{chr(0x415)}280A"
+    assert describe_foreign_chip(token) == f"{token}  (CYRILLIC CAPITAL LETTER IE)"
+
+
 def test_fields_0_to_10_are_where_they_were():
     plain = _line(refs="r7")
     with_chips = _line("A1,B2", refs="r7")
