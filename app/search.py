@@ -32,7 +32,7 @@ import unicodedata
 from collections.abc import Sequence
 from typing import NamedTuple
 
-from app.models import CHIPS_FIELD, format_chips, has_chips_field
+from app.models import CHIPS_FIELD, chip_ids, format_chips, has_chips_field
 
 # Cyrillic letter -> search key. Several letters share a key on purpose: that is what
 # lets one Latin spelling of a name find another.
@@ -297,14 +297,6 @@ def chip_query(text: str) -> str:
     return chip if whole and len(chip) >= _SHORTEST_CHIP_QUERY else ""
 
 
-def _chip_ids(line: str) -> frozenset[str]:
-    """The chip ids a line carries, as written to field 11."""
-    if not has_chips_field(line):
-        return frozenset()
-    field = format_chips(line.split("#")[CHIPS_FIELD])
-    return frozenset(c for rider in field.split(";") for c in rider.split(",") if c)
-
-
 class SearchIndex:
     """The reduced forms of one list, rebuilt only when that list changes."""
 
@@ -332,7 +324,7 @@ class SearchIndex:
         self._items = incoming
         plain = [_without_chips(item) for item in self._items]
         self._forms = [search_forms(item) for item in plain]
-        self._chips = [_chip_ids(item) for item in self._items]
+        self._chips = [chip_ids(item) for item in self._items]
         scripts: set[str] = set()
         # Without the chips: their hex letters would always add "Latin" to the list.
         for item in plain:
