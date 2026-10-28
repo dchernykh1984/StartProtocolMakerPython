@@ -155,10 +155,11 @@ def set_refs(line: str, refs: str) -> str:
 # ---------------------------------------------------------------------------
 
 CHIPS_FIELD = 11
-# Only these separate ids: labels print an EPC in groups of four, so a space is
-# part of the id the registrar copies, not the start of the next one.
 _CHIP_SEPARATORS = re.compile(r"[,;]")
 _NOT_CHIP_CHARS = re.compile(r"[^A-Za-z0-9]")
+# Labels print an EPC in groups of four characters ("E280 1170 0000 020A"): spaces
+# between such groups are inside one id, while a longer word is an id of its own.
+_CHIP_GROUP = 4
 
 
 def has_chips_field(line: str) -> bool:
@@ -169,10 +170,27 @@ def _normalise_chip(token: str) -> str:
     return _NOT_CHIP_CHARS.sub("", token).upper()
 
 
+def _chip_words(part: str) -> list[str]:
+    """The ids in one comma-separated part: groups of up to four join, longer stand."""
+    ids: list[str] = []
+    run: list[str] = []
+    for word in part.split():
+        if len(word) <= _CHIP_GROUP:
+            run.append(word)
+            continue
+        if run:
+            ids.append("".join(run))
+            run = []
+        ids.append(word)
+    if run:
+        ids.append("".join(run))
+    return ids
+
+
 def split_chips(text: str) -> list[str]:
     """Chip ids in order: upper case, ASCII letters and digits only, no repeats."""
-    tokens = map(_normalise_chip, _CHIP_SEPARATORS.split(text))
-    return list(dict.fromkeys(t for t in tokens if t))
+    words = (w for part in _CHIP_SEPARATORS.split(text) for w in _chip_words(part))
+    return list(dict.fromkeys(t for t in map(_normalise_chip, words) if t))
 
 
 def join_chips(tokens: list[str]) -> str:
@@ -201,9 +219,9 @@ def merge_chip_text(*texts: str) -> str:
     An id with a character outside ASCII is kept as typed, so the save still stops
     on it instead of the merge quietly turning it into another chip's id.
     """
-    tokens = (t.strip() for text in texts for t in _CHIP_SEPARATORS.split(text))
-    ids = (_normalise_chip(t) if t.isascii() else t for t in tokens)
-    return ", ".join(dict.fromkeys(i for i in ids if i))
+    parts = (t.strip() for text in texts for t in _CHIP_SEPARATORS.split(text))
+    ids = (i for t in parts for i in (split_chips(t) if t.isascii() else [t]))
+    return ", ".join(dict.fromkeys(ids))
 
 
 # ---------------------------------------------------------------------------

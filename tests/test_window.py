@@ -1100,7 +1100,7 @@ def _fill(win, number="120", chips=""):
 
 
 def test_saving_writes_the_chips_and_clears_the_field(win):
-    _fill(win, chips="e2801170 0000020a, E2801170000002AB")
+    _fill(win, chips="e280 1170 0000 020a, E2801170000002AB")
     win._on_save_to_file()
     saved = win._save_as_items()[0]
     assert saved.endswith("#E28011700000020A,E2801170000002AB#")

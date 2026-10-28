@@ -47,16 +47,26 @@ def test_an_old_line_has_no_chip_field_and_a_built_one_always_has_it():
 
 
 def test_chips_go_to_field_11_cleaned_and_in_order():
-    line = _line("e2801170 0000020a, E2801170000002AB", refs="r1")
+    line = _line("e280 1170 0000 020a, E2801170000002AB", refs="r1")
     assert line.endswith("#r1#E28011700000020A,E2801170000002AB#")
     assert parse_competitor_line(line)["chips"] == "E28011700000020A,E2801170000002AB"
 
 
-def test_ids_split_only_on_commas_and_semicolons():
+def test_ids_split_on_commas_and_semicolons_and_between_long_words():
     assert split_chips("E280 1170 0000 020A") == ["E28011700000020A"]
     assert split_chips("a1;b2 ,, c3") == ["A1", "B2", "C3"]
     assert split_chips("e280-1170.00:0a") == ["E2801170000A"]
     assert split_chips(" , ; ") == []
+    # Two whole ids pasted with a space are two ids, not one made-up one.
+    assert split_chips("E28011700000020A E2801170000002AB") == [
+        "E28011700000020A",
+        "E2801170000002AB",
+    ]
+    assert split_chips("E280 1170 0000 020A E2801170000002AB") == [
+        "E28011700000020A",
+        "E2801170000002AB",
+    ]
+    assert split_chips("ABC1234 9 BCD") == ["ABC1234", "9BCD"]
 
 
 def test_repeats_are_dropped_and_the_first_keeps_its_place():

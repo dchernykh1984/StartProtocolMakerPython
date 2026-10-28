@@ -27,7 +27,7 @@ from the copy uploaded to the site, and knows whose crossing a chip read is.
 **Why this priority**: Without the binding no chip read can become a crossing; it is the input
 every chip timing feature depends on.
 
-**Independent Test**: Open a line, enter `e2801170 0000020a, E2801170000002AB`, save, restart the
+**Independent Test**: Open a line, enter `e280 1170 0000 020a, E2801170000002AB`, save, restart the
 program; the protocol line, the start protocol file and the uploaded start list all end in
 `#E28011700000020A,E2801170000002AB#`.
 
@@ -108,8 +108,9 @@ principle II).
 
 ### Edge Cases
 
-- Chip ids typed with spaces inside (`E280 1170 0000 020A`, as labels print them): one id; only a
-  comma or a semicolon starts the next one.
+- Chip ids typed with spaces inside (`E280 1170 0000 020A`, as labels print them): one id. Spaces
+  join groups of up to four characters; between longer words they separate ids, so two whole ids
+  pasted with a space (`E28011700000020A E2801170000002AB`) stay two.
 - Lower case and stray punctuation (`e2801170-0000-020a`): ids are case-insensitive and kept upper
   case; any character other than an ASCII letter or digit inside an id is dropped.
 - A Cyrillic letter that looks Latin (the keyboard layout was Russian, or a desk reader typed into
@@ -128,9 +129,9 @@ principle II).
 
 - **FR-001**: Add one field after the registration references (index 11): empty, or
   comma-separated chip ids. An id is one or more ASCII letters and digits, stored upper case. Commas
-  and semicolons separate ids; spaces and any other ASCII character inside an id are dropped, so an
-  id printed in groups (`E280 1170 0000 020A`) is one id; empty ids and repeats are dropped, the
-  first occurrence keeps its place.
+  and semicolons separate ids; spaces join groups of up to four characters, so an id printed in
+  groups (`E280 1170 0000 020A`) is one id, and separate longer words; any other ASCII character
+  inside an id is dropped; empty ids and repeats are dropped, the first occurrence keeps its place.
 - **FR-002**: A line built from the form always writes the chip field, even empty, so it has at
   least 12 `#` separators. A line with fewer separators has no chip field and reads as having no
   chips.
