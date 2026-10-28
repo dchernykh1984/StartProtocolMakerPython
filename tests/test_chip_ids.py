@@ -101,3 +101,38 @@ def test_a_site_line_arrives_with_an_empty_chip_field():
     assert has_chips_field(line)
     assert line.endswith("#r7##")
     assert parse_competitor_line(line)["chips"] == ""
+
+
+# -- the readers of fields 0-10 (FinishProtocolGenerator, the site) -----------------
+
+
+def _generator_fields(line: str) -> list[str]:
+    """FinishProtocolGeneratorPython's StartProtocolElement.from_line: fields 0-9."""
+    parts = line.split("#")
+    return [parts[i] if i < len(parts) else "" for i in range(10)]
+
+
+def _site_fields(line: str) -> tuple[str, str, str, bool]:
+    """cycling-site event_photos/bindings.py parse_line: bib, stage, refs by index."""
+    fields = line.split("#")
+    refs_present = line.count("#") >= 11
+    return fields[0], fields[4], fields[10] if refs_present else "", refs_present
+
+
+def test_the_generator_and_the_site_read_a_line_with_chips_as_without():
+    plain = _line(refs="r7")
+    with_chips = _line("E28011700000020A,E2801170000002AB", refs="r7")
+    assert _generator_fields(with_chips) == _generator_fields(plain)
+    assert _site_fields(with_chips) == _site_fields(plain)
+    assert _site_fields(with_chips) == ("120", "1", "r7", True)
+
+
+def test_a_0_5_backup_line_loads_and_has_no_chips(tmp_path):
+    from app.models import load_backup, save_backup
+
+    path = tmp_path / "spm_backup.txt"
+    save_backup(str(path), [OLD], [OLD], [], [], "", "", "", "", False, False)
+    loaded = load_backup(str(path))
+    assert loaded["open_items"] == [OLD]
+    assert loaded["save_items"] == [OLD]
+    assert parse_competitor_line(loaded["save_items"][0])["chips"] == ""
