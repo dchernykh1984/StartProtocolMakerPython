@@ -110,6 +110,17 @@ def test_invisible_and_full_width_characters_are_plain_ones():
     assert format_chips(typed) == "E28011700000020A,B2"
 
 
+def test_symbols_that_only_look_like_letters_are_not_made_letters():
+    from app.models import cleaned_chip_text
+
+    numero, roman_twelve = chr(0x2116), chr(0x216B)
+    # The numero sign (Shift+3 on the Russian layout) is dropped, and shown dropped.
+    assert foreign_chip_tokens(f"{numero}12AB") == []
+    assert cleaned_chip_text(f"{numero}12AB") == "12AB"
+    # A Roman numeral is a number outside ASCII: the save stops on it.
+    assert foreign_chip_tokens(f"{roman_twelve}1") == [f"{roman_twelve}1"]
+
+
 def test_a_foreign_character_is_named_in_the_message():
     from app.models import describe_foreign_chip
 
