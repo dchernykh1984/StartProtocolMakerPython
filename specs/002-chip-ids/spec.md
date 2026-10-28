@@ -106,8 +106,8 @@ principle II).
 
 ### Edge Cases
 
-- Chip ids typed with spaces inside (`E280 1170`): whitespace separates ids, so the registrar sees
-  two ids and must correct them; the program does not guess.
+- Chip ids typed with spaces inside (`E280 1170 0000 020A`, as labels print them): one id; only a
+  comma or a semicolon starts the next one.
 - Lower case and stray punctuation (`e2801170-0000-020a`): ids are case-insensitive and kept upper
   case; any character other than an ASCII letter or digit inside an id is dropped.
 - A Cyrillic letter that looks Latin (the keyboard layout was Russian): it is not an ASCII letter,
@@ -122,9 +122,10 @@ principle II).
 ### Functional Requirements
 
 - **FR-001**: Add one field after the registration references (index 11): empty, or
-  comma-separated chip ids. An id is one or more ASCII letters and digits, stored upper case. Commas,
-  semicolons and whitespace separate ids; any other character inside an id is dropped; empty ids
-  and repeats are dropped, the first occurrence keeps its place.
+  comma-separated chip ids. An id is one or more ASCII letters and digits, stored upper case. Commas
+  and semicolons separate ids; spaces and any other ASCII character inside an id are dropped, so an
+  id printed in groups (`E280 1170 0000 020A`) is one id; empty ids and repeats are dropped, the
+  first occurrence keeps its place.
 - **FR-002**: A line built from the form always writes the chip field, even empty, so it has at
   least 12 `#` separators. A line with fewer separators has no chip field and reads as having no
   chips.
