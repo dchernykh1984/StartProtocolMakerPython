@@ -202,6 +202,10 @@ class MainWindow(QMainWindow):
         # A desk reader types each id followed by Enter: make that a separator, or two
         # scans would merge into one id.
         self._edit_chips.returnPressed.connect(self._on_chips_return)
+        # Typed (or scanned) since the form was last filled or saved: such chips belong
+        # to the rider about to be opened, not to the line they replace.
+        self._chips_typed = False
+        self._edit_chips.textEdited.connect(self._on_chips_typed)
         centre.addWidget(lbl)
         centre.addWidget(self._edit_chips)
 
@@ -517,9 +521,15 @@ class MainWindow(QMainWindow):
         )
 
     def _parse_and_fill_form(
-        self, line: str, number_override: str | None = None
-    ) -> None:
+        self,
+        line: str,
+        number_override: str | None = None,
+        keep_typed_chips: bool = False,
+    ) -> bool:
+        """Fill the form from a line; True when chips typed before it were kept."""
         d = parse_competitor_line(line)
+        typed = self._edit_chips.text().strip() if self._chips_typed else ""
+        kept = keep_typed_chips and bool(typed) and not d["chips"]
         self._edit_number.setText(
             d["number"] if number_override is None else number_override
         )
@@ -538,7 +548,9 @@ class MainWindow(QMainWindow):
         self._edit_city.setText(d["city"])
         self._edit_comment.setText(d["comment"])
         self._edit_refs.setText(d["refs"])
-        self._edit_chips.setText(d["chips"])
+        if not kept:
+            self._edit_chips.setText(d["chips"])
+            self._chips_typed = False
         # Always restore the line's own shift first: AutoShift only overwrites it when
         # it can actually compute one, and without this the field would keep the
         # previously edited competitor's shift.
@@ -550,6 +562,7 @@ class MainWindow(QMainWindow):
                 self._on_get_number()
             self._on_auto_shift()
         self._edit_stage.setText(d["stage"] or "1")
+        return kept
 
     def _load_backup(self, path: str) -> None:
         # Whatever was queued belongs to the list being replaced (possibly another
@@ -685,9 +698,24 @@ class MainWindow(QMainWindow):
         names = ", ".join(self._open_search.scripts)
         self._lbl_open_scripts.setText(f"Scripts in list: {names or '-'}")
 
+    def _on_chips_typed(self, _text: str) -> None:
+        self._chips_typed = True
+
     def _on_edit_open(self) -> None:
-        if self._list_open.currentItem():
-            self._parse_and_fill_form(self._list_open.currentItem().text())
+        if not self._list_open.currentItem():
+            return
+        # A rider scanned before being picked in the list keeps the scan; said aloud,
+        # so chips meant for someone else do not travel unnoticed.
+        if self._parse_and_fill_form(
+            self._list_open.currentItem().text(), keep_typed_chips=True
+        ):
+            QMessageBox.information(
+                self,
+                "Chip ids",
+                "The chip ids typed before opening this rider were kept:\n\n"
+                + self._edit_chips.text()
+                + "\n\nClear the field if they belong to someone else.",
+            )
 
     def _on_open_to_protocol(self) -> None:
         if self._list_open.currentItem():
@@ -782,6 +810,7 @@ class MainWindow(QMainWindow):
         self._edit_number.clear()
         self._edit_refs.clear()
         self._edit_chips.clear()
+        self._chips_typed = False
         self._save_all_data()
 
     def _on_chips_return(self) -> None:

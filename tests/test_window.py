@@ -1339,3 +1339,35 @@ def test_a_chip_on_two_bibs_is_named_without_moving_the_selection(win):
     assert not win._lbl_chip_error.isHidden()
     assert win._lbl_chip_error.text() == "ONE CHIP ON TWO BIBS! (line 3)"
     assert win._list_save_as.currentRow() == 1
+
+
+def test_chips_scanned_before_opening_a_registration_are_kept_and_said(
+    win, monkeypatch
+):
+    shown = []
+    monkeypatch.setattr(mw.QMessageBox, "information", lambda *a: shown.append(a[2]))
+    win._edit_chips.setText("A1")
+    win._edit_chips.textEdited.emit("A1")  # what typing or a desk reader does
+    win._list_open.addItem(_chip_line(number=""))
+    win._list_open.setCurrentRow(0)
+    win._on_edit_open()
+    assert win._edit_chips.text() == "A1"
+    assert "A1" in shown[0]
+
+
+def test_a_protocol_line_opened_for_correction_shows_its_own_chips(win):
+    win._edit_chips.setText("A1")
+    win._edit_chips.textEdited.emit("A1")
+    win._list_save_as.addItem(_chip_line("B1", number="5"))
+    win._list_save_as.setCurrentRow(0)
+    win._on_edit_save_as()
+    assert win._edit_chips.text() == "B1"
+
+
+def test_chips_left_from_an_opened_line_are_not_carried_to_the_next(win):
+    win._list_open.addItems([_chip_line("C1", number=""), _chip_line(number="")])
+    win._list_open.setCurrentRow(0)
+    win._on_edit_open()
+    win._list_open.setCurrentRow(1)
+    win._on_edit_open()
+    assert win._edit_chips.text() == ""
