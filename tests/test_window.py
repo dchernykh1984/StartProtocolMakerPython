@@ -1360,17 +1360,58 @@ def test_chips_scanned_before_opening_a_registration_are_kept_and_said(
     win._list_open.addItem(_chip_line(number=""))
     win._list_open.setCurrentRow(0)
     win._on_edit_open()
-    assert win._edit_chips.text() == "A1"
+    assert win._edit_chips.text() == "A1, "
     assert "A1" in shown[0]
 
 
-def test_a_protocol_line_opened_for_correction_shows_its_own_chips(win):
+def test_a_protocol_line_opened_for_correction_shows_its_own_chips(win, monkeypatch):
+    shown = []
+    monkeypatch.setattr(mw.QMessageBox, "information", lambda *a: shown.append(a[2]))
     win._edit_chips.setText("A1")
     win._edit_chips.textEdited.emit("A1")
     win._list_save_as.addItem(_chip_line("B1", number="5"))
     win._list_save_as.setCurrentRow(0)
     win._on_edit_save_as()
     assert win._edit_chips.text() == "B1, "
+    assert "not added" in shown[0] and "A1" in shown[0]
+
+
+def _type_chips(win, text):
+    """What typing or a desk reader does: the text changes, and textEdited fires."""
+    win._edit_chips.setText(text)
+    win._edit_chips.textEdited.emit(text)
+
+
+def test_only_the_ids_typed_after_a_line_was_opened_go_to_the_next_one(win):
+    win._list_open.addItems(
+        [_chip_line("X1", number=""), _chip_line(number=""), _chip_line(number="")]
+    )
+    win._list_open.setCurrentRow(0)
+    win._on_edit_open()
+    assert win._edit_chips.text() == "X1, "
+    _type_chips(win, "X1, Y1")
+    win._list_open.setCurrentRow(1)
+    win._on_edit_open()
+    assert win._edit_chips.text() == "Y1, "
+    win._list_open.setCurrentRow(2)
+    win._on_edit_open()
+    assert win._edit_chips.text() == ""
+
+
+def test_a_scan_before_opening_a_line_with_chips_joins_them(win):
+    _type_chips(win, "A1")
+    win._list_open.addItem(_chip_line("X1", number=""))
+    win._list_open.setCurrentRow(0)
+    win._on_edit_open()
+    assert win._edit_chips.text() == "X1, A1, "
+
+
+def test_a_scan_before_pasting_a_registration_form_is_kept(win, monkeypatch):
+    _type_chips(win, "A1")
+    form = _chip_line(number="")
+    monkeypatch.setattr(win, "_text_area_dialog", lambda *a, **k: (True, form))
+    win._on_parse_new_competitor()
+    assert win._edit_chips.text() == "A1, "
 
 
 def test_chips_left_from_an_opened_line_are_not_carried_to_the_next(win):

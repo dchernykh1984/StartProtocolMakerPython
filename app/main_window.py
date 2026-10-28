@@ -525,12 +525,17 @@ class MainWindow(QMainWindow):
         self,
         line: str,
         number_override: str | None = None,
-        keep_typed_chips: bool = False,
-    ) -> bool:
-        """Fill the form from a line; True when chips typed before it were kept."""
+        keep_typed_chips: bool | None = None,
+    ) -> str:
+        """Fill the form from a line; returns the chip ids typed before it, if any.
+
+        Typed means typed or scanned since the program last filled the field. With
+        ``keep_typed_chips`` they are added to the line's own (a registration opened
+        after its tag was scanned); with False they are replaced, and the caller says
+        so; with None (a member being added to a team) nothing is reported.
+        """
         d = parse_competitor_line(line)
-        typed = self._edit_chips.text().strip() if self._chips_typed else ""
-        kept = keep_typed_chips and bool(typed) and not d["chips"]
+        typed = self._typed_chips() if keep_typed_chips is not None else ""
         self._edit_number.setText(
             d["number"] if number_override is None else number_override
         )
@@ -549,8 +554,10 @@ class MainWindow(QMainWindow):
         self._edit_city.setText(d["city"])
         self._edit_comment.setText(d["comment"])
         self._edit_refs.setText(d["refs"])
-        if not kept:
-            self._set_chips(d["chips"])
+        own = d["chips"]
+        self._set_chips(
+            ", ".join(c for c in (own, typed) if c) if keep_typed_chips else own
+        )
         # Always restore the line's own shift first: AutoShift only overwrites it when
         # it can actually compute one, and without this the field would keep the
         # previously edited competitor's shift.
@@ -562,7 +569,7 @@ class MainWindow(QMainWindow):
                 self._on_get_number()
             self._on_auto_shift()
         self._edit_stage.setText(d["stage"] or "1")
-        return kept
+        return typed
 
     def _load_backup(self, path: str) -> None:
         # Whatever was queued belongs to the list being replaced (possibly another
@@ -701,6 +708,14 @@ class MainWindow(QMainWindow):
     def _on_chips_typed(self, _text: str) -> None:
         self._chips_typed = True
 
+    def _typed_chips(self) -> str:
+        """What was typed or scanned into the chip field since the program filled it."""
+        if not self._chips_typed:
+            return ""
+        text, filled = self._edit_chips.text(), self._chips_filled
+        part = text[len(filled) :] if text.startswith(filled) else text
+        return part.strip(" ,;")
+
     def _set_chips(self, text: str) -> None:
         """Put chips in the field from the program, ready for the next scan.
 
@@ -717,17 +732,20 @@ class MainWindow(QMainWindow):
     def _on_edit_open(self) -> None:
         if not self._list_open.currentItem():
             return
-        # A rider scanned before being picked in the list keeps the scan; said aloud,
-        # so chips meant for someone else do not travel unnoticed.
-        if self._parse_and_fill_form(
-            self._list_open.currentItem().text(), keep_typed_chips=True
-        ):
+        self._open_registration(self._list_open.currentItem().text())
+
+    def _open_registration(self, line: str) -> None:
+        """Open a rider being registered. A tag scanned before the rider was picked is
+        kept with the line's chips, and said aloud, so chips meant for someone else
+        do not travel unnoticed."""
+        typed = self._parse_and_fill_form(line, keep_typed_chips=True)
+        if typed:
             QMessageBox.information(
                 self,
                 "Chip ids",
                 "The chip ids typed before opening this rider were kept:\n\n"
-                + self._edit_chips.text()
-                + "\n\nClear the field if they belong to someone else.",
+                + typed
+                + "\n\nClear them if they belong to someone else.",
             )
 
     def _on_open_to_protocol(self) -> None:
@@ -914,7 +932,7 @@ class MainWindow(QMainWindow):
                 line = re.sub(self._regexp_from, py_to, line)
             except re.error:
                 pass
-        self._parse_and_fill_form(line)
+        self._open_registration(line)
         self._on_get_number()
 
     def _on_set_regexp_from(self) -> None:
@@ -929,7 +947,17 @@ class MainWindow(QMainWindow):
 
     def _on_edit_save_as(self) -> None:
         if self._list_save_as.currentItem():
-            self._parse_and_fill_form(self._list_save_as.currentItem().text())
+            # A correction shows the saved line as it is; typed ids are dropped, aloud.
+            typed = self._parse_and_fill_form(
+                self._list_save_as.currentItem().text(), keep_typed_chips=False
+            )
+            if typed:
+                QMessageBox.information(
+                    self,
+                    "Chip ids",
+                    "This line was opened for a correction, so the chip ids typed "
+                    "before were not added to it:\n\n" + typed,
+                )
         self._save_all_data()
 
     def _on_delete(self) -> None:
