@@ -355,6 +355,18 @@ def chip_rows(items: list[str]) -> tuple[int, int]:
     return problem, twice
 
 
+def chips_added(before: str, after: str) -> str:
+    """The ids in ``after`` that ``before`` did not have, as typed.
+
+    What a registrar typed or scanned into a field the form had filled with
+    ``before``: an id of the filled text stays out even when the text around it was
+    edited, so a line's own chips never pass for a scan.
+    """
+    had = {_chip_key(t) for rider in _raw_riders(before) for t in rider}
+    added = (t for rider in _raw_riders(after) for t in rider if _chip_key(t))
+    return ", ".join(dict.fromkeys(t for t in added if _chip_key(t) not in had))
+
+
 def merge_chip_text(team_chips: str, member_chips: str, team_size: int = 0) -> str:
     """The team's chips with the added member's ids as the next rider, for the form.
 

@@ -38,6 +38,7 @@ from app.models import (
     categories_to_group_rows,
     check_duplicate_fields,
     chip_rows,
+    chips_added,
     cleaned_chip_text,
     current_local_seconds,
     describe_foreign_chip,
@@ -707,9 +708,7 @@ class MainWindow(QMainWindow):
         """What was typed or scanned into the chip field since the program filled it."""
         if not self._edit_chips.isModified():
             return ""
-        text, filled = self._edit_chips.text(), self._chips_filled
-        part = text[len(filled) :] if text.startswith(filled) else text
-        return part.strip(" ,;")
+        return chips_added(self._chips_filled, self._edit_chips.text())
 
     def _set_chips(self, text: str) -> None:
         """Put chips in the field from the program, ready for the next scan.

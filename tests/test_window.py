@@ -1418,3 +1418,14 @@ def test_chips_left_from_an_opened_line_are_not_carried_to_the_next(win):
     win._list_open.setCurrentRow(1)
     win._on_edit_open()
     assert win._edit_chips.text() == ""
+
+
+def test_a_line_s_own_chip_left_after_an_edit_does_not_travel(win):
+    win._list_save_as.addItem(_chip_line("A1,B1", number="5"))
+    win._list_save_as.setCurrentRow(0)
+    win._on_edit_save_as()
+    _type_chips(win, "B1, ")  # the registrar deletes A1, then changes their mind
+    win._list_open.addItem(_chip_line(number=""))
+    win._list_open.setCurrentRow(0)
+    win._on_edit_open()
+    assert win._edit_chips.text() == ""

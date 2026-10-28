@@ -250,6 +250,15 @@ def test_linking_an_old_line_to_its_registration_keeps_its_chips():
 # -- teams (FR-006) --------------------------------------------------------------------
 
 
+def test_chips_added_are_the_ids_the_filled_text_did_not_have():
+    from app.models import chips_added
+
+    assert chips_added("X1, ", "X1, Y1") == "Y1"
+    # The line's own chip, with the text around it edited, is still not "added".
+    assert chips_added("A1, B1, ", "B1, ") == ""
+    assert chips_added("", "e280 1170, , ;") == "e280 1170"
+
+
 def test_a_team_members_chips_become_the_next_rider():
     from app.models import merge_chip_text
 
