@@ -16,9 +16,9 @@
 ## Chip id
 
 - One or more of `A-Z` and `0-9` after normalisation.
-- Normalisation of typed text: split on `,`, `;` and whitespace; upper-case; drop every
-  character that is not an ASCII letter or digit; drop empty tokens and repeats, keeping the
-  first occurrence in place.
+- Normalisation of typed text: split on `,` and `;`; upper-case; drop spaces and every other
+  character that is not an ASCII letter or digit; drop empty tokens and repeats, keeping the first
+  occurrence in place.
 - A token with a character outside ASCII is not normalised: the form refuses to save it.
 
 ## Relations

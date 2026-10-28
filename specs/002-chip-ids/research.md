@@ -13,12 +13,14 @@
 
 ## Decision 2: the shape of a chip id
 
-- **Decision**: one or more ASCII letters and digits, stored upper case; commas, semicolons and
-  whitespace separate ids; other ASCII characters inside an id are dropped.
+- **Decision**: one or more ASCII letters and digits, stored upper case; commas and semicolons
+  separate ids; spaces and other ASCII characters inside an id are dropped.
 - **Rationale**: readers report ids as hexadecimal EPCs (LLRP: Impinj, Zebra; cheap R2000 modules)
   or as alphanumeric transponder codes (RaceResult); upper case is how they print them, and the
-  chronometers compare ids after the same normalisation. Dashes and dots appear when people copy
-  ids from labels and carry no meaning.
+  chronometers compare ids after the same normalisation. Labels print a 96-bit EPC in groups of four
+  (`E280 1170 0000 020A`), and dashes and dots appear when people copy ids; none of them carries
+  meaning, so they cannot separate ids. The registration references split on whitespace too; chips
+  cannot.
 - **Alternatives**: keeping ids exactly as typed (rejected: `e280...` and `E280...` would be two
   chips to a chronometer that compares strings).
 
