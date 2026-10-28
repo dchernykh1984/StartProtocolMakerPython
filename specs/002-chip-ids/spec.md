@@ -165,7 +165,8 @@ principle II).
   keeps the team's stage count: the member's own line says "1", and a relay's chips bind by it.
 - **FR-007**: A second indicator next to the duplicate one reports a protocol line whose chips a
   reader cannot use as they are: any character outside ASCII in its field (a line copied verbatim
-  from a file made elsewhere never met the form's check) or a relay with more riders than stages;
+  from a file made elsewhere never met the form's check) or a relay rider with chips past the last
+  stage (a reserve without chips is fine);
   it names the line and leaves the selection where the registrar put it, since the problem lasts
   until fixed and a jump on every save would aim the next Delete at another rider. The duplicate
   indicator also reports a chip bound to two different bibs.
