@@ -1493,3 +1493,14 @@ def test_ids_scanned_for_a_leader_who_had_none_need_no_notice(win, monkeypatch):
     win._on_add_into_team()
     assert win._edit_chips.text() == "A1; "
     assert shown == []
+
+
+def test_a_rider_s_own_tag_scanned_before_opening_is_not_doubled(win, monkeypatch):
+    shown = []
+    monkeypatch.setattr(mw.QMessageBox, "information", lambda *a: shown.append(a[2]))
+    _type_chips(win, "e2801170")
+    win._list_open.addItem(_chip_line("E2801170", number=""))
+    win._list_open.setCurrentRow(0)
+    win._on_edit_open()
+    assert win._edit_chips.text() == "E2801170, "
+    assert shown == []
