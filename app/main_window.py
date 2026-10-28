@@ -1064,6 +1064,14 @@ class MainWindow(QMainWindow):
         saved_team = self._edit_team.text()
         saved_refs = split_refs(self._edit_refs.text())
         saved_chips = self._edit_chips.text()
+        # Typed since the form filled the field, after a rider who already had chips:
+        # the leader's extra chip, or the incoming member's scanned too early. The
+        # text cannot tell, so they stay put and the registrar is told.
+        typed = self._typed_chips()
+        unclear = bool(typed) and bool(
+            self._chips_filled.rsplit(";", 1)[-1].strip(" ,")
+        )
+        member_line = self._list_open.currentItem().text()
         # Members are joined below as "A / B", a relay from the site as "A<BR>B" (any
         # case, as the site reads it); a name left empty does not count.
         team_size = sum(
@@ -1076,10 +1084,7 @@ class MainWindow(QMainWindow):
         # the form yet, the stage left there is the last saved line's, not this one's.
         saved_stage = self._edit_stage.text() if team_size else None
         # Adding a member must not issue a different bib to a team already numbered.
-        self._parse_and_fill_form(
-            self._list_open.currentItem().text(),
-            self._edit_number.text().strip() or None,
-        )
+        self._parse_and_fill_form(member_line, self._edit_number.text().strip() or None)
         self._edit_refs.setText(
             join_refs(
                 list(dict.fromkeys(saved_refs + split_refs(self._edit_refs.text())))
@@ -1099,6 +1104,17 @@ class MainWindow(QMainWindow):
                 self._edit_team.setText(saved_team + " / " + self._edit_team.text())
         if self._edit_city.text() != saved_city:
             self._edit_city.setText(saved_city + " / " + self._edit_city.text())
+        if unclear:
+            QMessageBox.information(
+                self,
+                "Chip ids",
+                "These chip ids, typed before adding "
+                + (parse_competitor_line(member_line)["name"] or "the member")
+                + ", stayed with the rider before:\n\n"
+                + typed
+                + "\n\nIf they are the new member's, move them after the last "
+                "semicolon.",
+            )
 
     def _fetch_site_payload(self) -> dict | None:
         """Fetch the participants payload from the site (participants + categories).
