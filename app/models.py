@@ -298,12 +298,15 @@ def chip_bibs(line: str) -> list[tuple[str, str]]:
         return []
     stages = _relay_stages(fields)
     pairs: list[tuple[str, str]] = []
-    # A foreign id stays as typed: dropping its letter could make it another chip.
-    for k, group in enumerate(_unique_riders(_raw_riders(fields[CHIPS_FIELD]))):
+    # No repeats dropped across riders: a reader binds a chip listed for two riders
+    # to two bibs, and that conflict must show here. A foreign id stays as typed.
+    for k, tokens in enumerate(_raw_riders(fields[CHIPS_FIELD])):
         if stages and k >= stages:
             break
         rider_bib = str(int(bib) + k) if stages and k else bib
-        pairs.extend((chip, rider_bib) for chip in group)
+        pairs.extend(
+            (chip, rider_bib) for chip in dict.fromkeys(map(_chip_key, tokens)) if chip
+        )
     return pairs
 
 
