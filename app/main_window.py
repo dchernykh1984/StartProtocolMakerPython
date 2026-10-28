@@ -205,6 +205,7 @@ class MainWindow(QMainWindow):
         # Typed (or scanned) since the form was last filled or saved: such chips belong
         # to the rider about to be opened, not to the line they replace.
         self._chips_typed = False
+        self._chips_filled = ""
         self._edit_chips.textEdited.connect(self._on_chips_typed)
         centre.addWidget(lbl)
         centre.addWidget(self._edit_chips)
@@ -549,8 +550,7 @@ class MainWindow(QMainWindow):
         self._edit_comment.setText(d["comment"])
         self._edit_refs.setText(d["refs"])
         if not kept:
-            self._edit_chips.setText(d["chips"])
-            self._chips_typed = False
+            self._set_chips(d["chips"])
         # Always restore the line's own shift first: AutoShift only overwrites it when
         # it can actually compute one, and without this the field would keep the
         # previously edited competitor's shift.
@@ -701,6 +701,19 @@ class MainWindow(QMainWindow):
     def _on_chips_typed(self, _text: str) -> None:
         self._chips_typed = True
 
+    def _set_chips(self, text: str) -> None:
+        """Put chips in the field from the program, ready for the next scan.
+
+        Non-empty text ends with a separator, so a tag scanned next becomes an id of
+        its own instead of sticking to the last one; what is there now is what the
+        program put, so nothing in it counts as typed.
+        """
+        if text.strip() and text.rstrip()[-1] not in ",;":
+            text = text.rstrip() + ", "
+        self._edit_chips.setText(text)
+        self._chips_filled = text
+        self._chips_typed = False
+
     def _on_edit_open(self) -> None:
         if not self._list_open.currentItem():
             return
@@ -775,7 +788,7 @@ class MainWindow(QMainWindow):
             return
         cleaned = cleaned_chip_text(self._edit_chips.text())
         if cleaned is not None:
-            self._edit_chips.setText(cleaned)
+            self._set_chips(cleaned)
             riders = cleaned.split("; ")
             shown = (
                 cleaned
@@ -809,8 +822,7 @@ class MainWindow(QMainWindow):
         self._edit_name.clear()
         self._edit_number.clear()
         self._edit_refs.clear()
-        self._edit_chips.clear()
-        self._chips_typed = False
+        self._set_chips("")
         self._save_all_data()
 
     def _on_chips_return(self) -> None:
@@ -1034,7 +1046,7 @@ class MainWindow(QMainWindow):
                 list(dict.fromkeys(saved_refs + split_refs(self._edit_refs.text())))
             )
         )
-        self._edit_chips.setText(
+        self._set_chips(
             merge_chip_text(saved_chips, self._edit_chips.text(), team_size)
         )
         if saved_stage is not None:

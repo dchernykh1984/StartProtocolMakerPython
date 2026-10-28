@@ -157,7 +157,9 @@ principle II).
   character inside an id -- a space, a dash -- or a repeated id, the first Save stops and the field
   shows the ids as they will be saved, because only the registrar can tell one id printed in groups
   from two ids pasted without a comma, or see that a repeat left a relay rider without chips; the
-  second Save saves them. Enter in the chip field adds `, ` at the
+  second Save saves them. Chips the form puts in the field (opening a line, adding a member,
+  showing cleaned ids) end with a separator, so the next scan is an id of its own. Enter in the
+  chip field adds `, ` at the
   cursor, so a desk reader that ends each id with Enter fills the field one id per scan.
 - **FR-004**: Every path that copies a line verbatim keeps the chip field and anything after it:
   open to protocol, the backup, the start protocol file, FTP push, the start list upload.
