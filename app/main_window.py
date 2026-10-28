@@ -710,17 +710,21 @@ class MainWindow(QMainWindow):
             return ""
         return chips_added(self._chips_filled, self._edit_chips.text())
 
-    def _set_chips(self, text: str) -> None:
+    def _set_chips(self, text: str, still_typed: bool = False) -> None:
         """Put chips in the field from the program, ready for the next scan.
 
         Non-empty text ends with a separator, so a tag scanned next becomes an id of
-        its own instead of sticking to the last one; what is there now is what the
-        program put, so nothing in it counts as typed.
+        its own instead of sticking to the last one. What is there now is what the
+        program put, so nothing in it counts as typed -- unless ``still_typed``: the
+        cleaned ids shown before a Save are still the registrar's.
         """
         if text.strip() and text.rstrip()[-1] not in ",;":
             text = text.rstrip() + ", "
         self._edit_chips.setText(text)
-        self._chips_filled = text
+        if still_typed:
+            self._edit_chips.setModified(True)
+        else:
+            self._chips_filled = text
 
     def _on_edit_open(self) -> None:
         if not self._list_open.currentItem():
@@ -799,7 +803,7 @@ class MainWindow(QMainWindow):
             return
         cleaned = cleaned_chip_text(self._edit_chips.text())
         if cleaned is not None:
-            self._set_chips(cleaned)
+            self._set_chips(cleaned, still_typed=True)
             riders = cleaned.split("; ")
             shown = (
                 cleaned
