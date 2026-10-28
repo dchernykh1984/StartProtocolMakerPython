@@ -269,13 +269,14 @@ def foreign_chip_tokens(text: str) -> list[str]:
     return [t for rider in _raw_riders(text) for t in rider if any(map(_foreign, t))]
 
 
-def chip_field_has_foreign(field: str) -> bool:
-    """A written field 11 holding a letter or digit outside ASCII, full-width ones too.
+def chip_field_not_ascii(field: str) -> bool:
+    """A written field 11 with any character outside ASCII.
 
-    No NFKC here: readers drop what is not ASCII, so a full-width A that the form
-    would have made plain is lost to them in a line copied verbatim.
+    The form writes ASCII only, so such a field came verbatim from a file made
+    elsewhere. Readers drop what is not ASCII: a full-width A loses the letter, a
+    full-width comma joins two ids into one. No NFKC here, unlike for typed text.
     """
-    return any(map(_foreign, field))
+    return not field.isascii()
 
 
 def describe_foreign_chip(token: str) -> str:
@@ -329,9 +330,7 @@ def chip_problem_row(items: list[str]) -> int:
         fields = line.split("#")
         chips = fields[CHIPS_FIELD]
         stages = _relay_stages(fields)
-        if chip_field_has_foreign(chips) or (
-            stages and len(_raw_riders(chips)) > stages
-        ):
+        if chip_field_not_ascii(chips) or (stages and len(_raw_riders(chips)) > stages):
             return row
     return -1
 
