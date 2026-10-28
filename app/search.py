@@ -281,6 +281,16 @@ def _without_chips(line: str) -> str:
     return "#".join(fields)
 
 
+def chip_query(text: str) -> str:
+    """The chip id a Find query names, or "" when it is not one whole id.
+
+    A whole id (a tag scanned into Find) finds its rider; a fragment of one does not,
+    or bib numbers would stop on every chip. Made once per search, not per line.
+    """
+    chip = format_chips(text)
+    return "" if "," in chip or ";" in chip else chip
+
+
 def _chip_ids(line: str) -> frozenset[str]:
     """The chip ids a line carries, as written to field 11."""
     if not has_chips_field(line):
@@ -322,13 +332,11 @@ class SearchIndex:
         self._scripts = sorted(scripts)
         return True
 
-    def matches(self, row: int, query: Forms) -> bool:
-        """Whether the indexed line at row matches the reduced query."""
+    def matches(self, row: int, query: Forms, chip: str = "") -> bool:
+        """Whether the indexed line at row matches the reduced query, or carries the
+        chip id ``chip_query()`` made of it."""
         if not 0 <= row < len(self._forms):
             return False
-        # A whole chip id (a tag scanned into Find) finds its rider; a fragment of
-        # one does not, or bib numbers would stop on every chip.
-        chip = format_chips(query.plain)
         if chip and chip in self._chips[row]:
             return True
         return forms_match(self._forms[row], query)
