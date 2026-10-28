@@ -334,6 +334,14 @@ def test_two_foreign_ids_are_not_taken_for_one_chip():
     assert duplicate_chip_row([first, second]) == -1
 
 
+def test_one_chip_for_two_riders_of_a_relay_copied_verbatim_is_a_duplicate():
+    from app.models import chip_bibs, duplicate_chip_row
+
+    line = "5#Team#Relay#3#2#1990#T#C##0 00:00:00.000##A1;A1#"
+    assert chip_bibs(line) == [("A1", "5"), ("A1", "6")]
+    assert duplicate_chip_row([line]) == 0
+
+
 def test_a_relay_riders_chip_on_a_line_of_their_own_bib_is_no_duplicate():
     from app.models import duplicate_chip_row
 
