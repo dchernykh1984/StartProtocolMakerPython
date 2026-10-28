@@ -1504,3 +1504,36 @@ def test_a_rider_s_own_tag_scanned_before_opening_is_not_doubled(win, monkeypatc
     win._on_edit_open()
     assert win._edit_chips.text() == "E2801170, "
     assert shown == []
+
+
+def test_a_scan_into_an_opened_team_without_chips_goes_to_its_last_member(
+    win, monkeypatch
+):
+    shown = []
+    monkeypatch.setattr(mw.QMessageBox, "information", lambda *a: shown.append(a[2]))
+    team = build_competitor_line(
+        "21", "Kim A / Lee B", "M40#3", "3", "1990", "T", "C", "", "0 00:00:00.000"
+    )
+    win._list_save_as.addItem(team)
+    win._list_save_as.setCurrentRow(0)
+    win._on_edit_save_as()
+    _type_chips(win, "T1")
+    win._list_open.addItem(_chip_line(number=""))
+    win._list_open.setCurrentRow(0)
+    win._on_add_into_team()
+    assert win._edit_chips.text() == "; T1; "
+    assert "T1" in shown[0]  # an opened team: whose scan it was is unclear
+
+
+def test_ids_placed_by_hand_after_a_semicolon_are_left_alone(win, monkeypatch):
+    shown = []
+    monkeypatch.setattr(mw.QMessageBox, "information", lambda *a: shown.append(a[2]))
+    win._parse_and_fill_form(_chip_line("A1", number="21"))
+    win._list_open.addItems([_chip_line(number=""), _chip_line(number="")])
+    win._list_open.setCurrentRow(0)
+    win._on_add_into_team()  # the field is "A1; "
+    _type_chips(win, "A1; B1; T1")  # B1 for member 2, T1 placed for member 3
+    win._list_open.setCurrentRow(1)
+    win._on_add_into_team()
+    assert win._edit_chips.text() == "A1; B1; T1, "
+    assert shown == []

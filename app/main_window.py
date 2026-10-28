@@ -55,6 +55,8 @@ from app.models import (
     merge_open_lines,
     parse_competitor_line,
     participant_to_open_line,
+    place_typed_chips,
+    rider_had_chips,
     save_backup,
     split_refs,
     write_start_protocol,
@@ -206,6 +208,9 @@ class MainWindow(QMainWindow):
         # What the program last put in the field. QLineEdit's own "modified" flag tells
         # whether anything was typed (or scanned) since: setText() clears it.
         self._chips_filled = ""
+        # Whether the field was last filled by "Add into team" (a team being built
+        # here) rather than by opening a line.
+        self._filled_by_add = False
         centre.addWidget(lbl)
         centre.addWidget(self._edit_chips)
 
@@ -714,7 +719,9 @@ class MainWindow(QMainWindow):
             return ""
         return chips_added(self._chips_filled, self._edit_chips.text())
 
-    def _set_chips(self, text: str, still_typed: bool = False) -> None:
+    def _set_chips(
+        self, text: str, still_typed: bool = False, by_add: bool = False
+    ) -> None:
         """Put chips in the field from the program, ready for the next scan.
 
         Non-empty text ends with a separator, so a tag scanned next becomes an id of
@@ -729,6 +736,7 @@ class MainWindow(QMainWindow):
             self._edit_chips.setModified(True)
         else:
             self._chips_filled = text
+            self._filled_by_add = by_add
 
     def _on_edit_open(self) -> None:
         if not self._list_open.currentItem():
@@ -1067,14 +1075,6 @@ class MainWindow(QMainWindow):
         saved_city = self._edit_city.text()
         saved_team = self._edit_team.text()
         saved_refs = split_refs(self._edit_refs.text())
-        saved_chips = self._edit_chips.text()
-        # Typed since the form filled the field, after a rider who already had chips:
-        # the leader's extra chip, or the incoming member's scanned too early. The
-        # text cannot tell, so they stay put and the registrar is told.
-        typed = self._typed_chips()
-        unclear = bool(typed) and bool(
-            self._chips_filled.rsplit(";", 1)[-1].strip(" ,")
-        )
         member_line = self._list_open.currentItem().text()
         # Members are joined below as "A / B", a relay from the site as "A<BR>B" (any
         # case, as the site reads it); a name left empty does not count.
@@ -1087,6 +1087,21 @@ class MainWindow(QMainWindow):
         # member's own line (from the site: "1") must not reset it. With no team in
         # the form yet, the stage left there is the last saved line's, not this one's.
         saved_stage = self._edit_stage.text() if team_size else None
+        saved_chips = self._edit_chips.text()
+        # Ids typed since the form filled the field go to the member added last: the
+        # desk scans each member after adding them. A semicolon the registrar typed
+        # places them by hand, and that stays as it is. The owner is unclear when the
+        # last member already had chips (an extra chip, or the incoming member's
+        # scanned early) or the team was opened rather than built here; then the
+        # registrar is told where they went.
+        typed = self._typed_chips()
+        by_hand = saved_chips.count(";") > self._chips_filled.count(";")
+        unclear = False
+        if typed and not by_hand:
+            saved_chips = place_typed_chips(saved_chips, typed, team_size)
+            unclear = rider_had_chips(self._chips_filled, max(team_size - 1, 0)) or (
+                not self._filled_by_add and team_size >= 2
+            )
         # Adding a member must not issue a different bib to a team already numbered.
         self._parse_and_fill_form(member_line, self._edit_number.text().strip() or None)
         self._edit_refs.setText(
@@ -1095,7 +1110,8 @@ class MainWindow(QMainWindow):
             )
         )
         self._set_chips(
-            merge_chip_text(saved_chips, self._edit_chips.text(), team_size)
+            merge_chip_text(saved_chips, self._edit_chips.text(), team_size),
+            by_add=True,
         )
         if saved_stage is not None:
             self._edit_stage.setText(saved_stage)
@@ -1114,7 +1130,7 @@ class MainWindow(QMainWindow):
                 "Chip ids",
                 "These chip ids, typed before adding "
                 + (parse_competitor_line(member_line)["name"] or "the member")
-                + ", stayed with the rider before:\n\n"
+                + ", went to the member added before them:\n\n"
                 + typed
                 + "\n\nIf they are the new member's, move them after the last "
                 "semicolon.",

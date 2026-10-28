@@ -375,6 +375,28 @@ def chips_added(before: str, after: str) -> str:
     return ", ".join(dict.fromkeys(t for t in added if _chip_key(t) not in had))
 
 
+def place_typed_chips(text: str, typed: str, team_size: int) -> str:
+    """The team's chip text with the ids typed since it was filled moved onto the
+    member added last (rider ``team_size`` - 1; the first on a form with no team).
+
+    Typed text lands after whatever the field ends with, which for a team saved
+    without chips is the first rider; the desk scans each member after adding them,
+    so the last member is where such ids belong.
+    """
+    keys = {_chip_key(t) for rider in _raw_riders(typed) for t in rider}
+    riders = [[t for t in r if _chip_key(t) not in keys] for r in _raw_riders(text)]
+    riders += [[] for _ in range(team_size - len(riders))]
+    riders = riders or [[]]
+    riders[max(team_size - 1, 0)] += [t for rider in _raw_riders(typed) for t in rider]
+    return _join_riders(riders, ", ", "; ")
+
+
+def rider_had_chips(text: str, rider: int) -> bool:
+    """Whether the given rider (from 0) of a chip text has any id."""
+    riders = _raw_riders(text)
+    return rider < len(riders) and any(map(_chip_key, riders[rider]))
+
+
 def merge_chip_text(team_chips: str, member_chips: str, team_size: int = 0) -> str:
     """The team's chips with the added member's ids at the member's place, for the form.
 

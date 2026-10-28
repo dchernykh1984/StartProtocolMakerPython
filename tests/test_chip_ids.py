@@ -259,6 +259,17 @@ def test_chips_added_are_the_ids_the_filled_text_did_not_have():
     assert chips_added("", "e280 1170, , ;") == "e280 1170"
 
 
+def test_typed_ids_go_to_the_member_added_last():
+    from app.models import place_typed_chips, rider_had_chips
+
+    # A team of two saved without chips: a scan lands on the second member, not
+    # on the first, where the text alone would put it.
+    assert place_typed_chips("T", "T", team_size=2) == "; T"
+    assert place_typed_chips("A1; B1, T", "T", team_size=2) == "A1; B1, T"
+    assert place_typed_chips("X1", "X1", team_size=0) == "X1"
+    assert rider_had_chips("A1; ", 0) and not rider_had_chips("A1; ", 1)
+
+
 def test_a_team_members_chips_become_the_next_rider():
     from app.models import merge_chip_text
 
