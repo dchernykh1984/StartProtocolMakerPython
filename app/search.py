@@ -330,10 +330,12 @@ class SearchIndex:
         if incoming == self._items:
             return False
         self._items = incoming
-        self._forms = [search_forms(_without_chips(item)) for item in self._items]
+        plain = [_without_chips(item) for item in self._items]
+        self._forms = [search_forms(item) for item in plain]
         self._chips = [_chip_ids(item) for item in self._items]
         scripts: set[str] = set()
-        for item in self._items:
+        # Without the chips: their hex letters would always add "Latin" to the list.
+        for item in plain:
             scripts |= scripts_in(item)
         self._scripts = sorted(scripts)
         return True
