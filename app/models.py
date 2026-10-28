@@ -205,44 +205,45 @@ def _raw_riders(text: str) -> list[list[str]]:
     return riders
 
 
-def _rider_groups(text: str, keep_foreign: bool = False) -> list[list[str]]:
-    """The ids of each rider, in order, without repeats across the whole text.
+def _chip_key(token: str) -> str:
+    """How an id is compared: normalised, or as typed when it holds a foreign letter
+    (dropping the letter could turn it into another chip's id)."""
+    return token if any(map(_foreign, token)) else _normalise_chip(token)
+
+
+def _unique_riders(riders: list[list[str]], as_typed: bool = False) -> list[list[str]]:
+    """The ids of each rider without repeats across riders: keys, or ``as_typed``.
 
     A rider without chips (``-``, or nothing between two semicolons) is an empty
-    group that keeps the riders after it on their own stage. With ``keep_foreign``
-    an id holding a foreign letter is kept as typed, so the form can still stop on it.
+    group that keeps the riders after it on their own stage.
     """
     seen: set[str] = set()
     groups: list[list[str]] = []
-    for tokens in _raw_riders(text):
+    for tokens in riders:
         group = []
         for token in tokens:
-            chip = (
-                token
-                if keep_foreign and any(map(_foreign, token))
-                else (_normalise_chip(token))
-            )
-            if chip and chip not in seen:
-                seen.add(chip)
-                group.append(chip)
+            key = _chip_key(token)
+            if key and key not in seen:
+                seen.add(key)
+                group.append(token if as_typed else key)
         groups.append(group)
     return groups
+
+
+def _join_riders(groups: list[list[str]], ids: str = ",", riders: str = ";") -> str:
+    """Field 11 by default; the form shows it with spaces after the separators."""
+    return riders.join(ids.join(g) or _EMPTY_RIDER for g in groups)
 
 
 def format_chips(text: str) -> str:
     """Field 11 as written: ids of a rider joined by commas, riders by semicolons.
 
     A space inside an id is dropped like any punctuation, whatever the grouping a
-    label printed; only a comma or a semicolon starts the next id.
+    label printed; only a comma or a semicolon starts the next id. A foreign id stays
+    as typed: dropping its letter would write another chip's id without a word, for
+    any caller that skipped the form's check.
     """
-    # A foreign id stays as typed: dropping its letter would write another chip's id
-    # without a word, for any caller that skipped the form's check.
-    groups = _rider_groups(text, keep_foreign=True)
-    return _RIDER_SEPARATOR.join(",".join(g) or _EMPTY_RIDER for g in groups)
-
-
-def _show_chips(groups: list[list[str]]) -> str:
-    return "; ".join(", ".join(g) or _EMPTY_RIDER for g in groups)
+    return _join_riders(_unique_riders(_raw_riders(text)))
 
 
 def cleaned_chip_text(text: str) -> str | None:
@@ -255,7 +256,7 @@ def cleaned_chip_text(text: str) -> str | None:
     tokens = (t for rider in _raw_riders(text) for t in rider if t != _EMPTY_RIDER)
     if all(_normalise_chip(t) == t.upper() for t in tokens):
         return None
-    return _show_chips(_rider_groups(text))
+    return _join_riders(_unique_riders(_raw_riders(text)), ", ", "; ")
 
 
 def foreign_chip_tokens(text: str) -> list[str]:
@@ -293,7 +294,7 @@ def chip_bibs(line: str) -> list[tuple[str, str]]:
     stages = _relay_stages(fields)
     pairs: list[tuple[str, str]] = []
     # A foreign id stays as typed: dropping its letter could make it another chip.
-    for k, group in enumerate(_rider_groups(fields[CHIPS_FIELD], keep_foreign=True)):
+    for k, group in enumerate(_unique_riders(_raw_riders(fields[CHIPS_FIELD]))):
         if stages and k >= stages:
             break
         rider_bib = str(int(bib) + k) if stages and k else bib
@@ -321,7 +322,7 @@ def chip_problem_row(items: list[str]) -> int:
         chips = fields[CHIPS_FIELD]
         stages = _relay_stages(fields)
         if chip_field_has_foreign(chips) or (
-            stages and len(_rider_groups(chips)) > stages
+            stages and len(_raw_riders(chips)) > stages
         ):
             return row
     return -1
@@ -347,20 +348,10 @@ def merge_chip_text(*texts: str) -> str:
     An id with a foreign letter is kept as typed, so the save still stops on it. A
     member without chips keeps an empty place, so later riders stay on their stage.
     """
-    seen: set[str] = set()
-    groups: list[list[str]] = []
-    for text in texts:
-        # A member without chips still takes a place, shown as "-".
-        for tokens in _raw_riders(text) or [[]]:
-            group = []
-            for token in tokens:
-                key = token if any(map(_foreign, token)) else _normalise_chip(token)
-                if key and key not in seen:
-                    seen.add(key)
-                    # As typed: the save still shows what cleaning would drop.
-                    group.append(token)
-            groups.append(group)
-    return _show_chips(groups)
+    # A member without chips still takes a place, shown as "-"; ids stay as typed,
+    # so the save still shows what cleaning would drop.
+    riders = [r for text in texts for r in (_raw_riders(text) or [[]])]
+    return _join_riders(_unique_riders(riders, as_typed=True), ", ", "; ")
 
 
 # ---------------------------------------------------------------------------
