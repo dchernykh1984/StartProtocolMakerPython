@@ -290,17 +290,6 @@ def foreign_chip_tokens(text: str) -> list[str]:
     return [t for rider in _raw_riders(text) for t in rider if any(map(_foreign, t))]
 
 
-def chip_field_not_ascii(field: str) -> bool:
-    """A written field 11 with any character outside ASCII.
-
-    The form writes ASCII only, so such a field came verbatim from a file made
-    elsewhere. Readers drop what is not ASCII: a full-width A loses the letter, a
-    full-width comma joins two ids into one. Nothing is made plain here, unlike for
-    typed text.
-    """
-    return not field.isascii()
-
-
 def describe_foreign_chip(token: str) -> str:
     """The token and the names of its foreign letters, for the message."""
     names = (unicodedata.name(c, f"U+{ord(c):04X}") for c in token if _foreign(c))
