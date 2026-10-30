@@ -1,5 +1,91 @@
 # Changelog
 
+## [0.6.0](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.5.1...v0.6.0) (2026-10-30)
+
+
+### Features
+
+* **form:** edit a rider's chip ids next to the site entry ([7df7297](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/7df7297533849e39f6ac21bdb28a9bfad90cce13))
+* **form:** name the loaded lines whose chip ids hold a foreign character ([403cc72](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/403cc72f64c3e76aac051d0260c52713c5ef18c1))
+* **form:** stop a save on a chip id typed in another keyboard layout ([05ec781](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/05ec781bc75cdfe3851eda981961fa2e4337f21a))
+* **protocol:** bind each relay rider's chips to their own stage bib ([1c111b1](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/1c111b1878fc4db950a7a27b594a0b1b282c43b0))
+* **protocol:** flag protocol lines whose chip ids no reader can use ([efc2afc](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/efc2afccac5ea3398d9b4cced5c3906395b6e8ca))
+* **protocol:** keep each rider's chip ids in field 11 ([8af0c30](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/8af0c30851083483f8414b20fb48918c28bccb8f))
+* **protocol:** report a chip id used on two protocol lines ([fcf67c1](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/fcf67c1df64f65fd88c02a864ade2ae532bc0d53))
+* **search:** find the rider who carries a scanned chip id ([0960f2c](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/0960f2c5c66899255dcec80f5482a4581338ff01))
+* **team:** carry every member's chip ids into the team line ([8d2731f](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/8d2731fe720d644989c7b32a6311162cd596f9ba))
+
+
+### Bug Fixes
+
+* **form:** carry only freshly typed chip ids into a rider, on every way of opening one ([0627b97](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/0627b976cc7ddefa79b66c1ca003bc2f0c92e8a3))
+* **form:** check field 11 of a loaded line only where the line has one ([049a5dc](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/049a5dc4e8673584a56912442ed61f5f092be2d5))
+* **form:** count as typed only the chip ids the filled field did not have ([dfb39bd](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/dfb39bdf474398a75df56ca250884bb98cd6d0c1))
+* **form:** drop typographic punctuation from chip ids instead of refusing them ([b282bab](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/b282bab07abff1981d9dfa2c21b6cf0335772c88))
+* **form:** end filled-in chip ids with a separator so the next scan stays apart ([971a5d9](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/971a5d92ac87cdccbc35b6a7e804fe0a3a6346bc))
+* **form:** ignore invisible characters in chip ids and name a foreign one ([9b9e9e7](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/9b9e9e72e408bf455ec5852ae2ade374fe24cb9a))
+* **form:** keep a tag scanned before the rider is opened, and say so ([3882ea6](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/3882ea6022908cdf768d936c5f92edfaff2fe582))
+* **form:** keep cleaned chip ids as the registrar's until saved ([8c29104](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/8c291044727394b3e0607193c9804c07f9e026a9))
+* **form:** leave out a rider's own chip scanned before the line was opened ([e0c3160](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/e0c3160ea7fc8a1174ba714c0f9eacad719978fb))
+* **form:** make only spaces and full-width forms plain in chip ids, not every look-alike ([e682b85](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/e682b8500841888332d842749f4233b7ab7f291a))
+* **form:** name chip ids scanned before opening a relay instead of guessing the rider ([42b74f4](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/42b74f4981bee6382bbd529f0109813aebbfdd58))
+* **form:** name every kind of character the loaded-list warning is about ([22b0984](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/22b0984a4e10095544ab21fca9e6af9bd9bbbe6c))
+* **form:** separate a chip id at the cursor when a reader ends it with Enter ([0662883](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/06628838080e4161b82d03e0f757c0977212edc2))
+* **form:** show a dropped repeated chip id before saving ([9695dac](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/9695dac9c5eabc5acae0cb2bbd2837100938c563))
+* **form:** show cleaned chip ids before saving instead of guessing at spaces ([2885bcd](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/2885bcdf4bc4fde04e07784a005c2872d855214c))
+* **form:** show two ids that only a zero-width space kept apart ([058e0c4](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/058e0c46360bf50dbaeaf48fa401c612fcfabf58))
+* **protocol:** flag a relay rider past the last stage even when its chip repeats ([3a3d515](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/3a3d5157b93884d0577534925ba00f275ca465b5))
+* **protocol:** flag any character outside ASCII in a copied chip field ([a9db2a4](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/a9db2a41f2da648c2d584fd2216083452af97679))
+* **protocol:** flag full-width chip ids in lines copied verbatim ([35e6386](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/35e63862d823955a5ee3cc53e5bb1687b8a8aa1b))
+* **protocol:** name a chip on two bibs instead of moving the selection to it ([5f3d5d6](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/5f3d5d69c66ac49ddd33e89bdefecabaf36a9b44))
+* **protocol:** name the line with chip problems instead of selecting it ([10233ac](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/10233ac1c6e72dc8c1c0341df510f4d435fa573f))
+* **protocol:** read two whole chip ids pasted with a space as two ([745f197](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/745f19722fc288e4bf10aaad1325f968f7c433b4))
+* **protocol:** report a chip only when it is on the lines of two different bibs ([7632cb7](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/7632cb79f9a4c53e9bf319f0042b42efbc3fc01f))
+* **protocol:** report one chip listed for two riders of a relay ([ae6fd9f](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/ae6fd9f4f46de4f7692d2a764379aebd28b22fb7))
+* **protocol:** write a foreign chip id as typed rather than as another id ([708c9b6](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/708c9b6e83596851194d1a04afe4deff87ca900a))
+* **protocol:** write an empty chip field for a team without chips ([21abb12](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/21abb121f53f4f78b62670c12ba1cfbfd4ef0b87))
+* **search:** leave chip ids out of the scripts the list is said to hold ([acfee8b](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/acfee8bd165296f9f5a1be3363e96fd88a024fe7))
+* **search:** leave chip ids out of what Find matches ([555b5b0](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/555b5b0f88ed3476d4c5edf0fa086cb96f0ad21c))
+* **search:** treat a query shorter than eight characters as a bib, not a chip ([a0e9041](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/a0e9041fd0ac38ec11bdfdf0a44d8df68d0ab8e9))
+* **team:** count a relay's members joined by &lt;br&gt; in any case ([b017c07](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/b017c07b1d005be90e05f27934a3d630cb1bb633))
+* **team:** count a site relay's members when a member is added ([9e6ce67](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/9e6ce67474a1ab3493b7f9533263d43cc433a0b2))
+* **team:** give chips typed before the first member to that member ([e084a7d](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/e084a7dd84e1e798199815960e490231d8395950))
+* **team:** give ids typed before adding a member to the member added last ([ee3e7b1](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/ee3e7b11c259de664f57819b5d184a4f18f34228))
+* **team:** join a member's chips to those scanned ahead for that member ([8fda9da](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/8fda9da42df1c0b72d20f3b5eb061c182b37a928))
+* **team:** keep a team's chip ids as typed so the save still checks them ([3f079a1](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/3f079a1e3e70e5c1e87e093a8927ff42e6547677))
+* **team:** keep the team's stage count when a member is added ([f95d13d](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/f95d13d3abd56803fa7fdf6cd3b12159f770df5b))
+* **team:** leave a repeated chip id to the save check instead of dropping it ([cd34d83](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/cd34d8313d2ba1cd92d5bf5f433487c7d0c008e5))
+* **team:** leave a rider without chips empty instead of a dash the next scan sticks to ([3b7baa9](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/3b7baa9b606cae4df1ed9bdb7c0df53dec2c23c3))
+* **team:** place an added member by the team's size, not by its chip field ([4cd974a](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/4cd974af88cddc9592f7bf5425dd22f107f1de86))
+* **team:** point out chip ids typed before a member was added when the rider is unclear ([8f2811c](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/8f2811c583cdf09c514c70c0cda9358b73bee74f))
+* **team:** start a new team from its own stage and count only named members ([d0e93e9](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/d0e93e925920923ca26ebbe0893c19d945143ac4))
+* **team:** write a rider without chips as a dash so stages never shift ([898ed69](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/898ed69927a5563a38d889fe8de9e07059b07a3f))
+
+
+### Performance Improvements
+
+* **form:** read only field 11 when checking a loaded list ([da70f15](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/da70f1539e0c6a383a86fbc5f8469e1e9e0d41cd))
+* **protocol:** find chip problems and chips on two bibs in one pass ([3030a23](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/3030a232c1fae844f3d1eadb86ed22dca83a5c8b))
+* **protocol:** look at a line's riders only when it is a relay ([0b1437d](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/0b1437dca212e7e178abdb2a21359ea862d78d7f))
+* **protocol:** read the protocol list once for the duplicate checks ([e680161](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/e68016143555feb30d3dd248f434c0e1ad020357))
+* **search:** make the chip id of a Find query once per search ([9523e16](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/9523e1664b185afe0522dfbb3c5d9fd91779f945))
+
+
+### Documentation
+
+* describe the chip checks and rider groups as built ([9aeac71](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/9aeac7179ddbf842ee47a74e07799e16630ba319))
+* describe the chip field of the start protocol line ([b1faa26](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/b1faa260f1a82adb14947e49d0fca79be984dd03))
+* drop set_chips from the plan, since nothing needs it ([b5f193f](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/b5f193f182a5dda541570475720960e6bdc59534))
+* drop the dash from the description of a rider without chips ([1e093ee](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/1e093eec26678fe8874ee05c1d561c3de1a60dcd))
+* keep a chip id typed in groups of four as one id ([344ef1b](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/344ef1b5bfe52e9d5a9649395062b5f7eda46035))
+* let a desk reader's Enter separate chip ids ([1d48cbd](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/1d48cbd8306b6d7b0f3c32754eae59b62f523b00))
+* plan the chip field of the start protocol line ([696fe97](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/696fe97a70f2f4137689a0752120b1d72f1c8679))
+* say exactly what lights the chip indicator ([355165b](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/355165bdb90760405dbff6c1d059b34b950a8676))
+* say where an added member goes when the team lists more riders ([eed001a](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/eed001ab4fd962882251d76a91e2d0a5eeaaa00d))
+* say which characters stop a chip id and which are dropped ([0a14193](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/0a14193d404386103d4bcfbb19969d1d3df01d40))
+* specify keeping each rider's timing chips on the start protocol line ([2e94aa9](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/2e94aa9f15ab570ab2d2795c223d484a509a043f))
+* stop a save on a chip id typed in another keyboard layout ([1c2c4c3](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/1c2c4c38fbf8a16d2ff26fa8f253c9ebcf916276))
+
 ## [0.5.1](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.5.0...v0.5.1) (2026-10-27)
 
 
