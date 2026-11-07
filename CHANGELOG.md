@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.6.0...v0.6.1) (2026-11-07)
+
+
+### Bug Fixes
+
+* **ci:** restore the macos release asset, lost to a retired runner label ([711eb35](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/711eb3548a3b5f485203e6644c30f2c9b5e86f10))
+
 ## [0.6.0](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.5.1...v0.6.0) (2026-10-30)
 
 
