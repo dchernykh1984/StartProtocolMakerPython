@@ -69,11 +69,30 @@ def win(monkeypatch):
     w.deleteLater()
 
 
-def test_a_start_protocol_file_that_cannot_be_written_is_said(win, monkeypatch):
-    # Read-only, or held open by Excel on Windows: the list is kept, the referee told,
-    # and the automatic upload of that list is still queued.
+_UNWRITABLE = [
+    # Read-only, or held open by Excel on Windows.
+    (
+        PermissionError(13, "Permission denied", "start.txt"),
+        'Cannot save "start.txt": Permission denied.\n',
+    ),
+    # Its folder is gone: a USB stick pulled out.
+    (
+        FileNotFoundError(2, "No such file or directory", "start.txt"),
+        'Cannot save: directory for "start.txt" does not exist.\n',
+    ),
+    # An error without an errno is said by its text.
+    (OSError("the disk is full"), 'Cannot save "start.txt": the disk is full.\n'),
+]
+
+
+@pytest.mark.parametrize(("error", "said"), _UNWRITABLE)
+def test_a_start_protocol_file_that_cannot_be_written_is_said(
+    win, monkeypatch, error, said
+):
+    # The list is kept, the referee told, and the automatic upload of that list is
+    # still queued.
     def refuse(path, items):
-        raise PermissionError(13, "Permission denied", path)
+        raise error
 
     warned: list[str] = []
     queued: list[bool] = []
@@ -86,24 +105,31 @@ def test_a_start_protocol_file_that_cannot_be_written_is_said(win, monkeypatch):
     win._save_all_data()
     win._on_save_start()
     assert len(warned) == 2
-    assert all('Cannot save "start.txt": Permission denied' in text for text in warned)
+    assert all(said in text for text in warned)
     assert queued == [True]
 
 
+@pytest.mark.parametrize(("error", "said"), _UNWRITABLE)
 def test_upload_sends_nothing_when_the_start_protocol_cannot_be_written(
-    win, monkeypatch
+    win, monkeypatch, error, said
 ):
     # The file on disk is the old one: the finish computer must not pull it as new.
     def refuse(path, items):
-        raise PermissionError(13, "Permission denied", path)
+        raise error
 
+    warned: list[str] = []
     connected: list[tuple] = []
     monkeypatch.setattr(mw, "write_start_protocol", refuse)
+    monkeypatch.setattr(
+        mw.QMessageBox, "warning", lambda parent, t, text: warned.append(text)
+    )
     monkeypatch.setattr(mw.ftplib, "FTP", lambda *args: connected.append(args))
     win._start_protocol_file = "start.txt"
     win._edit_ftp_address.setText("ftp://h/d/#l#p")
     win._on_upload()
     assert connected == []
+    assert len(warned) == 1
+    assert said in warned[0]
 
 
 def _group_rows(win) -> list[tuple[str, str]]:
