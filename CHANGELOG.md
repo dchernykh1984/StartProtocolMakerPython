@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.6.2](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.6.1...v0.6.2) (2026-11-24)
+
+
+### Bug Fixes
+
+* **duplicates:** a mail after a leading space or a tab is still compared ([69e2469](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/69e24692aae43d3afa651d5ddc9f3674ab6facf9))
+* **duplicates:** two riders who left a field empty are no repeat of each other ([ef542eb](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/ef542ebaa1efb1d87946900a9730586ea4f2bd8c))
+* **numbers:** a relay team's stage riders keep their bibs from Get number ([a857b64](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/a857b6491e7924f6f27c4648015d4eb32640a10a))
+* **numbers:** Get number walks only the group's own bibs, however many stages a line names ([d0a81e5](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/d0a81e5b6dcef2603804d44a7b4133285b117a39))
+* **save:** a backup that cannot be written is said and the save goes on, and no upload goes out unsaved ([b62317d](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/b62317dd80eb4df6d3021587276f8dce1607bc59))
+* **save:** a start protocol file that cannot be written is said, and the Auto upload to the site still goes ([3f32afd](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/3f32afde976b74407ee06c1e703c8e32b7c0f54d))
+* **site:** an answer cut short is a connection error the automatic upload retries ([a0f2320](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/a0f2320dc5944742bdb31f6b30b126c4fa28d90e))
+* **upload:** a long upload status wraps instead of widening the window past a laptop screen ([7a6c835](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/7a6c835475bb372e56ab0d2d63b90ca148dfad16))
+* **upload:** staying after a backup that cannot be written keeps the upload owed to the site retrying ([ba9dc29](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/ba9dc29d10fcfb1ab83d238b21b562f0f460b112))
+* **upload:** the FTP upload sends nothing when the start protocol could not be written ([5b379ed](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/5b379ed680f29342e7a32b6bfc6f951d815100f5))
+
+
+### Documentation
+
+* **site:** the HTTPException clause names the answers it takes, a malformed one too ([a88e5c4](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/a88e5c4922c727d52a26260733db0ab216d58f73))
+* **skills:** an answer cut short is an HTTPException, and a file the program writes can fail ([24bdb5a](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/24bdb5a97cc8d9bd2071c4190a281c2fd5521685))
+* **spec:** relay bibs, an empty field in the duplicate check and a start protocol file that cannot be written ([07c0728](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/07c0728a647c4e2f4df4a56e9ea3b6e13d92b44e))
+
 ## [0.6.1](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.6.0...v0.6.1) (2026-11-07)
 
 
