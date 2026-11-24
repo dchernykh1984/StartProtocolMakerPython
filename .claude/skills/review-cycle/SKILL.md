@@ -56,8 +56,13 @@ Check these first; each one has already shipped at least once.
 - **Exceptions escaping into a Qt slot.** PySide6 terminates the application on an
   unhandled exception in a slot, so anything reached from a timer or a signal must not
   raise. `urllib` only wraps failures raised while sending -- a socket timeout or a
-  dropped connection while reading the response arrives as a bare `OSError`, and a
-  malformed body turns `int(data.get("count"))` into a `TypeError`.
+  dropped connection while reading the response arrives as a bare `OSError`, an answer
+  cut short (`IncompleteRead`) or a malformed status line is an
+  `http.client.HTTPException`, not an `OSError`, and a malformed body turns
+  `int(data.get("count"))` into a `TypeError`.
+- **A file the program writes failing.** The start protocol file and the backup can be
+  read-only, held open by Excel, in a folder that is gone, or on a full disk: say so in
+  a warning and let the rest of the save -- the other file, the upload -- go on.
 - **Modal dialogs on unattended paths.** A `QMessageBox` is fine for a button the
   referee just pressed. On a timer path it blocks the desk until someone clicks it;
   report there through a status label instead.
