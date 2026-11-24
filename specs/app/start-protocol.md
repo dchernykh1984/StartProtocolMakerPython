@@ -51,14 +51,17 @@ later field stays in place. Readers that exist:
 
 - **Get number** picks the lowest free bib in the group's range (`bib_from-bib_to` from the site,
   or typed). Bibs used in the protocol list are taken; so are those in the open list unless
-  "Use all numbers" is ticked.
+  "Use all numbers" is ticked. A line of N > 1 stages with a numeric bib takes `number` ..
+  `number + N - 1` wherever its bib is taken; a stage field that is no count above 1 takes the
+  bib alone.
 - **AutoShift** sets the delay to `(number - first number) * delay per number`, never below zero.
   A group range may carry its own `range#first#delay` override.
 - **Duplicates**: every save checks the protocol list for a repeated bib (field 0) and a repeated
   site registration (field 10); "Check names" and "Check mail" check fields 1 and 8 on demand. A
-  repeat is reported; the first repeat whose stage fields are equal is selected in the list. Chip
-  problems, a chip bound to two different bibs among them, are named in a second indicator without
-  moving the selection (see Timing chips).
+  repeat is reported; the first repeat whose stage fields are equal is selected in the list. An
+  empty field is no repeat; "Check mail" compares the comment's first word, after any leading spaces
+  or tabs. Chip problems, a chip bound to two different bibs among them, are named in a second
+  indicator without moving the selection (see Timing chips).
 - **Merge from site** matches a line by its site reference; two registrations of one person stay
   two lines. The `(last name, first name, year)` key only links an old unreferenced line when it is
   the single match, otherwise the line is added and reported as ambiguous. A reference on two
@@ -75,7 +78,9 @@ later field stays in place. Readers that exist:
   then cp1251, then Latin-1. A backup that cannot be written (a full disk) is said in a warning
   and the save goes on; closing then asks whether to exit anyway.
 - **Start protocol file**: the protocol list, one line per competitor, UTF-8; it can be pushed to
-  an FTP server as well.
+  an FTP server as well. A file that cannot be written (read-only, held open by Excel, its folder
+  gone, a full disk) is said in a warning: the save goes on and the Auto upload is still queued,
+  and Upload (FTP) then sends nothing.
 
 ## Site exchange
 
