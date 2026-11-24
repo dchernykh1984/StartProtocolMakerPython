@@ -466,8 +466,7 @@ def get_next_number(  # noqa: C901
         n = _extract_number(item)
         if n is None:
             return range(0)
-        stages = get_field(item, 4).strip()
-        count = int(stages) if stages.isdecimal() and int(stages) > 1 else 1
+        count = _relay_stages(item.split("#")) or 1
         # Only the group's own bibs: a date read as a stage count walks a billion.
         return range(max(n, first_n), min(n + count, last_n + 1))
 
