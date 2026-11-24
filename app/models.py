@@ -524,7 +524,8 @@ def check_duplicate_fields(
         if get_n_fields(item) >= field_idx + 1:
             val = get_field(item, field_idx).lower()
             if split_by_space:
-                val = val.split(" ")[0]
+                # A site comment that began with a line break starts with a space.
+                val = (val.split() or [""])[0]
             values.append(val)
         else:
             values.append("")

@@ -343,6 +343,14 @@ class TestCheckDuplicateFields:
         ]
         assert check_duplicate_fields(items, 8, True) == (True, 2)
 
+    def test_a_mail_after_a_leading_space_is_still_compared(self) -> None:
+        # A site comment that began with a line break arrives with a space first.
+        items = [
+            "1#Alice#G#3#1#1990#T#C# a@x.y note#",
+            "2#Bob#G#3#1#1991#T#C#\ta@x.y#",
+        ]
+        assert check_duplicate_fields(items, 8, True) == (True, 0)
+
     def test_empty(self) -> None:
         found, idx = check_duplicate_fields([], 0, False)
         assert found is False
