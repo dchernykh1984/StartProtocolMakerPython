@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import tempfile
+import time
 from pathlib import Path
 
 import pytest
@@ -269,6 +270,19 @@ class TestGetNextNumber:
             use_all_numbers=use_all,
         )
         assert result == expected
+
+    def test_a_huge_stage_count_costs_no_more_than_the_groups_range(self) -> None:
+        # A date in field 4 of a list opened in another column order, read as stages.
+        started = time.perf_counter()
+        result = get_next_number(
+            group_index=0,
+            open_items=[],
+            save_as_items=["25#Team#Relay#1#1000000000#..."],
+            numbers_items=["21-30"],
+            use_all_numbers=False,
+        )
+        assert time.perf_counter() - started < 1.0
+        assert result == "21"
 
     def test_invalid_group_index(self) -> None:
         assert get_next_number(-1, [], [], ["1-5"], False) is None
