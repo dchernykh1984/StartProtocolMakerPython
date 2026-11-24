@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import http.client
 import json
 import tempfile
 import urllib.error
@@ -561,3 +562,19 @@ class TestBackupHTTPRoundTrip:
             )
             result = load_backup(path)
         assert result["client_revision"] == 0
+
+
+@pytest.mark.parametrize(
+    "send",
+    [
+        lambda: fetch_participants("https://example.com", "tok"),
+        lambda: upload_start_list("https://example.com", "tok", "dev", [], 1),
+    ],
+)
+def test_an_answer_cut_short_is_a_connection_error(send) -> None:
+    # IncompleteRead is no OSError: it escaped, and the automatic upload never retried.
+    with patch(
+        "urllib.request.urlopen", side_effect=http.client.IncompleteRead(b"[", 9)
+    ):
+        with pytest.raises(ValueError, match="Connection error"):
+            send()
