@@ -319,6 +319,16 @@ class TestCheckDuplicateFields:
         items = ["1#Alice#G#3#1#1990#T#C##", "2#Bob#G#3#1#1991#T#C##"]
         assert check_duplicate_fields(items, 8, False) == (False, -1)
 
+    def test_a_real_repeat_beside_empty_fields_is_found_and_selected(self) -> None:
+        # Check mail splits by space: the repeat is rows 2 and 3, never the empty two.
+        items = [
+            "1#Alice#G#3#1#1990#T#C##",
+            "2#Bob#G#3#1#1991#T#C##",
+            "3#Carol#G#3#1#1992#T#C#a@x.y#",
+            "4#Dan#G#3#1#1993#T#C#a@x.y#",
+        ]
+        assert check_duplicate_fields(items, 8, True) == (True, 2)
+
     def test_empty(self) -> None:
         found, idx = check_duplicate_fields([], 0, False)
         assert found is False
