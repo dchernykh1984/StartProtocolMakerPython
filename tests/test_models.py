@@ -5,6 +5,8 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 
+import pytest
+
 from app.models import (
     auto_shift_time,
     build_competitor_line,
@@ -242,16 +244,31 @@ class TestGetNextNumber:
         )
         assert result is None
 
-    def test_a_relay_team_takes_the_bibs_of_all_its_stages(self) -> None:
-        # Riders 21, 22 and 23 of a three-stage team: the next team starts at 24.
+    @pytest.mark.parametrize(
+        ("open_items", "save_as_items", "use_all", "expected"),
+        [
+            # Riders 21, 22 and 23 of a three-stage team: the next team starts at 24.
+            ([], ["21#Team#Relay#1#3#..."], False, "24"),
+            (["21#Team#Relay#1#3#..."], [], False, "24"),
+            # "Use all numbers" leaves the open list's bibs free, a team's too.
+            (["21#Team#Relay#1#3#..."], [], True, "21"),
+            # A stage count that is no count of stages keeps the bib alone.
+            ([], ["21#Solo#G#1#0#..."], False, "22"),
+            ([], ["21#Solo#G#1#abc#..."], False, "22"),
+            ([], ["21#Solo#G#1##..."], False, "22"),
+        ],
+    )
+    def test_a_relay_team_takes_the_bibs_of_all_its_stages(
+        self, open_items, save_as_items, use_all, expected
+    ) -> None:
         result = get_next_number(
             group_index=0,
-            open_items=[],
-            save_as_items=["21#Team#Relay#1#3#..."],
+            open_items=open_items,
+            save_as_items=save_as_items,
             numbers_items=["21-30"],
-            use_all_numbers=False,
+            use_all_numbers=use_all,
         )
-        assert result == "24"
+        assert result == expected
 
     def test_invalid_group_index(self) -> None:
         assert get_next_number(-1, [], [], ["1-5"], False) is None
