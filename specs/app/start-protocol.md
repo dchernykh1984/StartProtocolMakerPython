@@ -72,7 +72,8 @@ later field stays in place. Readers that exist:
   RegExp From, RegExp To, FTP, HTTP (site URL and token), then optional tags `StartProtocolFile`,
   `UseAllNumbers`, `AutoShift`, `FirstNumber`, `DelayPerNumber`, `DeviceId`, `ClientRevision`,
   `AutoSend`. Tags are read back in this order, so a new one goes last. Loading tries UTF-8,
-  then cp1251, then Latin-1.
+  then cp1251, then Latin-1. A backup that cannot be written (a full disk) is said in a warning
+  and the save goes on; closing then asks whether to exit anyway.
 - **Start protocol file**: the protocol list, one line per competitor, UTF-8; it can be pushed to
   an FTP server as well.
 
@@ -88,7 +89,9 @@ later field stays in place. Readers that exist:
 - `POST /api/v1/start-list/` sends the protocol list as `items` with `device_id` and an increasing
   `client_revision`; the site keeps one snapshot per device and answers 409 to a stale one.
 - With **Auto** ticked, edits are sent 2 seconds after the last one; a failure is shown under the
-  button and retried every 15 seconds. The backup is written before every send.
+  button and retried every 15 seconds. The backup is written before every send, and nothing
+  is sent while it cannot be: the device counter would go out unsaved, and after a restart the
+  site would refuse every upload until the counter climbed past its own.
 
 ## Timing chips
 
