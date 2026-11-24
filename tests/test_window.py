@@ -69,6 +69,27 @@ def win(monkeypatch):
     w.deleteLater()
 
 
+def test_a_start_protocol_file_that_cannot_be_written_is_said(win, monkeypatch):
+    # Read-only, or held open by Excel on Windows: the list is kept, the referee told,
+    # and the automatic upload of that list is still queued.
+    def refuse(path, items):
+        raise PermissionError(13, "Permission denied", path)
+
+    warned: list[str] = []
+    queued: list[bool] = []
+    monkeypatch.setattr(mw, "write_start_protocol", refuse)
+    monkeypatch.setattr(
+        mw.QMessageBox, "warning", lambda parent, t, text: warned.append(text)
+    )
+    monkeypatch.setattr(win, "_schedule_auto_send", lambda: queued.append(True))
+    win._start_protocol_file = "start.txt"
+    win._save_all_data()
+    win._on_save_start()
+    assert len(warned) == 2
+    assert all('Cannot save "start.txt": Permission denied' in text for text in warned)
+    assert queued == [True]
+
+
 def _group_rows(win) -> list[tuple[str, str]]:
     rows = []
     for i in range(win._list_groups.count()):
