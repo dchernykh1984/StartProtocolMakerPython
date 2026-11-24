@@ -487,8 +487,16 @@ class MainWindow(QMainWindow):
 
     def _save_all_data(self) -> None:
         self._refresh_duplicate_indicator()
-        self._write_backup("temp", f"spm{int(time.time())}.txt")
-        self._write_backup("data", "spm_backup.txt")
+        unwritten = [
+            problem
+            for problem in (
+                self._write_backup("temp", f"spm{int(time.time())}.txt"),
+                self._write_backup("data", "spm_backup.txt"),
+            )
+            if problem
+        ]
+        if unwritten:
+            QMessageBox.warning(self, "Save", "\n".join(unwritten))
         if self._start_protocol_file:
             try:
                 write_start_protocol(self._start_protocol_file, self._save_as_items())
@@ -510,29 +518,36 @@ class MainWindow(QMainWindow):
             'Close the program holding it or choose another file with "Save as".'
         )
 
-    def _write_backup(self, folder: str, filename: str) -> None:
-        save_backup(
-            path=str(app_path(folder, filename)),
-            open_items=self._open_items(),
-            save_items=self._save_as_items(),
-            groups=self._groups(),
-            numbers=self._numbers(),
-            regexp_from=self._regexp_from,
-            regexp_to=self._regexp_to,
-            ftp_address=self._edit_ftp_address.text(),
-            start_protocol_file=self._start_protocol_file,
-            use_all_numbers=self._chk_use_all.isChecked(),
-            auto_shift=self._chk_auto_shift.isChecked(),
-            auto_send=self._chk_auto_send.isChecked(),
-            # The widgets may be showing a group's override; what belongs to the
-            # referee (and survives a restart) is what they typed themselves.
-            first_number=self._typed_first_number,
-            delay=self._typed_delay,
-            http_site_url=self._edit_http_site_url.text(),
-            http_token=self._edit_http_token.text(),
-            device_id=self._edit_device_id.text().strip(),
-            client_revision=self._client_revision,
-        )
+    def _write_backup(self, folder: str, filename: str) -> str:
+        """Write the backup: "" once it is, else why not -- a full disk, or a folder
+        the program may not write to, must not stop what comes after it."""
+        path = app_path(folder, filename)
+        try:
+            save_backup(
+                path=str(path),
+                open_items=self._open_items(),
+                save_items=self._save_as_items(),
+                groups=self._groups(),
+                numbers=self._numbers(),
+                regexp_from=self._regexp_from,
+                regexp_to=self._regexp_to,
+                ftp_address=self._edit_ftp_address.text(),
+                start_protocol_file=self._start_protocol_file,
+                use_all_numbers=self._chk_use_all.isChecked(),
+                auto_shift=self._chk_auto_shift.isChecked(),
+                auto_send=self._chk_auto_send.isChecked(),
+                # The widgets may be showing a group's override; what belongs to the
+                # referee (and survives a restart) is what they typed themselves.
+                first_number=self._typed_first_number,
+                delay=self._typed_delay,
+                http_site_url=self._edit_http_site_url.text(),
+                http_token=self._edit_http_token.text(),
+                device_id=self._edit_device_id.text().strip(),
+                client_revision=self._client_revision,
+            )
+        except OSError as exc:
+            return f'Cannot write the backup "{path}": {exc.strerror or exc}.'
+        return ""
 
     def _parse_and_fill_form(
         self,
@@ -1068,7 +1083,8 @@ class MainWindow(QMainWindow):
 
     def _on_backup(self) -> None:
         ts = int(time.time())
-        self._write_backup("temp", f"spm{ts}.txt")
+        if unwritten := self._write_backup("temp", f"spm{ts}.txt"):
+            QMessageBox.warning(self, "Backup", unwritten)
 
     def _on_load_backup(self) -> None:
         path, _ = QFileDialog.getOpenFileName(self, "Load backup")
@@ -1078,7 +1094,8 @@ class MainWindow(QMainWindow):
             self._load_backup(path)
 
     def _on_save_config(self) -> None:
-        self._write_backup(_BACKUP_FOLDER, _BACKUP_FILENAME)
+        if unwritten := self._write_backup(_BACKUP_FOLDER, _BACKUP_FILENAME):
+            QMessageBox.warning(self, "Save config", unwritten)
         # Saved settings may be the site credentials an earlier edit was waiting for.
         self._schedule_auto_send()
 
@@ -1317,7 +1334,10 @@ class MainWindow(QMainWindow):
         # Persist the device id, the counter and the current list -- but only that:
         # a full save would also re-run the duplicate check, which moves the selection
         # in the protocol list, and this can fire two seconds after the last edit.
-        self._write_backup(_BACKUP_FOLDER, _BACKUP_FILENAME)
+        # Never sent unsaved: after a restart the counter would start below the site's
+        # and every upload be refused until it climbed past it.
+        if unwritten := self._write_backup(_BACKUP_FOLDER, _BACKUP_FILENAME):
+            return False, unwritten
         try:
             count = upload_start_list(
                 site_url, token, device_id, self._save_as_items(), self._client_revision
@@ -1405,7 +1425,15 @@ class MainWindow(QMainWindow):
                 # Flush what the debounce window still holds; a failure here cannot be
                 # retried, and must not keep the window from closing.
                 self._upload_to_site()
-            self._write_backup("data", "spm_backup.txt")
+            if unwritten := self._write_backup("data", "spm_backup.txt"):
+                answer = QMessageBox.question(
+                    self,
+                    "Warning",
+                    f"{unwritten}\nExit anyway? What is not saved is lost.",
+                )
+                if answer != QMessageBox.StandardButton.Yes:
+                    event.ignore()
+                    return
             event.accept()
         else:
             event.ignore()

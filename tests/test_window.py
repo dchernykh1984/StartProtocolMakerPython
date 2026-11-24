@@ -132,6 +132,33 @@ def test_upload_sends_nothing_when_the_start_protocol_cannot_be_written(
     assert said in warned[0]
 
 
+def _full_disk(**kwargs):
+    raise OSError(28, "No space left on device")
+
+
+def test_a_backup_that_cannot_be_written_is_said_and_the_save_goes_on(win, monkeypatch):
+    # A full disk: the start protocol may still go elsewhere, and the upload is owed.
+    warned: list[str] = []
+    written: list[str] = []
+    queued: list[bool] = []
+    monkeypatch.setattr(mw.MainWindow, "_write_backup", _REAL_WRITE_BACKUP)
+    monkeypatch.setattr(mw, "save_backup", _full_disk)
+    monkeypatch.setattr(
+        mw, "write_start_protocol", lambda path, items: written.append(path)
+    )
+    monkeypatch.setattr(
+        mw.QMessageBox, "warning", lambda parent, t, text: warned.append(text)
+    )
+    monkeypatch.setattr(win, "_schedule_auto_send", lambda: queued.append(True))
+    win._start_protocol_file = "start.txt"
+    win._save_all_data()
+    assert len(warned) == 1  # both backups in one warning
+    assert warned[0].count("Cannot write the backup") == 2
+    assert "No space left on device" in warned[0]
+    assert written == ["start.txt"]
+    assert queued == [True]
+
+
 def _group_rows(win) -> list[tuple[str, str]]:
     rows = []
     for i in range(win._list_groups.count()):
@@ -849,6 +876,53 @@ def test_closing_flushes_a_queued_auto_send(win, uploads, monkeypatch):
 
     win.closeEvent(_Event())
     assert len(uploads.calls) == 1
+
+
+def test_an_upload_whose_backup_cannot_be_written_sends_nothing_and_retries(
+    win, uploads, monkeypatch
+):
+    # The counter is never sent unsaved: after a restart the site would refuse it.
+    _arm_auto_send(win)
+    monkeypatch.setattr(mw.MainWindow, "_write_backup", _REAL_WRITE_BACKUP)
+    monkeypatch.setattr(mw, "save_backup", _full_disk)
+    win._auto_send_pending = True
+    win._on_auto_send_timeout()
+    assert uploads.calls == []
+    status = win._lbl_auto_send_status.text()
+    assert "No space left on device" in status
+    assert status.endswith("(will retry)")
+    assert win._auto_send_timer.isActive()
+
+
+@pytest.mark.parametrize(("exit_anyway", "accepted"), [(False, False), (True, True)])
+def test_closing_with_a_backup_that_cannot_be_written_asks_first(
+    win, monkeypatch, exit_anyway, accepted
+):
+    asked: list[str] = []
+    yes, no = mw.QMessageBox.StandardButton.Yes, mw.QMessageBox.StandardButton.No
+
+    def answer(parent, title, text):
+        asked.append(text)
+        return yes if len(asked) == 1 or exit_anyway else no
+
+    monkeypatch.setattr(mw.MainWindow, "_write_backup", _REAL_WRITE_BACKUP)
+    monkeypatch.setattr(mw, "save_backup", _full_disk)
+    monkeypatch.setattr(mw.QMessageBox, "question", answer)
+
+    class _Event:
+        accepted = None
+
+        def accept(self) -> None:
+            self.accepted = True
+
+        def ignore(self) -> None:
+            self.accepted = False
+
+    event = _Event()
+    win.closeEvent(event)
+    assert event.accepted is accepted
+    assert "Cannot write the backup" in asked[1]
+    assert asked[1].endswith("Exit anyway? What is not saved is lost.")
 
 
 # -- Transliteration-aware search ------------------------------------------
