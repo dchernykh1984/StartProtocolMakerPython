@@ -500,25 +500,8 @@ class MainWindow(QMainWindow):
         if unwritten:
             QMessageBox.warning(self, "Save", "\n".join(unwritten))
         if self._start_protocol_file:
-            try:
-                write_start_protocol(self._start_protocol_file, self._save_as_items())
-            except FileNotFoundError:
-                QMessageBox.warning(
-                    self,
-                    "Save",
-                    f'Cannot save: directory for "{self._start_protocol_file}"'
-                    ' does not exist.\nUse "Save as" to choose a new location.',
-                )
-            except OSError as exc:
-                # Read-only, or held open by another program (Excel on Windows).
-                QMessageBox.warning(self, "Save", self._unwritable(exc))
+            self._on_save_start()  # what it could not write it says; the save goes on
         self._schedule_auto_send()
-
-    def _unwritable(self, exc: OSError) -> str:
-        return (
-            f'Cannot save "{self._start_protocol_file}": {exc.strerror or exc}.\n'
-            'Close the program holding it or choose another file with "Save as".'
-        )
 
     def _write_backup(self, folder: str, filename: str) -> str:
         """Write the backup: "" once it is, else why not -- a full disk, or a folder
@@ -1073,7 +1056,13 @@ class MainWindow(QMainWindow):
             )
             return False
         except OSError as exc:
-            QMessageBox.warning(self, "Save", self._unwritable(exc))
+            # Read-only, or held open by another program (Excel on Windows).
+            QMessageBox.warning(
+                self,
+                "Save",
+                f'Cannot save "{self._start_protocol_file}": {exc.strerror or exc}.\n'
+                'Close the program holding it or choose another file with "Save as".',
+            )
             return False
         return True
 
