@@ -419,6 +419,8 @@ class MainWindow(QMainWindow):
         right.addLayout(row_send)
         # The status goes on its own line so a long message never squeezes the button.
         self._lbl_auto_send_status = QLabel("")
+        # Wrapped: a backup's path in it must not widen the window past a laptop screen.
+        self._lbl_auto_send_status.setWordWrap(True)
         right.addWidget(self._lbl_auto_send_status)
 
         row7 = QHBoxLayout()
