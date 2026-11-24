@@ -63,7 +63,8 @@ def upload_start_list(
         # dropped connection while reading the response surfaces as a bare OSError,
         # which would otherwise escape into the caller's Qt slot.
         raise ValueError(f"Connection error: {exc}") from exc
-    except http.client.HTTPException as exc:  # an answer cut short: IncompleteRead
+    # Cut short or malformed: IncompleteRead, BadStatusLine and their kin.
+    except http.client.HTTPException as exc:
         raise ValueError(f"Connection error: {exc!r}") from exc
     except (json.JSONDecodeError, ValueError) as exc:
         raise ValueError(f"Invalid response: {exc}") from exc
@@ -109,7 +110,8 @@ def fetch_participants(site_url: str, token: str) -> dict:
         raise ValueError(f"Connection error: {exc.reason}") from exc
     except OSError as exc:
         raise ValueError(f"Connection error: {exc}") from exc
-    except http.client.HTTPException as exc:  # an answer cut short: IncompleteRead
+    # Cut short or malformed: IncompleteRead, BadStatusLine and their kin.
+    except http.client.HTTPException as exc:
         raise ValueError(f"Connection error: {exc!r}") from exc
     except (json.JSONDecodeError, ValueError) as exc:
         raise ValueError(f"Invalid response: {exc}") from exc
