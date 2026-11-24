@@ -159,6 +159,28 @@ def test_a_backup_that_cannot_be_written_is_said_and_the_save_goes_on(win, monke
     assert queued == [True]
 
 
+@pytest.mark.parametrize(
+    ("handler", "title", "schedules"),
+    [("_on_backup", "Backup", False), ("_on_save_config", "Save config", True)],
+)
+def test_backup_and_save_config_say_a_backup_that_cannot_be_written(
+    win, monkeypatch, handler, title, schedules
+):
+    warned: list[tuple[str, str]] = []
+    queued: list[bool] = []
+    monkeypatch.setattr(mw.MainWindow, "_write_backup", _REAL_WRITE_BACKUP)
+    monkeypatch.setattr(mw, "save_backup", _full_disk)
+    monkeypatch.setattr(
+        mw.QMessageBox, "warning", lambda parent, t, text: warned.append((t, text))
+    )
+    monkeypatch.setattr(win, "_schedule_auto_send", lambda: queued.append(True))
+    getattr(win, handler)()
+    assert len(warned) == 1
+    assert warned[0][0] == title
+    assert warned[0][1].startswith('Cannot write the backup "')
+    assert queued == ([True] if schedules else [])
+
+
 def _group_rows(win) -> list[tuple[str, str]]:
     rows = []
     for i in range(win._list_groups.count()):
