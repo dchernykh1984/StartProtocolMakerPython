@@ -1010,8 +1010,8 @@ class MainWindow(QMainWindow):
             self._list_save_as.setCurrentRow(idx)
 
     def _on_upload(self) -> None:
-        self._on_save_start()
-        if not self._start_protocol_file:
+        # A file that could not be written now is an old one: never send it.
+        if not self._on_save_start():
             return
         ftp_address = self._edit_ftp_address.text().strip()
         if not ftp_address:
@@ -1038,12 +1038,13 @@ class MainWindow(QMainWindow):
         except Exception as exc:
             QMessageBox.warning(self, "Upload", f"Exception during file upload: {exc}")
 
-    def _on_save_start(self) -> None:
+    def _on_save_start(self) -> bool:
+        """Write the start protocol file; False -- the referee told why -- if not."""
         if not self._start_protocol_file:
             QMessageBox.warning(
                 self, "Save", 'File with start protocol not selected. Click "Save as"'
             )
-            return
+            return False
         try:
             write_start_protocol(self._start_protocol_file, self._save_as_items())
         except FileNotFoundError:
@@ -1053,8 +1054,11 @@ class MainWindow(QMainWindow):
                 f'Cannot save: directory for "{self._start_protocol_file}"'
                 ' does not exist.\nUse "Save as" to choose a new location.',
             )
+            return False
         except OSError as exc:
             QMessageBox.warning(self, "Save", self._unwritable(exc))
+            return False
+        return True
 
     def _on_save_as_start(self) -> None:
         path, _ = QFileDialog.getSaveFileName(self, "Save start protocol")

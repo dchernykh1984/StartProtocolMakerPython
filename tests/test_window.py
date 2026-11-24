@@ -90,6 +90,22 @@ def test_a_start_protocol_file_that_cannot_be_written_is_said(win, monkeypatch):
     assert queued == [True]
 
 
+def test_upload_sends_nothing_when_the_start_protocol_cannot_be_written(
+    win, monkeypatch
+):
+    # The file on disk is the old one: the finish computer must not pull it as new.
+    def refuse(path, items):
+        raise PermissionError(13, "Permission denied", path)
+
+    connected: list[tuple] = []
+    monkeypatch.setattr(mw, "write_start_protocol", refuse)
+    monkeypatch.setattr(mw.ftplib, "FTP", lambda *args: connected.append(args))
+    win._start_protocol_file = "start.txt"
+    win._edit_ftp_address.setText("ftp://h/d/#l#p")
+    win._on_upload()
+    assert connected == []
+
+
 def _group_rows(win) -> list[tuple[str, str]]:
     rows = []
     for i in range(win._list_groups.count()):
