@@ -1422,9 +1422,9 @@ class MainWindow(QMainWindow):
         if reply == QMessageBox.StandardButton.Yes:
             self._auto_send_timer.stop()
             if self._auto_send_pending and self._chk_auto_send.isChecked():
-                # Flush what the debounce window still holds; a failure here cannot be
-                # retried, and must not keep the window from closing.
-                self._upload_to_site()
+                # Flush what the debounce window still holds; a failure is retried only
+                # if the window then stays open.
+                self._auto_send_pending = not self._upload_to_site()[0]
             if unwritten := self._write_backup("data", "spm_backup.txt"):
                 answer = QMessageBox.question(
                     self,
@@ -1432,6 +1432,8 @@ class MainWindow(QMainWindow):
                     f"{unwritten}\nExit anyway? What is not saved is lost.",
                 )
                 if answer != QMessageBox.StandardButton.Yes:
+                    if self._auto_send_pending:  # the window stays: so does the retry
+                        self._retry_auto_send_later()
                     event.ignore()
                     return
             event.accept()

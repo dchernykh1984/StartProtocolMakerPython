@@ -896,7 +896,7 @@ def test_an_upload_whose_backup_cannot_be_written_sends_nothing_and_retries(
 
 @pytest.mark.parametrize(("exit_anyway", "accepted"), [(False, False), (True, True)])
 def test_closing_with_a_backup_that_cannot_be_written_asks_first(
-    win, monkeypatch, exit_anyway, accepted
+    win, uploads, monkeypatch, exit_anyway, accepted
 ):
     asked: list[str] = []
     yes, no = mw.QMessageBox.StandardButton.Yes, mw.QMessageBox.StandardButton.No
@@ -905,6 +905,8 @@ def test_closing_with_a_backup_that_cannot_be_written_asks_first(
         asked.append(text)
         return yes if len(asked) == 1 or exit_anyway else no
 
+    _arm_auto_send(win)
+    win._auto_send_pending = True  # an upload owed, which the full disk stops
     monkeypatch.setattr(mw.MainWindow, "_write_backup", _REAL_WRITE_BACKUP)
     monkeypatch.setattr(mw, "save_backup", _full_disk)
     monkeypatch.setattr(mw.QMessageBox, "question", answer)
@@ -921,6 +923,8 @@ def test_closing_with_a_backup_that_cannot_be_written_asks_first(
     event = _Event()
     win.closeEvent(event)
     assert event.accepted is accepted
+    assert uploads.calls == []
+    assert win._auto_send_timer.isActive() is not accepted  # staying, it retries
     assert "Cannot write the backup" in asked[1]
     assert asked[1].endswith("Exit anyway? What is not saved is lost.")
 
