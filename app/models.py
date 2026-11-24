@@ -528,8 +528,9 @@ def check_duplicate_fields(
         else:
             values.append("")
 
-    # quick check
-    if len(set(values)) == len(values) or not values:
+    # quick check; an empty field -- no mail, no name -- repeats nothing
+    filled = [value for value in values if value]
+    if len(set(filled)) == len(filled):
         return False, -1
 
     for i in range(len(values)):

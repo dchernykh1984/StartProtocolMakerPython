@@ -297,6 +297,11 @@ class TestCheckDuplicateFields:
         found, _ = check_duplicate_fields(items, 0, False, start_from=1)
         assert found is True
 
+    def test_an_empty_field_is_no_repeat(self) -> None:
+        # Check mail: two riders who gave no mail share nothing.
+        items = ["1#Alice#G#3#1#1990#T#C##", "2#Bob#G#3#1#1991#T#C##"]
+        assert check_duplicate_fields(items, 8, False) == (False, -1)
+
     def test_empty(self) -> None:
         found, idx = check_duplicate_fields([], 0, False)
         assert found is False
