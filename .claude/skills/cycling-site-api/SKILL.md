@@ -67,8 +67,10 @@ a registration desk.
 
 - **Normalize every failure into `ValueError`.** `urllib` wraps only what fails while
   sending: `HTTPError` and `URLError`. A socket timeout or a dropped connection while
-  reading the response arrives as a bare `OSError`, and callers reach these functions
-  from Qt slots, where an unhandled exception terminates the application.
+  reading the response arrives as a bare `OSError`, an answer cut short
+  (`IncompleteRead`) or a malformed status line as an `http.client.HTTPException`, not
+  an `OSError`, and callers reach these functions from Qt slots, where an unhandled
+  exception terminates the application.
 - **Validate the body before using it.** A response that is not a JSON object, or a
   `count` that is not a number, must be reported as an invalid response rather than
   raising `TypeError` or `AttributeError` deep in a slot.
@@ -79,4 +81,4 @@ a registration desk.
   list matters most, so a failed automatic upload re-arms itself (15s in Start Protocol
   Maker) until it succeeds.
 - The chronometer's client has not been hardened the same way yet: `app/http_io.py`
-  there still lets `OSError` and a malformed body through.
+  there still lets `OSError`, `http.client.HTTPException` and a malformed body through.
