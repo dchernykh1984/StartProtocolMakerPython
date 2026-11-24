@@ -242,6 +242,17 @@ class TestGetNextNumber:
         )
         assert result is None
 
+    def test_a_relay_team_takes_the_bibs_of_all_its_stages(self) -> None:
+        # Riders 21, 22 and 23 of a three-stage team: the next team starts at 24.
+        result = get_next_number(
+            group_index=0,
+            open_items=[],
+            save_as_items=["21#Team#Relay#1#3#..."],
+            numbers_items=["21-30"],
+            use_all_numbers=False,
+        )
+        assert result == "24"
+
     def test_invalid_group_index(self) -> None:
         assert get_next_number(-1, [], [], ["1-5"], False) is None
         assert get_next_number(5, [], [], ["1-5"], False) is None

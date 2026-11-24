@@ -461,16 +461,21 @@ def get_next_number(  # noqa: C901
         except ValueError:
             return None
 
-    for item in save_as_items:
+    def _taken(item: str) -> range:
+        # A line of N stages is a relay team: its riders wear number .. number + N - 1.
         n = _extract_number(item)
-        if n is not None:
-            all_numbers.discard(n)
+        if n is None:
+            return range(0)
+        stages = get_field(item, 4).strip()
+        count = int(stages) if stages.isdecimal() and int(stages) > 1 else 1
+        return range(n, n + count)
+
+    for item in save_as_items:
+        all_numbers.difference_update(_taken(item))
 
     if not use_all_numbers:
         for item in open_items:
-            n = _extract_number(item)
-            if n is not None:
-                all_numbers.discard(n)
+            all_numbers.difference_update(_taken(item))
 
     if not all_numbers:
         return None
