@@ -894,6 +894,20 @@ def test_an_upload_whose_backup_cannot_be_written_sends_nothing_and_retries(
     assert win._auto_send_timer.isActive()
 
 
+def test_a_long_upload_status_wraps_instead_of_widening_the_window(win):
+    _arm_auto_send(win)
+    win.show()
+    _app.processEvents()
+    narrowest = win.minimumSizeHint().width()
+    win._report_auto_send(
+        False,
+        'Cannot write the backup "C:\\Users\\referee\\OneDrive - Cycling Club\\Desktop'
+        '\\race 2026\\data\\spm_backup.txt": No space left on device.',
+    )
+    _app.processEvents()
+    assert win.minimumSizeHint().width() == narrowest
+
+
 @pytest.mark.parametrize(("exit_anyway", "accepted"), [(False, False), (True, True)])
 def test_closing_with_a_backup_that_cannot_be_written_asks_first(
     win, uploads, monkeypatch, exit_anyway, accepted
