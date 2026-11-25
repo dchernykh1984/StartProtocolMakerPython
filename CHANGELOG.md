@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.4](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.6.3...v0.6.4) (2026-11-25)
+
+
+### Bug Fixes
+
+* **release:** the release check tells gh which repository it asks about, as it has no checkout ([cff4b83](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/cff4b83f636acd7c8ab620b278c26370df30a7da))
+
 ## [0.6.3](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.6.2...v0.6.3) (2026-11-25)
 
 
