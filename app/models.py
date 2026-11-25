@@ -610,7 +610,8 @@ def load_backup(path: str) -> dict:  # noqa: C901
     if not p.exists():
         return result
 
-    # Notepad saves a backup back with a byte order mark in front of its first line.
+    # A byte order mark before the first line: Notepad before Windows 10 1903 writes
+    # one, a later Notepad on "UTF-8 with BOM", PowerShell 5.1 on -Encoding UTF8.
     for enc in ("utf-8-sig", "cp1251", "latin-1"):
         try:
             text = p.read_text(encoding=enc)
