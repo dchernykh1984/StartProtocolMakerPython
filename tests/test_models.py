@@ -530,7 +530,7 @@ class TestBackup:
         with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as f:
             path = Path(f.name)
         save_backup(str(path), **self._defaults(save_items=[line], device_id="desk-1"))
-        path.write_bytes(b"\xef\xbb\xbf" + path.read_bytes())  # as Notepad saves it
+        path.write_bytes(b"\xef\xbb\xbf" + path.read_bytes())  # old Notepad's mark
         result = load_backup(str(path))
         assert result["save_items"] == [line]
         assert result["device_id"] == "desk-1"
