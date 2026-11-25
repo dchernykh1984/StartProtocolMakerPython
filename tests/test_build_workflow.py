@@ -50,3 +50,22 @@ def test_workflow_bundle_id_is_reverse_dns_for_this_project() -> None:
     bundle_id = _workflow_env("APP_BUNDLE_ID")
     assert re.fullmatch(r"[a-z0-9]+(\.[a-z0-9-]+)+", bundle_id), bundle_id
     assert bundle_id.rsplit(".", 1)[-1] == _project_name()
+
+
+def _job(name: str) -> str:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    match = re.search(
+        rf"^  {re.escape(name)}:\n(.*?)(?=^  \S|\Z)", text, re.MULTILINE | re.DOTALL
+    )
+    assert match is not None, f"no {name} job in {WORKFLOW.name}"
+    return match.group(1)
+
+
+def test_the_release_check_names_the_repository_for_gh() -> None:
+    # The verify job has no checkout, so gh has no git remote to read the
+    # repository off: without GH_REPO every release run stopped at
+    # "not a git repository".
+    verify = _job("verify")
+    assert re.search(
+        r"^ +GH_REPO: \$\{\{ github\.repository \}\}$", verify, re.MULTILINE
+    )
