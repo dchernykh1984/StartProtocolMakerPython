@@ -525,6 +525,16 @@ class TestBackup:
         result = load_backup(path)
         assert result["open_items"] == []
 
+    def test_backup_saved_back_with_a_byte_order_mark_loads(self) -> None:
+        line = "15#Petrov Petr#M40#3#1#1984#T#C##0 00:00:00.000#r12##"
+        with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as f:
+            path = Path(f.name)
+        save_backup(str(path), **self._defaults(save_items=[line], device_id="desk-1"))
+        path.write_bytes(b"\xef\xbb\xbf" + path.read_bytes())  # as Notepad saves it
+        result = load_backup(str(path))
+        assert result["save_items"] == [line]
+        assert result["device_id"] == "desk-1"
+
 
 # ---------------------------------------------------------------------------
 # write_start_protocol
