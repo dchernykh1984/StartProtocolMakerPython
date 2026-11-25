@@ -610,7 +610,8 @@ def load_backup(path: str) -> dict:  # noqa: C901
     if not p.exists():
         return result
 
-    for enc in ("utf-8", "cp1251", "latin-1"):
+    # Notepad saves a backup back with a byte order mark in front of its first line.
+    for enc in ("utf-8-sig", "cp1251", "latin-1"):
         try:
             text = p.read_text(encoding=enc)
             break
