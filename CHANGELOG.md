@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.3](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.6.2...v0.6.3) (2026-11-25)
+
+
+### Bug Fixes
+
+* **backup:** a backup saved back by Notepad with a byte order mark loads, not an empty start ([86fc91a](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/86fc91ad65c176a040cae326ce676896cec374bf))
+
+
+### Documentation
+
+* **backup:** say which editors write the byte order mark the backup is read past ([c26b410](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/c26b410bf2917bf6e8effa8e099b1b471c6dae3b))
+
 ## [0.6.2](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.6.1...v0.6.2) (2026-11-24)
 
 
