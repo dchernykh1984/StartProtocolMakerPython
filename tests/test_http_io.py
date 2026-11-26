@@ -3,16 +3,23 @@
 from __future__ import annotations
 
 import http.client
+import io
 import json
 import tempfile
 import urllib.error
 import urllib.request
+from email.message import Message
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.http_io import fetch_participants, upload_start_list
+from app.http_io import (
+    RevisionConflictError,
+    fetch_participants,
+    fetch_start_list_revision,
+    upload_start_list,
+)
 from app.models import (
     NOT_PAID,
     load_backup,
@@ -237,6 +244,98 @@ class TestUploadStartList:
                 upload_start_list(
                     "https://example.com", "tok", "dev", [], client_revision=1
                 )
+
+    @pytest.mark.parametrize(
+        ("detail", "stored"),
+        [
+            ("A newer start list (revision 112) is already stored", 112),
+            ("A different start list is already stored at revision 12", 12),
+        ],
+    )
+    def test_a_conflict_says_the_sites_words_and_its_revision(
+        self, detail: str, stored: int
+    ) -> None:
+        refusal = _refusal(409, "Conflict", json.dumps({"detail": detail}))
+        with patch("urllib.request.urlopen", side_effect=refusal):
+            with pytest.raises(RevisionConflictError) as refused:
+                upload_start_list("https://example.com", "tok", "dev", ["a"], 12)
+        assert str(refused.value) == f"HTTP 409: {detail}"
+        assert refused.value.stored == stored
+
+    @pytest.mark.parametrize(
+        "body", ["", "<html>Conflict</html>", '["x"]', '{"detail": ""}']
+    )
+    def test_a_conflict_without_the_sites_words_names_no_revision(
+        self, body: str
+    ) -> None:
+        with patch(
+            "urllib.request.urlopen", side_effect=_refusal(409, "Conflict", body)
+        ):
+            with pytest.raises(RevisionConflictError) as refused:
+                upload_start_list("https://example.com", "tok", "dev", ["a"], 12)
+        assert str(refused.value) == "HTTP 409: Conflict"
+        assert refused.value.stored is None
+
+    def test_another_refusal_says_the_sites_words(self) -> None:
+        detail = "An item is too long (max 2000 characters)"
+        refusal = _refusal(400, "Bad Request", json.dumps({"detail": detail}))
+        with patch("urllib.request.urlopen", side_effect=refusal):
+            with pytest.raises(ValueError) as refused:
+                upload_start_list("https://example.com", "tok", "dev", ["a"], 12)
+        assert str(refused.value) == f"HTTP 400: {detail}"
+        assert not isinstance(refused.value, RevisionConflictError)
+
+
+def _refusal(code: int, reason: str, body: str) -> urllib.error.HTTPError:
+    return urllib.error.HTTPError(
+        "https://example.com", code, reason, Message(), io.BytesIO(body.encode())
+    )
+
+
+# ---------------------------------------------------------------------------
+# fetch_start_list_revision
+# ---------------------------------------------------------------------------
+
+
+_LISTS = {
+    "devices": [
+        {"device_id": "other", "items": ["b"], "client_revision": 5},
+        {"device_id": "dev", "items": ["a"], "client_revision": 112},
+    ],
+    "items": ["b", "a"],
+}
+
+
+class TestFetchStartListRevision:
+    def test_reads_this_devices_revision(self) -> None:
+        calls: list[str] = []
+
+        def fake_urlopen(url, timeout):
+            calls.append(url)
+            return _make_response(_LISTS)
+
+        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+            revision = fetch_start_list_revision("https://site.com/", "my-tok", "dev")
+        assert revision == 112
+        assert calls == ["https://site.com/api/v1/start-list/?competition_token=my-tok"]
+
+    def test_a_device_without_a_list_on_the_site_has_no_revision(self) -> None:
+        with patch("urllib.request.urlopen", return_value=_make_response(_LISTS)):
+            assert fetch_start_list_revision("https://s", "tok", "new-desk") is None
+
+    @pytest.mark.parametrize(
+        "body",
+        [
+            {},
+            {"devices": {"dev": 112}},
+            {"devices": [{"device_id": "dev"}]},
+            {"devices": [{"device_id": "dev", "client_revision": "twelve"}]},
+        ],
+    )
+    def test_a_malformed_answer_is_an_invalid_response(self, body: dict) -> None:
+        with patch("urllib.request.urlopen", return_value=_make_response(body)):
+            with pytest.raises(ValueError, match="Invalid response"):
+                fetch_start_list_revision("https://s", "tok", "dev")
 
 
 # ---------------------------------------------------------------------------
@@ -569,6 +668,7 @@ class TestBackupHTTPRoundTrip:
     [
         lambda: fetch_participants("https://example.com", "tok"),
         lambda: upload_start_list("https://example.com", "tok", "dev", [], 1),
+        lambda: fetch_start_list_revision("https://example.com", "tok", "dev"),
     ],
 )
 def test_an_answer_cut_short_is_a_connection_error(send) -> None:

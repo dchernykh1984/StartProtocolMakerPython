@@ -8,7 +8,12 @@ main_window is excluded from coverage, so these guard against silent handler dri
 
 from __future__ import annotations
 
+import io
+import json
 import os
+import urllib.error
+import urllib.request
+from email.message import Message
 
 import pytest
 
@@ -913,6 +918,117 @@ def test_an_upload_whose_backup_cannot_be_written_sends_nothing_and_retries(
     status = win._lbl_auto_send_status.text()
     assert "No space left on device" in status
     assert status.endswith("(will retry)")
+    assert win._auto_send_timer.isActive()
+
+
+def _answer(data: dict) -> io.BytesIO:
+    return io.BytesIO(json.dumps(data).encode("utf-8"))
+
+
+class _Site:
+    """The site's start lists in memory, with its compare-and-set on the revision
+    (cycling-site api/endpoints/start_list.py): a newer revision replaces the device's
+    list, an older one or another list at the same revision is a 409 naming the
+    stored revision -- or a bare 409 with `names_revision` off. `rival` is another
+    desk sending under the same device id, moving the revision on before each send."""
+
+    def __init__(
+        self,
+        stored: int,
+        names_revision: bool = True,
+        rival: int = 0,
+        log: list[tuple[str, int]] | None = None,
+    ) -> None:
+        self.lists = {"dev": (stored, ["9#Somebody Else#Elite#5#1#1990#T#C##"])}
+        self.names_revision = names_revision
+        self.rival = rival
+        self.log: list[tuple[str, int]] = [] if log is None else log
+        self.reads = 0
+
+    def __call__(self, request, timeout):
+        if isinstance(request, str):  # GET /api/v1/start-list/
+            assert request == "https://s/api/v1/start-list/?competition_token=tok"
+            self.reads += 1
+            devices = [
+                {"device_id": device, "items": items, "client_revision": revision}
+                for device, (revision, items) in self.lists.items()
+            ]
+            return _answer({"devices": devices})
+        sent = json.loads(request.data)
+        device, revision, items = (
+            sent["device_id"],
+            sent["client_revision"],
+            sent["items"],
+        )
+        self.log.append(("posted", revision))
+        if self.rival:
+            moved, rivals = self.lists[device]
+            self.lists[device] = (moved + self.rival, rivals)
+        stored, stored_items = self.lists.get(device, (0, []))
+        if revision < stored:
+            detail = f"A newer start list (revision {stored}) is already stored"
+        elif revision == stored and items != stored_items:
+            detail = f"A different start list is already stored at revision {stored}"
+        else:
+            self.lists[device] = (revision, items)
+            return _answer(
+                {"device_id": device, "count": len(items), "client_revision": revision}
+            )
+        body = json.dumps({"detail": detail}) if self.names_revision else ""
+        raise urllib.error.HTTPError(
+            request.full_url, 409, "Conflict", Message(), io.BytesIO(body.encode())
+        )
+
+
+@pytest.mark.parametrize("names_revision", [True, False])
+def test_a_desk_behind_the_sites_revision_takes_it_and_sends_at_once(
+    win, monkeypatch, names_revision
+):
+    # Load backup put the counter back at 12 while the site holds this desk's list at
+    # 112: one refusal, then the counter is past the site's, saved, and the list sent
+    # at once -- not refused every 15 seconds for the next 25 minutes.
+    events: list[tuple[str, int]] = []
+    site = _Site(stored=112, names_revision=names_revision, log=events)
+    monkeypatch.setattr(urllib.request, "urlopen", site)
+    monkeypatch.setattr(mw.MainWindow, "_write_backup", _REAL_WRITE_BACKUP)
+    monkeypatch.setattr(
+        mw, "save_backup", lambda **kw: events.append(("saved", kw["client_revision"]))
+    )
+    line = "1#Runner One#Elite#5#1#1990#T#C##0 00:00:00.000#"
+    restored = _empty_backup() | {
+        "client_revision": 12,
+        "auto_send": True,
+        "save_items": [line],
+    }
+    monkeypatch.setattr(mw, "load_backup", lambda path: restored)
+    monkeypatch.setattr(
+        mw.QFileDialog, "getOpenFileName", lambda *a, **k: ("/restored.txt", "")
+    )
+    win._on_load_backup()
+    win._save_all_data()  # the referee's next edit
+    events.clear()
+    win._on_auto_send_timeout()
+    assert events == [("saved", 13), ("posted", 13), ("saved", 113), ("posted", 113)]
+    assert site.lists["dev"] == (113, [line])
+    assert site.reads == (0 if names_revision else 1)  # the GET only when not named
+    assert win._lbl_auto_send_status.text().startswith("auto: Sent 1 competitor(s) at")
+    assert win._auto_send_pending is False
+    assert win._auto_send_timer.isActive() is False
+
+
+def test_a_list_still_refused_says_the_sites_reason_and_is_retried(win, monkeypatch):
+    # Another desk under the same device id keeps moving the revision on: one send at
+    # once after the refusal, no more, and the referee reads why the site refused it.
+    site = _Site(stored=112, rival=1000)
+    monkeypatch.setattr(urllib.request, "urlopen", site)
+    _arm_auto_send(win)
+    win._auto_send_pending = True
+    win._on_auto_send_timeout()
+    assert site.log == [("posted", 1), ("posted", 1113)]
+    assert win._lbl_auto_send_status.text() == (
+        "auto: HTTP 409: A newer start list (revision 2112) is already stored"
+        " (will retry)"
+    )
     assert win._auto_send_timer.isActive()
 
 
