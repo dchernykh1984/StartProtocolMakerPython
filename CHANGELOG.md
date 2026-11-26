@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.5](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.6.4...v0.6.5) (2026-11-26)
+
+
+### Bug Fixes
+
+* **backup:** a backup saved back as UTF-16 by Notepad or PowerShell loads, not an empty start ([dcad415](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/dcad4151d0d1c5996b8955dec94af4a4c48c38b7))
+* **site:** a desk behind the site's revision of its start list takes that revision and sends again at once ([e881c1f](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/e881c1f33e29d00b8578dd280cd53f6bbd98628f))
+
+
+### Documentation
+
+* the agent guides say docs, perf and revert commits are released too, as release-please lists them ([eb386d8](https://github.com/dchernykh1984/StartProtocolMakerPython/commit/eb386d82a47a7b964768c992725ff20b4cc54393))
+
 ## [0.6.4](https://github.com/dchernykh1984/StartProtocolMakerPython/compare/v0.6.3...v0.6.4) (2026-11-25)
 
 
