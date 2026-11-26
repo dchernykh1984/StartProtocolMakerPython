@@ -1032,6 +1032,39 @@ def test_a_list_still_refused_says_the_sites_reason_and_is_retried(win, monkeypa
     assert win._auto_send_timer.isActive()
 
 
+@pytest.mark.parametrize(
+    ("stored", "said"),
+    [
+        (None, "auto: HTTP 409: Conflict (will retry)"),
+        (
+            ValueError("HTTP 500: Internal Server Error"),
+            "auto: HTTP 500: Internal Server Error (will retry)",
+        ),
+    ],
+)
+def test_a_bare_refusal_with_no_revision_to_take_is_said_and_retried(
+    win, monkeypatch, stored, said
+):
+    # A 409 naming no revision, and the site's lists hold none for this desk, or
+    # reading them fails: nothing to take, so the refusal is said and sent again later.
+    site = _Site(stored=112, names_revision=False)
+    monkeypatch.setattr(urllib.request, "urlopen", site)
+
+    def fetched(*_args: str) -> int | None:
+        if isinstance(stored, Exception):
+            raise stored
+        return stored
+
+    monkeypatch.setattr(mw, "fetch_start_list_revision", fetched)
+    _arm_auto_send(win)
+    win._auto_send_pending = True
+    win._on_auto_send_timeout()
+    assert site.log == [("posted", 1)]  # no second send with nothing taken
+    assert win._lbl_auto_send_status.text() == said
+    assert win._client_revision == 1
+    assert win._auto_send_timer.isActive()
+
+
 def test_a_long_upload_status_wraps_instead_of_widening_the_window(win):
     _arm_auto_send(win)
     win.show()
