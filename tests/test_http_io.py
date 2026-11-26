@@ -263,7 +263,14 @@ class TestUploadStartList:
         assert refused.value.stored == stored
 
     @pytest.mark.parametrize(
-        "body", ["", "<html>Conflict</html>", '["x"]', '{"detail": ""}']
+        "body",
+        [
+            "",
+            "<html>Conflict</html>",
+            '["x"]',
+            '{"detail": ""}',
+            '{"detail": [{"msg": "revision 5"}]}',  # a validation error's list
+        ],
     )
     def test_a_conflict_without_the_sites_words_names_no_revision(
         self, body: str
@@ -319,9 +326,15 @@ class TestFetchStartListRevision:
         assert revision == 112
         assert calls == ["https://site.com/api/v1/start-list/?competition_token=my-tok"]
 
-    def test_a_device_without_a_list_on_the_site_has_no_revision(self) -> None:
-        with patch("urllib.request.urlopen", return_value=_make_response(_LISTS)):
-            assert fetch_start_list_revision("https://s", "tok", "new-desk") is None
+    @pytest.mark.parametrize(
+        ("body", "device"),
+        [(_LISTS, "new-desk"), ({"devices": ["dev"]}, "dev")],  # no list of its own
+    )
+    def test_a_device_without_a_list_on_the_site_has_no_revision(
+        self, body: dict, device: str
+    ) -> None:
+        with patch("urllib.request.urlopen", return_value=_make_response(body)):
+            assert fetch_start_list_revision("https://s", "tok", device) is None
 
     @pytest.mark.parametrize(
         "body",
