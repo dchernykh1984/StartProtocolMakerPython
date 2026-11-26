@@ -18,8 +18,10 @@ with a different working directory, including saving and uploading the file.
 - Never commit to `main`. Branch off `origin/main`, one logical change per commit.
 - Commit messages: Conventional Commits, a single line, no trailers.
   `cz check --rev-range origin/main..HEAD` runs on every PR, and release-please builds
-  `CHANGELOG.md` from these messages, so the type matters (`fix:` and `feat:` are
-  released, `chore:`/`docs:`/`test:`/`style:` are not).
+  `CHANGELOG.md` from these messages, so the type matters: `feat`, `fix`, `perf`,
+  `revert` and `docs` are released (with `release-type: python` it lists `docs` under
+  Documentation); `build`, `chore`, `ci`, `refactor`, `style` and `test` are not, unless
+  marked breaking with `!`.
 - **Never credit an AI anywhere.** No `Co-Authored-By: assistant`, no "Generated with
   an assistant", no robot emoji, in commit messages, pull request titles or
   descriptions, PR or issue comments, code comments, or docs. This holds even when a
