@@ -49,6 +49,13 @@ server rejects a stale or reordered snapshot with **HTTP 409**, which is how a d
 upload is stopped from overwriting a newer one. Persist the counter next to the data,
 bump it before sending, and never reset it.
 
+The 409 names the revision the site holds (`A newer start list (revision 112) is already
+stored`, `A different start list is already stored at revision 112`), and
+`GET /api/v1/start-list/?competition_token=<token>` gives every device's
+`client_revision`. On a 409 Start Protocol Maker moves its counter past the site's,
+saves it and sends again at once: a counter put back by Load backup would otherwise be
+refused on every retry until it climbed past the site's, one step per retry.
+
 ## Line formats
 
 `items` are the same lines the apps keep on disk, `#` separated and `#` terminated:

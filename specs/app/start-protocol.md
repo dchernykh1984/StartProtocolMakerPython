@@ -95,10 +95,14 @@ later field stays in place. Readers that exist:
   including category names, so supplied text cannot shift the registration reference.
 - `POST /api/v1/start-list/` sends the protocol list as `items` with `device_id` and an increasing
   `client_revision`; the site keeps one snapshot per device and answers 409 to a stale one.
+- A 409 means the site holds this device's list at a revision the counter has not passed (Load
+  backup puts the counter back). The counter then takes the site's revision -- the one the 409
+  names, else this device's in `GET /api/v1/start-list/` -- plus one, is saved, and the list is
+  sent again at once, once, so the desk's current list goes through. A refusal is shown in the
+  site's own words (`HTTP 409: A newer start list (revision 113) is already stored`).
 - With **Auto** ticked, edits are sent 2 seconds after the last one; a failure is shown under the
   button and retried every 15 seconds. The backup is written before every send, and nothing
-  is sent while it cannot be: the device counter would go out unsaved, and after a restart the
-  site would refuse every upload until the counter climbed past its own.
+  is sent while it cannot be: the backup, not the site, is the record of the list.
 
 ## Timing chips
 

@@ -29,7 +29,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.http_io import fetch_participants, upload_start_list
+from app.http_io import (
+    RevisionConflictError,
+    fetch_participants,
+    fetch_start_list_revision,
+    upload_start_list,
+)
 from app.models import (
     CHIPS_FIELD,
     DEFAULT_NUMBER_RANGE,
@@ -1322,20 +1327,38 @@ class MainWindow(QMainWindow):
         # Bump the per-device counter on every send so the server can order uploads and
         # reject a delayed/reordered one; persist it (with the list) before sending.
         self._client_revision += 1
-        # Persist the device id, the counter and the current list -- but only that:
-        # a full save would also re-run the duplicate check, which moves the selection
-        # in the protocol list, and this can fire two seconds after the last edit.
-        # Never sent unsaved: after a restart the counter would start below the site's
-        # and every upload be refused until it climbed past it.
-        if unwritten := self._write_backup(_BACKUP_FOLDER, _BACKUP_FILENAME):
-            return False, unwritten
+        items = self._save_as_items()
         try:
-            count = upload_start_list(
-                site_url, token, device_id, self._save_as_items(), self._client_revision
-            )
+            try:
+                count = self._save_and_send(site_url, token, device_id, items)
+            except RevisionConflictError as refused:
+                # The site holds this device's list at a revision the counter has not
+                # passed (a backup loaded): take the site's and send this list at once,
+                # rather than be refused on every retry until the counter catches up.
+                stored = refused.stored
+                if stored is None:
+                    stored = fetch_start_list_revision(site_url, token, device_id)
+                if stored is None:
+                    raise
+                self._client_revision = max(self._client_revision, stored) + 1
+                count = self._save_and_send(site_url, token, device_id, items)
         except ValueError as exc:
             return False, str(exc)
         return True, f"Sent {count} competitor(s)"
+
+    def _save_and_send(
+        self, site_url: str, token: str, device_id: str, items: list[str]
+    ) -> int:
+        """Send the list under the current counter once the backup holds both."""
+        # Persist the device id, the counter and the current list -- but only that:
+        # a full save would also re-run the duplicate check, which moves the selection
+        # in the protocol list, and this can fire two seconds after the last edit.
+        # Never sent unsaved: the backup, not the site, is the record of the list.
+        if unwritten := self._write_backup(_BACKUP_FOLDER, _BACKUP_FILENAME):
+            raise ValueError(unwritten)
+        return upload_start_list(
+            site_url, token, device_id, items, self._client_revision
+        )
 
     def _on_send_to_site(self) -> None:
         """Upload the current save list on demand (the button)."""

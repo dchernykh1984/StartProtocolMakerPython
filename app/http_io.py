@@ -4,9 +4,32 @@ from __future__ import annotations
 
 import http.client
 import json
+import re
 import urllib.error
 import urllib.parse
 import urllib.request
+
+
+class RevisionConflictError(ValueError):
+    """The site refused a start list with 409: it holds this device's list at a
+    revision the upload did not pass. ``stored`` is that revision, as the site's
+    answer names it ("A newer start list (revision 112) is already stored"), or
+    None when the answer does not."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        named = re.search(r"\brevision (\d+)", message)
+        self.stored = int(named.group(1)) if named else None
+
+
+def _site_reason(exc: urllib.error.HTTPError) -> str:
+    """The site's own words for a refusal (its JSON ``detail``), else the status."""
+    try:
+        body = json.loads(exc.read().decode("utf-8"))
+    except OSError, http.client.HTTPException, ValueError:
+        body = None
+    detail = body.get("detail") if isinstance(body, dict) else None
+    return detail if isinstance(detail, str) and detail else exc.reason
 
 
 def upload_start_list(
@@ -34,7 +57,9 @@ def upload_start_list(
         The number of items the site stored.
 
     Raises:
-        ValueError: On HTTP error, network error, or invalid JSON response.
+        RevisionConflictError: On HTTP 409, the site's revision named if it says it.
+        ValueError: On any other HTTP error (in the site's own words when it gives
+            them), network error, or invalid JSON response.
     """
     url = site_url.rstrip("/") + "/api/v1/start-list/"
     payload = json.dumps(
@@ -55,7 +80,10 @@ def upload_start_list(
         with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310
             data = json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
-        raise ValueError(f"HTTP {exc.code}: {exc.reason}") from exc
+        message = f"HTTP {exc.code}: {_site_reason(exc)}"
+        if exc.code == http.HTTPStatus.CONFLICT:
+            raise RevisionConflictError(message) from exc
+        raise ValueError(message) from exc
     except urllib.error.URLError as exc:
         raise ValueError(f"Connection error: {exc.reason}") from exc
     except OSError as exc:
@@ -101,6 +129,34 @@ def fetch_participants(site_url: str, token: str) -> dict:
         + "/api/v1/participants/?"
         + urllib.parse.urlencode({"competition_token": token, "include_unpaid": "true"})
     )
+    return _get_json(url)
+
+
+def fetch_start_list_revision(site_url: str, token: str, device_id: str) -> int | None:
+    """The revision of this device's start list on the site, None if it has none.
+
+    Raises:
+        ValueError: On HTTP error, network error, or invalid JSON response.
+    """
+    url = (
+        site_url.rstrip("/")
+        + "/api/v1/start-list/?"
+        + urllib.parse.urlencode({"competition_token": token})
+    )
+    devices = _get_json(url).get("devices")
+    if not isinstance(devices, list):
+        raise ValueError("Invalid response: expected a list of devices")
+    for device in devices:
+        if isinstance(device, dict) and device.get("device_id") == device_id:
+            revision = device.get("client_revision")
+            if isinstance(revision, int):
+                return revision
+            raise ValueError(f"Invalid response: bad revision {revision!r}")
+    return None
+
+
+def _get_json(url: str) -> dict:
+    """The JSON object the site answers a GET with; every failure is a ValueError."""
     try:
         with urllib.request.urlopen(url, timeout=10) as resp:  # noqa: S310
             data = json.loads(resp.read().decode("utf-8"))
