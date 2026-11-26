@@ -908,7 +908,7 @@ def test_closing_flushes_a_queued_auto_send(win, uploads, monkeypatch):
 def test_an_upload_whose_backup_cannot_be_written_sends_nothing_and_retries(
     win, uploads, monkeypatch
 ):
-    # The counter is never sent unsaved: after a restart the site would refuse it.
+    # Never sent unsaved: the backup, not the site, is the record of the list.
     _arm_auto_send(win)
     monkeypatch.setattr(mw.MainWindow, "_write_backup", _REAL_WRITE_BACKUP)
     monkeypatch.setattr(mw, "save_backup", _full_disk)
