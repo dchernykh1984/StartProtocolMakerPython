@@ -361,6 +361,9 @@ class TestCheckDuplicateFields:
 # save_backup / load_backup
 # ---------------------------------------------------------------------------
 
+# Petrov Petr, as escapes to keep this file ASCII.
+_PETROV_PETR = "\u041f\u0435\u0442\u0440\u043e\u0432 \u041f\u0435\u0442\u0440"
+
 
 class TestBackup:
     def _roundtrip(self, **kwargs) -> dict:
@@ -531,6 +534,20 @@ class TestBackup:
             path = Path(f.name)
         save_backup(str(path), **self._defaults(save_items=[line], device_id="desk-1"))
         path.write_bytes(b"\xef\xbb\xbf" + path.read_bytes())  # old Notepad's mark
+        result = load_backup(str(path))
+        assert result["save_items"] == [line]
+        assert result["device_id"] == "desk-1"
+
+    @pytest.mark.parametrize("codec", ["utf-16-le", "utf-16-be"])
+    def test_backup_saved_back_as_utf_16_loads(self, codec: str) -> None:
+        # Notepad's "Unicode" and "UTF-16 BE", `>` in Windows PowerShell 5.1: the mark
+        # FF FE or FE FF, then two bytes a character, with Windows line ends.
+        line = f"15#{_PETROV_PETR}#M40#3#1#1984#T#C##0 00:00:00.000#r12##"
+        with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as f:
+            path = Path(f.name)
+        save_backup(str(path), **self._defaults(save_items=[line], device_id="desk-1"))
+        text = path.read_text(encoding="utf-8").replace("\n", "\r\n")
+        path.write_bytes(("\ufeff" + text).encode(codec))
         result = load_backup(str(path))
         assert result["save_items"] == [line]
         assert result["device_id"] == "desk-1"
