@@ -612,7 +612,10 @@ def load_backup(path: str) -> dict:  # noqa: C901
 
     # A byte order mark before the first line: Notepad before Windows 10 1903 writes
     # one, a later Notepad on "UTF-8 with BOM", PowerShell 5.1 on -Encoding UTF8.
-    for enc in ("utf-8-sig", "cp1251", "latin-1"):
+    # FF FE or FE FF is UTF-16's: Notepad's "Unicode", "UTF-16 LE" and "UTF-16 BE",
+    # `>` in Windows PowerShell 5.1.
+    utf16 = p.read_bytes()[:2] in (b"\xff\xfe", b"\xfe\xff")
+    for enc in ("utf-16",) if utf16 else ("utf-8-sig", "cp1251", "latin-1"):
         try:
             text = p.read_text(encoding=enc)
             break

@@ -74,11 +74,12 @@ later field stays in place. Readers that exist:
   `temp/spm<unix time>.txt`. Sections in order: open list, protocol list, groups, number ranges,
   RegExp From, RegExp To, FTP, HTTP (site URL and token), then optional tags `StartProtocolFile`,
   `UseAllNumbers`, `AutoShift`, `FirstNumber`, `DelayPerNumber`, `DeviceId`, `ClientRevision`,
-  `AutoSend`. Tags are read back in this order, so a new one goes last. Loading tries UTF-8, a
-  byte order mark in front of it skipped (Notepad before Windows 10 1903 writes one, a later
-  Notepad on "UTF-8 with BOM"), then cp1251, then Latin-1. A backup that cannot be written (a
-  full disk) is said in a warning and the save goes on; closing then asks whether to exit
-  anyway.
+  `AutoSend`. Tags are read back in this order, so a new one goes last. Loading reads a file
+  that begins with FF FE or FE FF as UTF-16 (Notepad's "Unicode", "UTF-16 LE" and "UTF-16 BE",
+  `>` in Windows PowerShell 5.1); any other it tries as UTF-8, a byte order mark in front of it
+  skipped (Notepad before Windows 10 1903 writes one, a later Notepad on "UTF-8 with BOM"), then
+  cp1251, then Latin-1. A backup that cannot be written (a full disk) is said in a warning and
+  the save goes on; closing then asks whether to exit anyway.
 - **Start protocol file**: the protocol list, one line per competitor, UTF-8; it can be pushed to
   an FTP server as well. A file that cannot be written (read-only, held open by Excel, its folder
   gone, a full disk) is said in a warning: the save goes on and the Auto upload is still queued,
